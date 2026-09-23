@@ -494,6 +494,249 @@ export const EVENTS: LifeEvent[] = [
       { label: 'Trabalhar mais um pouco', icon: '💪', run: (L) => { stat(L, 'saude', -3); return O('Você ainda tem lenha pra queimar.', 'neutro') } },
     ],
   },
+  {
+    id: 'pixNumeroErrado', min: 18, max: 90, weight: 6, once: true, cond: (L) => L.money >= 100, icon: '💸', title: 'Pix para o número errado',
+    setup: (L) => ({ person: makePerson(rng, { age: rng.int(25, 65), rel: 'conhecido', bond: 35 }), n: Math.min(rng.int(10, 50) * 10, Math.floor(L.money)) }),
+    text: (_L, c) => `Você digitou uma chave errada e mandou ${money(c.n!)} para ${c.person!.first}. O comprovante chegou; a humildade, não.`,
+    choices: [
+      { label: 'Pedir ajuda ao banco', icon: '🏦', run: (L, c) => {
+        if (rng.chance(0.45 + L.stats.inteligencia / 500)) { stat(L, 'felicidade', 3); return O('O banco localizou a transferência a tempo. Uma vez na vida, o protocolo veio antes do boleto.', 'bom', { scene: { id: 'telefonema', data: { fala: 'O valor voltou para sua conta.', good: true } } }); }
+        L.money -= c.n!; stat(L, 'felicidade', -5); return O(`O protocolo foi aberto. O dinheiro, ${money(c.n!)}, foi passear sem data de volta.`, 'ruim', { scene: { id: 'telefonema', data: { fala: 'A transferência não pode ser revertida.', good: false } }, mood: 'triste' });
+      } },
+      { label: 'Pedir a devolução', icon: '📲', run: (L, c) => {
+        if (rng.chance(0.4 + L.stats.inteligencia / 500)) { L.karma += 2; return O(`${c.person!.first} devolveu o valor. Ainda existe gente decente; só não dá pra marcar no app.`, 'bom', { scene: { id: 'telefonema', data: { fala: 'Pronto, devolvi. Boa sorte!', good: true } } }); }
+        L.money -= c.n!; stat(L, 'felicidade', -4); return O(`${c.person!.first} visualizou e bloqueou. ${money(c.n!)} compraram uma lição sem garantia.`, 'ruim', { scene: { id: 'telefonema', data: { fala: 'Número indisponível.', good: false } }, mood: 'triste' });
+      } },
+      { label: 'Expor o caso no grupo do bairro', icon: '📣', run: (L, c) => {
+        L.money -= c.n!; stat(L, 'felicidade', -3); L.karma -= 1;
+        if (!L.people.some((p) => p.id === c.person!.id)) L.people.push(c.person!);
+        L.flags.pixExposto = L.player.age; L.flags.pixVizinhoId = c.person!.id;
+        return O(`O grupo avisou outras pessoas, mas ${c.person!.first} guardou seu textão. A internet tem memória e pouco serviço.`, 'neutro', { mood: 'tenso', react: { player: { expr: 'serio' } } });
+      } },
+    ],
+  },
+  {
+    id: 'golpeFalsoParente', min: 20, max: 90, weight: 5, icon: '📞', title: 'Vó, manda um Pix?',
+    setup: (L) => {
+      const avo = pickRandom(byRel(L, 'avo', 'avoM'));
+      const pessoa = avo ?? (() => { const sex = rng.pick(['f', 'm'] as const); return makePerson(rng, { sex, age: rng.int(65, 85), rel: sex === 'f' ? 'avoM' : 'avo', bond: 55 }); })();
+      return { person: pessoa, n: rng.int(8, 30) * 100 };
+    },
+    text: (_L, c) => `${c.person!.first} recebeu mensagem de um suposto neto pedindo ${money(c.n!)}. A foto é de outra pessoa e a urgência tem pressa demais.`,
+    choices: [
+      { label: 'Ligar para o número salvo', icon: '☎️', run: (L, c) => {
+        const p = c.person!; if (!L.people.some((x) => x.id === p.id)) L.people.push(p);
+        bond(p, 7); L.karma += 3; stat(L, 'inteligencia', 1);
+        return O(`${p.first} confirmou que está bem e apagou a mensagem. O golpista perdeu a plateia e você ganhou uma ligação longa.`, 'bom', { scene: { id: 'telefonema', others: [p], data: { fala: 'Ainda bem que você ligou!', good: true } }, react: { npc: { expr: 'feliz', say: 'Ainda bem que você ligou!' } } });
+      } },
+      { label: 'Mandar o valor para ajudar', icon: '💸', cond: (L, c) => L.money >= c.n!, run: (L, c) => {
+        const p = c.person!; if (!L.people.some((x) => x.id === p.id)) L.people.push(p);
+        if (rng.chance(0.25 + L.stats.inteligencia / 500)) { bond(p, 4); stat(L, 'felicidade', 2); return O('Você conferiu o nome do recebedor no último segundo e cancelou. O susto foi grátis; raridade nacional.', 'bom'); }
+        L.money -= c.n!; bond(p, -3); stat(L, 'felicidade', -7); return O(`O dinheiro foi para o golpista. ${p.first} ficou sem o Pix e você sem ${money(c.n!)}.`, 'ruim', { scene: { id: 'telefonema', others: [p], data: { fala: 'Esse número não é da família!', good: false } }, mood: 'triste', react: { npc: { expr: 'triste', say: 'Esse número não é da família.' } } });
+      } },
+      { label: 'Avisar a família e bloquear', icon: '🛡️', run: (L, c) => {
+        const p = c.person!; if (!L.people.some((x) => x.id === p.id)) L.people.push(p);
+        bond(p, 4); L.karma += 2; stat(L, 'felicidade', 2);
+        return O('A família bloqueou o número e ganhou uma nova regra: áudio de emergência também pode esperar uma ligação.', 'bom', { scene: { id: 'telefonema', others: [p], data: { fala: 'Bloqueado. E agora vou ligar pra todo mundo.', good: true } } });
+      } },
+    ],
+  },
+  {
+    id: 'contaLuzVerão', min: 20, max: 90, weight: (L) => L.flags.contaLuzPendente ? 0 : 6, icon: '🧾', title: 'A luz veio de jatinho',
+    setup: () => ({ n: rng.int(8, 25) * 100 }),
+    text: (_L, c) => `No calor de 40 °C, o ventilador bateu ponto no terceiro turno. A conta chegou: ${money(c.n!)}.`,
+    choices: [
+      { label: 'Pagar e aceitar a derrota', icon: '💳', cond: (L, c) => L.money >= c.n!, run: (L, c) => {
+        L.money -= c.n!; stat(L, 'felicidade', -2); return O(`A conta de ${money(c.n!)} foi paga. O ventilador agora pode girar com culpa quitada.`, 'neutro');
+      } },
+      { label: 'Abrir protocolo na ouvidoria', icon: '📝', cond: (L, c) => L.money >= Math.round(c.n! * 0.65), run: (L, c) => {
+        if (rng.chance(0.4 + L.stats.inteligencia / 500)) { const reducao = Math.round(c.n! * 0.35); L.money -= c.n! - reducao; stat(L, 'felicidade', 3); return O(`A leitura foi corrigida e você pagou ${money(c.n! - reducao)}. A ouvidoria resolveu antes da próxima era geológica.`, 'bom', { scene: { id: 'telefonema', data: { fala: 'A conta foi revisada.', good: true } } }); }
+        L.flags.contaLuzPendente = L.player.age; stat(L, 'felicidade', -4); return O('O protocolo foi aceito. A resposta vem em até 180 dias úteis, contados em calendário de outra dimensão.', 'ruim', { scene: { id: 'telefonema', data: { fala: 'Sua solicitação está em análise.', good: false } }, mood: 'tenso' });
+      } },
+      { label: 'Deixar o boleto para amanhã', icon: '🧊', run: (L) => {
+        L.flags.contaLuzPendente = L.player.age; stat(L, 'felicidade', 1); return O('Você escondeu o boleto embaixo da fruteira. A dívida não vê escuro; só rende juros.', 'neutro');
+      } },
+      { label: 'Improvisar um “gato”', icon: '⚡', run: (L, c) => {
+        L.karma -= 4;
+        if (rng.chance(0.25 + L.stats.inteligencia / 500)) { const economia = Math.round(c.n! * 0.15); L.money += economia; stat(L, 'saude', -3); return O(`Você economizou ${money(economia)} neste mês e comprou preocupação para os próximos.`, 'neutro', { scene: { id: 'reflexao', data: { env: 'sala', titulo: 'Conta reduzida', sub: 'Economia baixa, tensão alta.', motion: 'pensando' } }, mood: 'tenso', react: { player: { expr: 'serio' } } }); }
+        L.money -= 1200; stat(L, 'saude', -9); stat(L, 'felicidade', -7); return O('Um curto trouxe vistoria, multa e um susto. A economia doméstica saiu cara.', 'ruim', { scene: { id: 'reflexao', data: { env: 'sala', titulo: 'Conta inesperada', sub: 'A multa veio com faísca.', motion: 'triste' } }, mood: 'ferido', react: { player: { expr: 'dor' } } });
+      } },
+    ],
+  },
+  {
+    id: 'enchenteNaRua', min: 18, max: 90, weight: 4, icon: '🌧️', title: 'A rua virou rio',
+    text: () => 'A água já chegou à calçada e seu sofá está mais perto da porta que você. O bairro tenta salvar o que dá.',
+    scene: () => ({ id: 'reflexao', data: { env: 'ruaChuva', titulo: 'Rua virou rio', sub: 'O sofá já pediu carona.', motion: 'triste' } }),
+    choices: [
+      { label: 'Tirar os móveis de casa', icon: '🛋️', run: (L) => {
+        if (rng.chance(0.35 + L.fitness / 250)) { stat(L, 'saude', -2); stat(L, 'felicidade', 4); L.money -= 250; return O('Você salvou o sofá e perdeu duas almofadas para a correnteza. A sala sobreviveu com baixa autoestima.', 'bom', { scene: { id: 'reflexao', data: { env: 'ruaChuva', titulo: 'Operação sofá', sub: 'Dois braços, quatro almofadas.', motion: 'correr' } } }); }
+        stat(L, 'saude', -9); stat(L, 'felicidade', -7); L.money -= 1200; return O('A água levou o sofá e quase levou você. O seguro pediu fotos; a água não esperou.', 'ruim', { scene: { id: 'reflexao', data: { env: 'ruaChuva', titulo: 'Prejuízo molhado', sub: 'O sofá foi morar no quarteirão.', motion: 'triste' } }, mood: 'ferido', react: { player: { expr: 'dor' } } });
+      } },
+      { label: 'Filmar para o story', icon: '📱', run: (L) => {
+        L.fame += 3; L.karma -= 2; stat(L, 'felicidade', 2); return O('O vídeo teve 12 mil visualizações. Seu colchão também, mas ele não monetizou.', 'neutro', { scene: { id: 'reflexao', data: { env: 'ruaChuva', titulo: 'Ao vivo do alagamento', sub: 'A água subiu. O engajamento também.', motion: 'mexerCelular' } }, react: { player: { expr: 'serio' } } });
+      } },
+      { label: 'Ajudar os vizinhos', icon: '🤝', run: (L) => {
+        L.karma += 5; stat(L, 'saude', -4); stat(L, 'felicidade', 5); return O('Você ergueu móveis de duas casas. O karma subiu; na volta, seu nariz começou a escorrer.', 'bom', { scene: { id: 'reflexao', data: { env: 'ruaChuva', titulo: 'Mutirão na chuva', sub: 'A vizinhança virou equipe.', motion: 'ofegante' } }, mood: 'tenso' });
+      } },
+    ],
+  },
+  {
+    id: 'apagaoNaEntrega', min: 18, max: 70, weight: (L) => (L.job ? (L.flags.contaLuzPendente ? 5 : 2) : 0),
+    cond: (L) => !!L.job, icon: '🕯️', title: 'Apagão no prazo final',
+    text: (L) => `Seu relatório vence hoje. O bairro apagou e ${L.job?.title ?? 'o trabalho'} não aceita entrega em vela.`,
+    scene: () => ({ id: 'reflexao', data: { env: 'escritorio', titulo: 'Sem energia', sub: 'O prazo continua ligado.', motion: 'facepalm' } }),
+    choices: [
+      { label: 'Avisar a chefia na hora', icon: '☎️', run: (L) => {
+        const aceito = rng.chance(0.5 + (L.job?.perf ?? 50) / 300);
+        if (aceito) { if (L.job) L.job.perf += 4; stat(L, 'felicidade', 2); return O('A chefia aceitou o aviso e estendeu o prazo. Transparência: 1, reunião de alinhamento: ainda por vir.', 'bom', { scene: { id: 'telefonema', data: { fala: 'Entrega amanhã. Registre o chamado.', good: true } } }); }
+        if (L.job) L.job.perf -= 7; L.flags.advertencias = ((L.flags.advertencias as number) ?? 0) + 1; stat(L, 'felicidade', -4); return O('A chefia achou que faltou planejamento e registrou uma advertência. Poste não costuma pedir opinião.', 'ruim', { scene: { id: 'telefonema', data: { fala: 'O prazo era conhecido desde segunda.', good: false } }, mood: 'tenso', react: { player: { expr: 'serio' } } });
+      } },
+      { label: 'Dizer que já enviou', icon: '🤥', run: (L) => {
+        if (rng.chance(0.2 + L.stats.inteligencia / 500)) { if (L.job) L.job.perf += 2; stat(L, 'felicidade', 3); return O('A chefia encontrou o anexo no e-mail. Era o arquivo errado, mas você ganhou até amanhã para corrigir.', 'neutro'); }
+        if (L.job) L.job.perf -= 12; L.flags.advertencias = ((L.flags.advertencias as number) ?? 0) + 1; stat(L, 'felicidade', -7); return O('Pedem o protocolo de envio e registram uma advertência. A única coisa enviada foi sua credibilidade.', 'ruim', { mood: 'triste', react: { player: { expr: 'envergonhado' } } });
+      } },
+      { label: 'Ir à lan house do bairro', icon: '🖥️', cond: (L) => L.money >= 80, run: (L) => {
+        L.money -= 80; stat(L, 'saude', -3); if (L.job) L.job.perf += 5; return O('Você terminou o relatório no computador da lan house. O prazo foi salvo por R$ 80 e um teclado pegajoso.', 'bom', { scene: { id: 'reflexao', data: { env: 'escritorio', titulo: 'Entrega concluída', sub: 'A tomada tinha energia e taxa horária.', motion: 'digitar' } } });
+      } },
+    ],
+  },
+  {
+    id: 'nomeSujo', min: 20, max: 90, weight: 5, icon: '📉', title: 'Seu nome foi pro cadastro',
+    cond: (L) => L.flags.nomeSujo === undefined,
+    setup: () => ({ n: rng.int(10, 50) * 100 }),
+    text: (_L, c) => `Uma dívida esquecida de ${money(c.n!)} apareceu no cadastro de crédito. O aplicativo oferece três botões e nenhum abraço.`,
+    choices: [
+      { label: 'Renegociar com entrada', icon: '🧾', cond: (L, c) => L.money >= Math.round(c.n! * 0.2), run: (L, c) => {
+        const entrada = Math.round(c.n! * 0.2); L.money -= entrada;
+        if (rng.chance(0.45 + L.stats.inteligencia / 250)) { stat(L, 'felicidade', 4); L.karma += 1; return O(`A negociação fechou com entrada de ${money(entrada)}. Seu nome saiu da lista antes do café esfriar.`, 'bom'); }
+        L.flags.nomeSujo = L.player.age; stat(L, 'felicidade', -5); return O(`A entrada de ${money(entrada)} foi. A dívida continua e ganhou prazo para pensar no assunto.`, 'ruim', { mood: 'tenso' });
+      } },
+      { label: 'Ignorar as notificações', icon: '🔕', run: (L) => {
+        L.flags.nomeSujo = L.player.age; stat(L, 'felicidade', -6); return O('Você silenciou o aplicativo. O cadastro não silenciou você; só passou a cobrar em letra maior.', 'ruim', { mood: 'tenso' });
+      } },
+      { label: 'Pagar o feirão “limpa nome”', icon: '🧼', cond: (L) => L.money >= 600, run: (L) => {
+        L.money -= 600;
+        if (rng.chance(0.3 + L.stats.inteligencia / 500)) { stat(L, 'felicidade', 3); return O('O acordo era legítimo e a restrição saiu. Você leu as letras miúdas; a civilização avança.', 'bom'); }
+        L.flags.nomeSujo = L.player.age; stat(L, 'felicidade', -8); return O('O intermediário sumiu depois da taxa. Seu nome continua sujo; agora o saldo também.', 'ruim', { mood: 'triste' });
+      } },
+    ],
+  },
+  {
+    id: 'furadeiraDomingo', min: 20, max: 90, weight: (L) => L.flags.furadeiraRevidada ? 0 : 5, icon: '🛠️', title: 'Furadeira às sete',
+    setup: (L) => ({ person: makePerson(rng, { age: rng.int(25, 70), rel: 'conhecido', bond: 38 }), hora: rng.pick(['7h03', '7h11', '7h29']) }),
+    text: (_L, c) => `Domingo, ${c.hora}: o vizinho começou a furar a parede. Você suspeita que a broca atravessou até o seu sonho.`,
+    choices: [
+      { label: 'Pedir respeito na porta', icon: '🚪', run: (L, c) => {
+        const p = c.person!; if (!L.people.some((x) => x.id === p.id)) L.people.push(p);
+        if (rng.chance(0.45 + L.stats.inteligencia / 500)) { bond(p, 6); stat(L, 'felicidade', 3); return O(`${p.first} pediu desculpas e adiou a obra. A conversa durou menos que a furadeira.`, 'bom', { scene: { id: 'interacao', others: [p], data: { action: 'conversar', env: 'suburbio' } }, react: { npc: { expr: 'feliz', say: 'Foi mal, já vou parar.' } } }); }
+        bond(p, -8); stat(L, 'felicidade', -4); return O(`${p.first} disse que está dentro do horário permitido. O domingo não foi consultado.`, 'ruim', { scene: { id: 'interacao', others: [p], data: { action: 'discutir', env: 'suburbio' } }, mood: 'tenso', react: { npc: { expr: 'serio', say: 'É só uma furadeira.' } } });
+      } },
+      { label: 'Chamar o síndico', icon: '📋', run: (L, c) => {
+        const p = c.person!; if (!L.people.some((x) => x.id === p.id)) L.people.push(p);
+        if (rng.chance(0.65)) { bond(p, -2); stat(L, 'felicidade', 2); L.karma += 1; return O('O síndico pediu que a obra esperasse. Você ganhou silêncio e uma reunião de condomínio futura.', 'bom', { scene: { id: 'interacao', others: [p], data: { action: 'conversar', env: 'suburbio' } } }); }
+        bond(p, -6); stat(L, 'felicidade', -3); return O('O síndico não atendeu; o vizinho ouviu seu recado pelo interfone. Democracia acústica.', 'ruim', { mood: 'tenso', react: { player: { expr: 'serio' } } });
+      } },
+      { label: 'Ligar o som em resposta', icon: '🔊', run: (L, c) => {
+        const p = c.person!; if (!L.people.some((x) => x.id === p.id)) L.people.push(p);
+        bond(p, -8); L.karma -= 3; stat(L, 'felicidade', 4); L.flags.furadeiraRevidada = L.player.age; L.flags.furadeiraVizinhoId = p.id;
+        return O('A obra ganhou trilha sonora e o prédio ganhou dois inimigos com caixa de som. O síndico ganhou assunto.', 'neutro', { scene: { id: 'interacao', others: [p], data: { action: 'discutir', env: 'suburbio' } }, mood: 'tenso', react: { player: { expr: 'serio' }, npc: { expr: 'bravo', say: 'Aumenta mais que eu quero!' } } });
+      } },
+    ],
+  },
+  {
+    id: 'cursoMilionario', min: 20, max: 75, weight: (L) => L.money >= 250 ? 5 : 0, once: true, icon: '📈', title: 'Aula para ficar rico',
+    setup: () => ({ n: 1997, entrada: 250 }),
+    text: (_L, c) => `Um curso promete ensinar a ganhar ${money(c.n!)} por mês com “mentalidade milionária”. A aula grátis já pediu seu cartão.`,
+    choices: [
+      { label: 'Comprar o pacote completo', icon: '💳', cond: (L, c) => L.money >= c.n!, run: (L, c) => {
+        L.money -= c.n!; L.flags.cursoCoachComprado = L.player.age; stat(L, 'felicidade', 2); return O(`Você pagou ${money(c.n!)} por 12 módulos e um grupo VIP. A prosperidade começou no caixa do vendedor.`, 'ruim', { mood: 'tenso' });
+      } },
+      { label: 'Fechar a aba', icon: '❎', run: (L) => {
+        stat(L, 'inteligencia', 1); stat(L, 'felicidade', 2); return O('Você fechou a página e guardou o cartão. Seu patrimônio cresceu exatamente R$ 0; hoje isso é progresso.', 'bom');
+      } },
+      { label: 'Virar afiliado do curso', icon: '🤝', cond: (L, c) => L.money >= c.entrada!, run: (L, c) => {
+        L.money -= c.entrada!; L.flags.cursoCoachComprado = L.player.age; L.fame += 2; L.karma -= 3;
+        return O('Você pagou para divulgar o curso e chamou isso de renda passiva. A plataforma recebeu renda ativa.', 'neutro', { react: { player: { expr: 'convencido' } } });
+      } },
+    ],
+  },
+  {
+    id: 'vizinhoLembra', min: 20, max: 100, weight: 6,
+    cond: (L) => {
+      const pix = L.flags.pixExposto, furadeira = L.flags.furadeiraRevidada;
+      return (typeof pix === 'number' && L.player.age - pix >= 1 && typeof L.flags.pixVizinhoId === 'string') ||
+        (typeof furadeira === 'number' && L.player.age - furadeira >= 1 && typeof L.flags.furadeiraVizinhoId === 'string');
+    },
+    setup: (L) => {
+      const pendencias = [
+        { tipo: 'pix', idade: L.flags.pixExposto, id: L.flags.pixVizinhoId },
+        { tipo: 'furadeira', idade: L.flags.furadeiraRevidada, id: L.flags.furadeiraVizinhoId },
+      ].filter((x) => typeof x.id === 'string' && typeof x.idade === 'number' && L.player.age - x.idade >= 1)
+        .sort((a, b) => (a.idade as number) - (b.idade as number));
+      const item = pendencias[0];
+      const person = item && L.people.find((p) => p.id === item.id);
+      return item && person ? { tipo: item.tipo, person } : null;
+    },
+    icon: '📣', title: (_L, c) => c.tipo === 'pix' ? 'O grupo não esquece' : 'Domingo, de novo',
+    text: (_L, c) => c.tipo === 'pix'
+      ? `${c.person!.first} voltou ao grupo do bairro para cobrar seu textão sobre o Pix. O histórico está fixado; a paz, não.`
+      : `${c.person!.first} retomou a obra cedo e lembrou do seu som. O prédio segue sem isolamento e sem maturidade.`,
+    choices: [
+      { label: 'Conversar sem plateia', icon: '💬', run: (L, c) => {
+        const p = c.person!; bond(p, 6); L.karma += 2; stat(L, 'felicidade', 3);
+        if (c.tipo === 'pix') { delete L.flags.pixExposto; delete L.flags.pixVizinhoId; }
+        else { delete L.flags.furadeiraRevidada; delete L.flags.furadeiraVizinhoId; }
+        return O(`${p.first} aceitou baixar o tom. O grupo do bairro perdeu um capítulo; você ganhou silêncio.`, 'bom', { scene: { id: 'interacao', others: [p], data: { action: 'conversar', env: 'suburbio' } }, react: { npc: { expr: 'feliz', say: 'Podemos esquecer isso?' } } });
+      } },
+      { label: 'Pedir mediação ao síndico', icon: '📋', run: (L, c) => {
+        const p = c.person!; bond(p, 2); L.karma += 3; stat(L, 'felicidade', 1);
+        if (c.tipo === 'pix') { delete L.flags.pixExposto; delete L.flags.pixVizinhoId; }
+        else { delete L.flags.furadeiraRevidada; delete L.flags.furadeiraVizinhoId; }
+        return O('O síndico mediou a conversa e registrou tudo em ata. Agora até a paz tem número de protocolo.', 'neutro', { scene: { id: 'interacao', others: [p], data: { action: 'conversar', env: 'suburbio' } } });
+      } },
+      { label: 'Responder no grupo', icon: '⌨️', run: (L, c) => {
+        const p = c.person!; const venceu = rng.chance(0.35 + L.stats.inteligencia / 250);
+        if (c.tipo === 'pix') { delete L.flags.pixExposto; delete L.flags.pixVizinhoId; }
+        else { delete L.flags.furadeiraRevidada; delete L.flags.furadeiraVizinhoId; }
+        if (venceu) { bond(p, -2); stat(L, 'felicidade', 2); return O('Sua resposta encerrou o assunto. O grupo mudou para foto de cachorro e boletos, nessa ordem.', 'neutro'); }
+        bond(p, -9); stat(L, 'felicidade', -5); return O('Sua resposta virou captura de tela e figurinha. O grupo achou um novo assunto: você.', 'ruim', { mood: 'tenso', react: { player: { expr: 'envergonhado' } } });
+      } },
+    ],
+  },
+  {
+    id: 'cobrancaInesperada', min: 20, max: 100, weight: 7,
+    cond: (L) => ['contaLuzPendente', 'nomeSujo', 'cursoCoachComprado'].some((flag) => typeof L.flags[flag] === 'number' && L.player.age - (L.flags[flag] as number) >= 1),
+    setup: (L) => {
+      const pendencias = [
+        { tipo: 'luz', flag: 'contaLuzPendente', valor: 650 },
+        { tipo: 'credito', flag: 'nomeSujo', valor: 1200 },
+        { tipo: 'curso', flag: 'cursoCoachComprado', valor: 997 },
+      ].map((x) => ({ ...x, idade: L.flags[x.flag] }))
+        .filter((x) => typeof x.idade === 'number' && L.player.age - x.idade >= 1)
+        .sort((a, b) => (a.idade as number) - (b.idade as number));
+      const item = pendencias[0];
+      return item ? { tipo: item.tipo, flag: item.flag, n: item.valor } : null;
+    },
+    icon: '📬', title: (_L, c) => c.tipo === 'luz' ? 'A ouvidoria respondeu' : c.tipo === 'credito' ? 'O cadastro ainda cobra' : 'O curso renovou sozinho',
+    text: (_L, c) => c.tipo === 'luz'
+      ? `A resposta do protocolo chegou: a conta venceu e há ${money(c.n!)} em encargos. A ouvidoria agradece sua paciência.`
+      : c.tipo === 'credito'
+        ? `O cadastro segue restrito e o acordo pede ${money(c.n!)} para limpar a pendência. Seu nome está em mais grupos que você.`
+        : `O curso renovou o acesso por ${money(c.n!)}. O módulo de cancelamento fica dentro do módulo de prosperidade.`,
+    choices: [
+      { label: 'Pagar e encerrar o assunto', icon: '💳', cond: (L, c) => L.money >= c.n!, run: (L, c) => {
+        L.money -= c.n!; delete L.flags[c.flag!]; stat(L, 'felicidade', 3);
+        return O(`Você pagou ${money(c.n!)} e encerrou a pendência. O alívio veio sem parcelamento; o saldo, também.`, 'neutro', { scene: { id: 'telefonema', data: { fala: 'Sua pendência foi encerrada.', good: true } } });
+      } },
+      { label: 'Contestar com comprovantes', icon: '🗂️', cond: (L) => L.money >= 100, run: (L, c) => {
+        if (rng.chance(0.35 + L.stats.inteligencia / 250)) { delete L.flags[c.flag!]; L.karma += 2; stat(L, 'felicidade', 3); return O('Os comprovantes resolveram a cobrança. Guardar PDF finalmente virou investimento.', 'bom', { scene: { id: 'telefonema', data: { fala: 'A cobrança foi retirada.', good: true } } }); }
+        L.money -= 100; L.flags[c.flag!] = L.player.age; stat(L, 'felicidade', -4); return O('O sistema pediu outro formulário para provar que você já enviou o formulário anterior.', 'ruim', { scene: { id: 'telefonema', data: { fala: 'Faltou um documento complementar.', good: false } }, mood: 'tenso' });
+      } },
+      { label: 'Empurrar para o próximo ano', icon: '📆', run: (L, c) => {
+        L.flags[c.flag!] = L.player.age; stat(L, 'felicidade', -4); return O('Você adiou a cobrança. Ela aceitou o convite e já marcou o retorno com juros.', 'ruim', { mood: 'tenso' });
+      } },
+    ],
+  },
 ];
 
 export function eventTitle(ev: LifeEvent, L: Life, c: EvCtx) {

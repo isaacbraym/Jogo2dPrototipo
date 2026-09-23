@@ -84,6 +84,13 @@ Valores: number, boolean ou string (JSON). Nomes camelCase. Guarde a **idade** q
 | `avisoDivida` | idade do último aviso de dívida | life |
 | `moodNext` | humor da próxima cena em casa | ui/game |
 | `neto` | já teve neto | events |
+| `pixExposto` | idade em que o caso do Pix foi exposto no grupo do bairro | events; vizinhoLembra |
+| `pixVizinhoId` | id da pessoa que recebeu o Pix exposto | events; vizinhoLembra |
+| `furadeiraRevidada` | idade em que o jogador retaliou com som alto | events; vizinhoLembra |
+| `furadeiraVizinhoId` | id do vizinho da furadeira | events; vizinhoLembra |
+| `contaLuzPendente` | idade do protocolo/conta de luz pendente | events; apagaoNaEntrega; cobrancaInesperada |
+| `nomeSujo` | idade em que a pendência de crédito ficou aberta | events; cobrancaInesperada |
+| `cursoCoachComprado` | idade da compra/afiliado do curso | events; cobrancaInesperada |
 | `ev_<id>` | evento `once` já ocorreu | life.pickEvents |
 
 **Ao criar uma flag nova, acrescente uma linha nesta tabela** (e rode `npm run catalog`).

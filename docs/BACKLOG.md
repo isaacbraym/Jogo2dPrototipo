@@ -5,15 +5,15 @@ Ideias esperando implementação. Marque `[x]` e o id criado quando terminar (ex
 Itens marcados **[ENGINE]** precisam de mudança no motor → não implemente; copie para `docs/PEDIDOS-ENGINE.md`.
 
 ## A. Eventos aleatórios — vida adulta (P1)
-- [ ] Pix para o número errado (devolvem / bloqueiam / expor no grupo do bairro → vingança do vizinho depois)
-- [ ] Golpe do falso parente pedindo dinheiro (variação do `golpeZap` com tia/avó como alvo, não o jogador)
-- [ ] Conta de luz absurda no verão (reclamar na ouvidoria = 6 meses de espera; "gato" = risco de multa/incêndio)
-- [ ] Enchente na rua (salvar móveis / filmar pro story / ajudar vizinhos → karma + gripe)
-- [ ] Apagão no dia da entrega do trabalho (desculpa aceita? chefe desconfia → advertência)
-- [ ] Nome sujo no SPC (negociar / ignorar → sem crédito por anos / feirão "limpa nome")
-- [ ] Vizinho de cima com furadeira domingo 7h (reclamar / revidar com som alto / chamar síndico → condomínio briga)
+- [x] Pix para o número errado (devolvem / bloqueiam / expor no grupo do bairro → vingança do vizinho depois) → `pixNumeroErrado`, `vizinhoLembra`
+- [x] Golpe do falso parente pedindo dinheiro (variação do `golpeZap` com avó como alvo, não o jogador) → `golpeFalsoParente`
+- [x] Conta de luz absurda no verão (ouvidoria = 180 dias úteis; "gato" com risco de multa/curto) → `contaLuzVerão`
+- [x] Enchente na rua (salvar móveis / filmar pro story / ajudar vizinhos → karma + gripe; cena dedicada fica para G) → `enchenteNaRua`
+- [x] Apagão no dia da entrega do trabalho (desculpa aceita? chefe desconfia → advertência) → `apagaoNaEntrega`
+- [x] Nome sujo no cadastro de crédito (negociar / ignorar / feirão "limpa nome") → `nomeSujo`, `cobrancaInesperada`
+- [x] Vizinho de cima com furadeira domingo 7h (reclamar / revidar com som alto / chamar síndico → condomínio briga) → `furadeiraDomingo`, `vizinhoLembra`
 - [ ] Aposta online viciante (ganha pouco no começo, perde muito depois; flag de vício → eventos de recaída)
-- [ ] Curso de "mentalidade milionária" de coach (pagar R$ 1.997 / desistir / virar coach também)
+- [x] Curso de "mentalidade milionária" de coach (pagar R$ 1.997 / desistir / virar coach também) → `cursoMilionario`, `cobrancaInesperada`
 - [ ] Reunião de condomínio (virar síndico → poder + inimigos)
 - [ ] Carro guinchado / multa / flanelinha (pagar / discutir / "cuidar do carro" de novo)
 - [ ] Assalto no ônibus (entregar celular / resistir → risco alto / esconder celular falso)

@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-23 — Lote 01: vida adulta e boletos (Codex)
+
+**Eventos (10: 8 situações e 2 retornos):** `pixNumeroErrado`, `golpeFalsoParente`, `contaLuzVerão`, `enchenteNaRua`, `apagaoNaEntrega`, `nomeSujo`, `furadeiraDomingo`, `cursoMilionario`, `vizinhoLembra`, `cobrancaInesperada`.
+**Escolhas (31):** três por evento, exceto `contaLuzVerão` (quatro); apostas arriscadas variam por sorte e atributos.
+**Cenas, movimentos, expressões, ambientes, objetos e interações novos:** 0. O lote reutiliza `reflexao`, `telefonema` e `interacao`.
+**Flags novas (7):** `pixExposto` e `pixVizinhoId`; `furadeiraRevidada` e `furadeiraVizinhoId`; `contaLuzPendente`; `nomeSujo`; `cursoCoachComprado`. Os retornos limpam cada pendência quando resolvida. `advertencias` já existia e agora recebe a consequência do apagão no trabalho.
+**Cadeias:** expor o Pix ou revidar com som pode voltar em `vizinhoLembra`; a conta de luz pendente, dívida de crédito e compra do curso voltam em `cobrancaInesperada`; a conta atrasada aumenta o peso de `apagaoNaEntrega`.
+**Backlog:** oito itens da seção A concluídos. Aposta online viciante continua pendente; a cena dedicada da enchente fica para o lote G.
+**Verificação:** `npm run check` ✅ (um aviso de cobertura esperado: os dois retornos dependem de flags geradas por escolhas e não são alcançados nos perfis limpos do validador); `npm run build` ✅; `npm run catalog` ✅ (59 eventos).
+**Verificação visual:** harness conferido em `reflexao` (chuva), `telefonema` e `interacao` no subúrbio; personagens e cenários renderizados. Não foram criados itens visuais novos.
+**Pendências/pedidos de engine:** nenhum pedido de engine.
+
 Entradas mais novas no topo. Cada lote registra: data, agente, o que foi criado (com ids), flags novas, consequências,
 verificação e pendências. Modelo em `.agents/skills/viva-verificar-e-entregar/SKILL.md`.
 

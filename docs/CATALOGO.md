@@ -3,7 +3,7 @@
 > **Não edite à mão.** Gerado por `npm run catalog` a partir dos registros do código.
 > Use para conferir nomes existentes antes de criar algo novo.
 
-## Eventos anuais — 49
+## Eventos anuais — 59
 
 | id | idades | título | tipo |
 |---|---|---|---|
@@ -56,6 +56,16 @@
 | `recuperacao` | 10–17 | 📉 De recuperação | 3 escolhas |
 | `vizinho` | 18–90 | 🔊 Vizinho do paredão | 3 escolhas |
 | `aposentarAuto` | 65–75 | 🏖️ Hora de se aposentar? | 2 escolhas |
+| `pixNumeroErrado` | 18–90 | 💸 Pix para o número errado | 3 escolhas, única |
+| `golpeFalsoParente` | 20–90 | 📞 Vó, manda um Pix? | 3 escolhas |
+| `contaLuzVerão` | 20–90 | 🧾 A luz veio de jatinho | 4 escolhas |
+| `enchenteNaRua` | 18–90 | 🌧️ A rua virou rio | 3 escolhas |
+| `apagaoNaEntrega` | 18–70 | 🕯️ Apagão no prazo final | 3 escolhas |
+| `nomeSujo` | 20–90 | 📉 Seu nome foi pro cadastro | 3 escolhas |
+| `furadeiraDomingo` | 20–90 | 🛠️ Furadeira às sete | 3 escolhas |
+| `cursoMilionario` | 20–75 | 📈 Aula para ficar rico | 3 escolhas, única |
+| `vizinhoLembra` | 20–100 | 📣 (dinâmico) | 3 escolhas |
+| `cobrancaInesperada` | 20–100 | 📬 (dinâmico) | 3 escolhas |
 
 ## Ações (aba Atividades) — 27
 
@@ -268,17 +278,24 @@ Além destas, `ev_<id>` marca eventos `once` já ocorridos.
 
 | flag | onde |
 |---|---|
-| `advertencias` | game/aggression.ts, game/state.ts |
+| `advertencias` | game/events.ts, game/aggression.ts, game/state.ts |
 | `anosFacul` | game/events.ts, game/life.ts |
 | `aposentadoria` | game/events.ts, game/life.ts, ui/game.ts |
 | `arte` | game/events.ts |
 | `avisoDivida` | game/life.ts |
+| `contaLuzPendente` | game/events.ts |
+| `cursoCoachComprado` | game/events.ts |
 | `expulsoes` | game/aggression.ts |
+| `furadeiraRevidada` | game/events.ts |
+| `furadeiraVizinhoId` | game/events.ts |
 | `infracoes` | game/events.ts, game/aggression.ts, game/life.ts |
 | `medalha` | game/events.ts |
 | `moodNext` | ui/game.ts |
 | `musica` | game/events.ts, game/activities.ts, game/interviews.ts |
 | `neto` | game/events.ts |
+| `nomeSujo` | game/events.ts |
+| `pixExposto` | game/events.ts |
+| `pixVizinhoId` | game/events.ts |
 
 ## Conquistas — 18
 
