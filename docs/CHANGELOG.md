@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-23 — Lote 05: variações, retornos e entrevistas (Codex)
+
+**Eventos (8 retornos):** `videoFirmaReaparece`, `colegasGreveLembram`, `amigoAjudaVolta`, `valentaoAdulto`, `colaNoDiploma`, `celularVolta`, `piramideContatoVolta`, `netoLembraConversa`.
+**Eventos antigos ampliados (10):** `valentao`, `provaEscola`, `amigoPrecisa`, `loteriaAchada`, `acidenteRua`, `piramide`, `filaSUS`, `happyHourObrigatorio`, `primeiroCelular`, `recuperacao`; resultados agora variam por atributos/sorte e trazem reações coerentes.
+**Escolhas novas:** 16 (duas em cada retorno); escolhas antigas também ganharam ramos sorteados.
+**Entrevistas:** 20 novas mensagens de entrevistador/reprovação: oito resultados em `REJECT` e três perguntas genéricas com nove respostas.
+**Flags novas (12):** `amigoAjudaPessoaId`, `amigoAjudaIdade`, `amigoAjudaValor`, `valentaoAdultoIdade`, `valentaoAdultoNome`, `colaNoDiplomaIdade`, `celularVirouNoiteIdade`, `piramideInvestidaIdade`, `piramideInvestidaValor`, `piramideInvestidaResultado`, `netoLembraConversaIdade`, `netoLembraConversaPessoaId`. `videoFirmaIdade`, `greveAderiuIdade` e `infracoes` reaproveitam estado já existente.
+**Cadeias:** o empréstimo a um amigo pode voltar como ajuda; ceder o lanche reaparece na vida adulta; colar pode pedir avaliação complementar; jogar de madrugada retorna como lembrança; lucro/perda da pirâmide altera o retorno; conversar com o neto pode render uma visita futura.
+**Ajuste financeiro:** `piramide` agora debita o aporte antes do sorteio e paga duas vezes o aporte no sucesso, evitando criar dinheiro indevido; a chance usa inteligência e karma.
+**Backlog:** seção F concluída para dez eventos antigos escolhidos por terem resultados únicos em decisões importantes; oito retornos e vinte textos de entrevista adicionados.
+**Verificação:** `npm run check:quick` ✅ · `npm run check` ✅ · `npm run build` ✅ · `npm run catalog` ✅. Avisos de cobertura: os retornos dependem das escolhas que gravam as flags; nesta rodada, o sorteio aleatório também não executou `herancaBriga` → “Dividir entre todos”.
+**Verificação visual:** sem itens visuais novos neste lote.
+**Pendências/pedidos de engine:** nenhum novo.
+
 ## 2026-09-23 — Lote 04: família, relações e velhice (Codex)
 
 **Eventos (14: 12 situações e 2 retornos):** `ceiaNatal`, `tiaPerguntaNamoro`, `sograMoraJunto`, `irmaoPedeEmprestado`, `irmaoNaoDevolve`, `herancaBriga`, `velorioCoxinha`, `filhoAdolescenteRebelde`, `netoSoLigaNoPix`, `aprenderCelularComNeto`, `provaVidaInss`, `baileTerceiraIdade`, `testamentoGato`, `familiaContestaTestamento`.

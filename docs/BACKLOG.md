@@ -63,11 +63,10 @@ Itens marcados **[ENGINE]** precisam de mudança no motor → não implemente; c
 - [x] Escrever o testamento (deixar parte pro gato → família reage) → `testamentoGato`, `familiaContestaTestamento`
 
 ## F. Variações de consequência em eventos existentes (P1 — ajuste seguro)
-- [ ] Para cada evento com 1 só desfecho por escolha, criar 2–3 desfechos sorteados (`rng.chance`/`rng.pick`) influenciados por stats.
-- [ ] Acrescentar `react` (reação do NPC) e `mood` nos eventos antigos que ainda não têm.
-- [ ] Criar 8 "retornos" (eventos que leem flags de escolhas passadas): ex. quem colou na prova (`infracoes`) é pego anos depois no
-      diploma; quem ajudou `amigoPrecisa` é ajudado de volta; quem entregou o lanche ao valentão reencontra o valentão adulto.
-- [ ] Frases de reprovação e respostas de entrevistador novas (`REJECT`, `GENERIC`) — 20 novas.
+- [x] Variar com stats escolhas determinísticas em dez eventos antigos: `valentao`, `provaEscola`, `amigoPrecisa`, `loteriaAchada`, `acidenteRua`, `piramide`, `filaSUS`, `happyHourObrigatorio`, `primeiroCelular`, `recuperacao`.
+- [x] Acrescentar `react`/`mood` aos resultados ampliados desses eventos; expressões válidas conferidas pelo validador.
+- [x] Criar 8 retornos que leem flags de escolhas passadas: `videoFirmaReaparece`, `colegasGreveLembram`, `amigoAjudaVolta`, `valentaoAdulto`, `colaNoDiploma`, `celularVolta`, `piramideContatoVolta`, `netoLembraConversa`.
+- [x] Adicionar 20 textos de entrevistador/reprovação: 8 recusas em `REJECT` e 3 perguntas `GENERIC` com 9 respostas.
 
 ## G. Cenas, animações e ambientes (P2)
 - [ ] Ambientes: `loterica`, `rodoviaria`, `feiraLivre`, `pontoOnibus`, `upa`, `cartorio`, `salaoBeleza`, `lanHouse`, `quadraVarzea`, `postoGasolina`

@@ -111,6 +111,18 @@ Valores: number, boolean ou string (JSON). Nomes camelCase. Guarde a **idade** q
 | `testamentoGatoIdade` | idade em que parte dos bens foi reservada ao gato | events; familiaContestaTestamento |
 | `testamentoGatoValor` | valor reservado para os cuidados do gato | events; familiaContestaTestamento |
 | `testamentoGatoPetId` | id do gato citado no testamento | events; familiaContestaTestamento |
+| `amigoAjudaPessoaId` | id da pessoa a quem foi emprestado dinheiro em `amigoPrecisa` | events; amigoAjudaVolta |
+| `amigoAjudaIdade` | idade do empréstimo ao amigo que ainda não foi devolvido | events; amigoAjudaVolta |
+| `amigoAjudaValor` | valor emprestado ao amigo que ainda não foi devolvido | events; amigoAjudaVolta |
+| `valentaoAdultoIdade` | idade em que o lanche foi entregue ao valentão | events; valentaoAdulto |
+| `valentaoAdultoNome` | nome do valentão da escola que reaparece adulto | events; valentaoAdulto |
+| `colaNoDiplomaIdade` | idade da cola bem-sucedida que pode ser revista depois | events; colaNoDiploma |
+| `celularVirouNoiteIdade` | idade em que o primeiro celular virou a noite nos jogos | events; celularVolta |
+| `piramideInvestidaIdade` | idade do investimento na pirâmide ainda sem retorno | events; piramideContatoVolta |
+| `piramideInvestidaValor` | valor aplicado na oportunidade de pirâmide | events; piramideContatoVolta |
+| `piramideInvestidaResultado` | resultado do investimento (`lucro` ou `perda`) | events; piramideContatoVolta |
+| `netoLembraConversaIdade` | idade da conversa com o neto sem pedido de dinheiro | events; netoLembraConversa |
+| `netoLembraConversaPessoaId` | id do neto com quem o jogador escolheu conversar | events; netoLembraConversa |
 | `ev_<id>` | evento `once` já ocorreu | life.pickEvents |
 
 **Ao criar uma flag nova, acrescente uma linha nesta tabela** (e rode `npm run catalog`).

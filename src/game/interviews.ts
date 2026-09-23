@@ -69,6 +69,30 @@ const GENERIC: Q[] = [
       { label: 'Esta entrevista, neste exato momento.', icon: '😰', score: 1, reply: 'Justo. E ela ainda não acabou.', expr: 'convencido' },
     ],
   },
+  {
+    text: 'O que você faz quando ninguém responde sua mensagem sobre uma tarefa?',
+    opts: [
+      { label: 'Mando um lembrete claro e sigo o prazo.', icon: '📨', score: 2, reply: 'Objetivo. A mensagem já tem mais gestão que metade das reuniões.', expr: 'feliz' },
+      { label: 'Abro uma reunião para cobrar resposta.', icon: '📅', score: -1, reply: 'Uma reunião para cobrar resposta por mensagem. O ciclo corporativo se completa.', expr: 'cansado' },
+      { label: 'Faço tudo e finjo surpresa depois.', icon: '🤐', score: -2, reply: 'A equipe agradece; o seu calendário, nem tanto.', expr: 'desprezo' },
+    ],
+  },
+  {
+    text: 'Como organiza um dia com três prazos e uma urgência?',
+    opts: [
+      { label: 'Confirmo prioridades e negocio prazo.', icon: '🗂️', score: 3, reply: 'Você acabou de usar a palavra “negociar”. O RH vai precisar sentar.', expr: 'pensativo' },
+      { label: 'Faço uma lista e começo pelo mais urgente.', icon: '✅', score: 2, reply: 'Boa. A lista não resolve tudo, mas pelo menos documenta o caos.', expr: 'feliz' },
+      { label: 'Espero a urgência cancelar as outras.', icon: '🫣', score: -2, reply: 'Estratégia baseada em esperança. Temos um formulário para isso.', expr: 'desprezo' },
+    ],
+  },
+  {
+    text: 'Você percebeu um erro no relatório depois de enviar. E agora?',
+    opts: [
+      { label: 'Aviso, corrijo e registro a versão certa.', icon: '🛠️', score: 3, reply: 'Responsabilidade. Alguém avise a impressora de certificados.', expr: 'feliz' },
+      { label: 'Espero para ver se alguém nota.', icon: '👀', score: -2, reply: 'O método “deixa quieto” também é conhecido como auditoria surpresa.', expr: 'serio' },
+      { label: 'Digo que a planilha mudou sozinha.', icon: '📊', score: -1, reply: 'A planilha está na sala ao lado se quiser apresentar sua defesa.', expr: 'cansado' },
+    ],
+  },
 ];
 
 const rnd = (a: number, b: number) => rng.int(a, b);
@@ -320,6 +344,14 @@ const REJECT = [
   'Escolheram alguém com 10 anos de experiência pra vaga júnior. Normal.',
   '"Você é qualificado(a) demais." Tradução: querem pagar menos.',
   'Te deram "retorno em breve". Isso foi há três anos, emocionalmente.',
+  'A vaga foi congelada depois de cinco entrevistas. O processo, pelo menos, ficou aquecido.',
+  'Escolheram alguém que já fazia a função sem receber por ela. Chamaram de continuidade.',
+  'A empresa pausou a contratação para “reavaliar o cenário”. O cenário segue trabalhando.',
+  'Você não tinha o perfil cultural. Ninguém explicou qual cultura; talvez a do vale-refeição.',
+  'A vaga foi cancelada no dia da resposta. O silêncio anterior era parte do planejamento.',
+  'Pediam disponibilidade imediata e levaram dois meses para decidir. O relógio perdeu a vaga.',
+  'Agradeceram seu tempo e encerraram o processo. Seu tempo não recebeu agradecimento do aluguel.',
+  'Você chegou à etapa final: a etapa em que a empresa some com mais convicção.',
 ];
 
 /** Monta a entrevista como uma cadeia de eventos com escolhas. */

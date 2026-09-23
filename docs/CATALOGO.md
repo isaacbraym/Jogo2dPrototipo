@@ -3,7 +3,7 @@
 > **Não edite à mão.** Gerado por `npm run catalog` a partir dos registros do código.
 > Use para conferir nomes existentes antes de criar algo novo.
 
-## Eventos anuais — 94
+## Eventos anuais — 102
 
 | id | idades | título | tipo |
 |---|---|---|---|
@@ -101,6 +101,14 @@
 | `baileTerceiraIdade` | 60–100 | 🎶 Baile da terceira idade | 3 escolhas |
 | `testamentoGato` | 60–100 | 🐈 O testamento do gato | 3 escolhas, única |
 | `familiaContestaTestamento` | 61–100 | 📜 A família leu o testamento | 3 escolhas, única |
+| `videoFirmaReaparece` | 21–90 | 📹 O vídeo voltou ao grupo | 2 escolhas, única |
+| `colegasGreveLembram` | 21–90 | ✊ A ata da paralisação | 2 escolhas, única |
+| `amigoAjudaVolta` | 17–100 | 🫶 Uma ajuda lembrada | 2 escolhas, única |
+| `valentaoAdulto` | 18–100 | 🥪 O recreio ficou adulto | 2 escolhas, única |
+| `colaNoDiploma` | 18–100 | 🎓 A prova apareceu no arquivo | 2 escolhas, única |
+| `celularVolta` | 14–100 | 📱 A notificação atrasada | 2 escolhas, única |
+| `piramideContatoVolta` | 21–100 | 📈 O conhecido tem outra oportunidade | 2 escolhas, única |
+| `netoLembraConversa` | 46–100 | ☕ Uma visita sem pedido de Pix | 2 escolhas, única |
 
 ## Ações (aba Atividades) — 27
 
@@ -314,6 +322,9 @@ Além destas, `ev_<id>` marca eventos `once` já ocorridos.
 | flag | onde |
 |---|---|
 | `advertencias` | game/events.ts, game/aggression.ts, game/state.ts |
+| `amigoAjudaIdade` | game/events.ts |
+| `amigoAjudaPessoaId` | game/events.ts |
+| `amigoAjudaValor` | game/events.ts |
 | `anosFacul` | game/events.ts, game/life.ts |
 | `aposentadoria` | game/events.ts, game/life.ts, ui/game.ts |
 | `arte` | game/events.ts |
@@ -321,6 +332,8 @@ Além destas, `ev_<id>` marca eventos `once` já ocorridos.
 | `assedioMoralValor` | game/events.ts |
 | `avisoDivida` | game/life.ts |
 | `boletimEscondidoIdade` | game/events.ts |
+| `celularVirouNoiteIdade` | game/events.ts |
+| `colaNoDiplomaIdade` | game/events.ts |
 | `contaLuzPendente` | game/events.ts |
 | `cursoCoachComprado` | game/events.ts |
 | `estagiarioEmprego` | game/events.ts |
@@ -342,13 +355,20 @@ Além destas, `ev_<id>` marca eventos `once` já ocorridos.
 | `moodNext` | ui/game.ts |
 | `musica` | game/events.ts, game/activities.ts, game/interviews.ts |
 | `neto` | game/events.ts |
+| `netoLembraConversaIdade` | game/events.ts |
+| `netoLembraConversaPessoaId` | game/events.ts |
 | `netoPessoaId` | game/events.ts |
 | `nomeSujo` | game/events.ts |
+| `piramideInvestidaIdade` | game/events.ts |
+| `piramideInvestidaResultado` | game/events.ts |
+| `piramideInvestidaValor` | game/events.ts |
 | `pixExposto` | game/events.ts |
 | `pixVizinhoId` | game/events.ts |
 | `testamentoGatoIdade` | game/events.ts |
 | `testamentoGatoPetId` | game/events.ts |
 | `testamentoGatoValor` | game/events.ts |
+| `valentaoAdultoIdade` | game/events.ts |
+| `valentaoAdultoNome` | game/events.ts |
 | `videoFirmaIdade` | game/events.ts |
 | `videoFirmaJob` | game/events.ts |
 
