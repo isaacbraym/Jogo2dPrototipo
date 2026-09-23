@@ -8,9 +8,14 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check": "tsc --noEmit && tsx scripts/check-content.ts",
+    "check:quick": "tsx scripts/check-content.ts --quick",
+    "catalog": "tsx scripts/catalog.ts"
   },
   "devDependencies": {
+    "@types/node": "^24.13.6",
+    "tsx": "^4.23.15",
     "typescript": "~5.9.3",
     "vite": "^8.3.0",
     "vite-plugin-singlefile": "^2.3.3"

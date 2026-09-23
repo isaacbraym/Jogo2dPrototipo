@@ -52,7 +52,7 @@ export function flame(ctx: Ctx, x: number, y: number, s: number, t: number) {
 
 // =========================================================== objetos de mão
 type Held = (ctx: Ctx, t: number, near: boolean) => void;
-const HELD: Record<string, { follow: boolean; draw: Held; off?: Pt }> = {
+export const HELD: Record<string, { follow: boolean; draw: Held; off?: Pt }> = {
   celular: {
     follow: false,
     draw: (ctx) => {
