@@ -10,8 +10,7 @@ verificação e pendências. Modelo em `.agents/skills/viva-verificar-e-entregar
 - **Docs:** `AGENTS.md`, `CLAUDE.md`, `docs/ARQUITETURA.md`, `docs/specs/SPEC-01..06`, `docs/BACKLOG.md`,
   `docs/PEDIDOS-ENGINE.md`, `docs/DELEGACAO-LUNA.md`; 7 skills em `.agents/skills/`.
 - **Código:** `HELD` exportado de `render/props.ts` (para o validador); `tsx` e `@types/node` como devDependencies.
-- **Correções:** teste prático da entrevista não entrega mais a resposta (ícone ✅); fila do hospital com cadeiras e sem sobreposição;
-  condenação por lesão corporal agora também tira o emprego.
+- **CI:** `pages.yml` roda o validador rápido antes de publicar; novo `check.yml` valida branches (ex.: `luna/*`) e PRs.
 
 ## 2026-09-23 — Expansão: realismo, consequências e agressões (Claude)
 - Agressões com consequência estilo BitLife (10 tipos): esquiva, revide, ferimento, advertência/justa causa, detenção →
@@ -23,6 +22,7 @@ verificação e pendências. Modelo em `.agents/skills/viva-verificar-e-entregar
   `filaHospital`, `festaFirma`, `reuniao`. Novos eventos: `churrasco`, `golpeZap`, `piramide`, `transito`, `filaSUS`,
   `festaFirma`, `chefeHumilha`, `provocacaoEscola`, `recuperacao`, `vizinho`.
 - `react` e `mood` nos resultados: fim do "sorriso depois do soco". Editor mobile com close na parte editada.
+- Correções: teste prático da entrevista não entrega a resposta; fila do hospital com cadeiras; condenação tira o emprego.
 
 ## 2026-09-23 — Protótipo inicial (Claude)
 - Editor de personagem modular, 34 ambientes, 50+ situações, motor de vida anual, carreiras, relações, conquistas,
