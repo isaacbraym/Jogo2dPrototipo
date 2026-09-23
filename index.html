@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>VIVA — Uma vida, mil escolhas</title>
+    <meta name="description" content="Simulador de vida 2D com personagens modulares, escolhas e consequências." />
+    <meta name="theme-color" content="#1b1438" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23ff7a59'/%3E%3Cpath d='M32 47 C14 35 16 20 26 20 C30 20 32 24 32 24 C32 24 34 20 38 20 C48 20 50 35 32 47Z' fill='%23fff'/%3E%3C/svg%3E" />
+    <style>
+      html, body { margin: 0; height: 100%; background: #16103a; }
+      .boot { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; color: #f6f3ff; font: 800 18px system-ui, sans-serif; background: radial-gradient(900px 600px at 30% 0%, #3a2a80, transparent 60%), linear-gradient(160deg, #1d1543, #120d2b); }
+      .boot b { font-size: 64px; letter-spacing: 3px; background: linear-gradient(180deg, #fff3c9, #ffb547 45%, #ff7a59); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .boot i { width: 46px; height: 46px; border-radius: 50%; border: 5px solid rgba(255,255,255,.15); border-top-color: #ffb547; animation: s .8s linear infinite; }
+      @keyframes s { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <div id="app"><div class="boot"><b>VIVA!</b><i></i><span>Preparando sua vida…</span></div></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
