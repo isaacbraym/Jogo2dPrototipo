@@ -1,7 +1,7 @@
 import { Ctx, roundRect, part, circle, starPath } from '../render/draw';
 import { PROPS, box } from '../render/props';
 import {
-  X0, WW, FLOOR, sky, sun, moon, clouds, hills, mountains, skyline, treeRow, pines, floor, wall, windowFrame, lightShaft, frameArt, clock, shelf, glow, lampPendant, cloud,
+  X0, WW, FLOOR, GROUND, sky, sun, moon, clouds, hills, mountains, skyline, treeRow, pines, floor, wall, windowFrame, lightShaft, frameArt, clock, shelf, glow, lampPendant, cloud,
 } from '../render/bg';
 import { shade, rgba } from '../core/color';
 import { RNG } from '../core/rng';
@@ -1074,6 +1074,7 @@ const mercado: Env = {
       box(ctx, 1100, 360, 10, 100, 2, '#8a8f98');
       box(ctx, 1080, 330, 50, 34, 6, '#f2c14e');
       ctx.fillStyle = '#23242b'; ctx.font = '900 22px Nunito'; ctx.fillText('4', 1105, 356);
+      P('carrinhoMercado', ctx, 170, GROUND, 0, {}, 0.72);
     },
     anim: (ctx, t) => {
       for (let i = 0; i < 4; i++) {
@@ -1248,6 +1249,134 @@ const diretoria: Env = {
   }],
 };
 
+// Lotérica pequena, com fila numerada e cartaz de serviço público.
+const loterica: Env = {
+  id: 'loterica', name: 'Lotérica', mood: 'tense',
+  layers: [{ depth: 1, static: (ctx) => {
+    wall(ctx, '#e9e2d3', 'azulejo', '#f8f5ec'); floor(ctx, 'piso', '#c8c4bb');
+    box(ctx, 120, 110, 330, 180, 5, '#d2d5d2'); box(ctx, 138, 128, 294, 112, 3, '#243c43');
+    ctx.fillStyle = '#bdf0bf'; ctx.font = '800 24px monospace'; ctx.textAlign = 'center'; ctx.fillText('SENHA 23', 285, 174); ctx.font = '16px monospace'; ctx.fillText('CHAMANDO A 4', 285, 207);
+    box(ctx, 860, 300, 380, 130, 6, '#8a5a3a'); box(ctx, 850, 286, 400, 20, 4, '#c99a72');
+    for (const x of [900, 1050, 1200]) { box(ctx, x, 120, 80, 110, 3, '#f4efe2'); ctx.fillStyle = '#c2273d'; ctx.font = '700 14px Nunito'; ctx.fillText('PAGUE AQUI', x + 40, 150); ctx.fillStyle = '#5a3a24'; ctx.font = '12px Nunito'; ctx.fillText('FIADO? NÃO.', x + 40, 184); }
+    P('ventilador', ctx, 710, 285, 0, { state: 0.6 }, 0.65);
+  } }],
+  tint: { col: '#dfcfad', a: 0.04 },
+};
+
+// Rodoviária de interior com plataforma, bancos e painel atrasado.
+const rodoviaria: Env = {
+  id: 'rodoviaria', name: 'Rodoviária', mood: 'calm',
+  layers: [{ depth: 1, static: (ctx) => {
+    wall(ctx, '#d5d8d5', 'painel', '#aeb8b6'); floor(ctx, 'piso', '#b9b8b1');
+    for (const x of [100, 290, 1030, 1220]) { box(ctx, x, 90, 130, 195, 3, '#58666b'); ctx.fillStyle = '#9dc2cf'; ctx.fillRect(x + 8, 98, 114, 168); ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(x + 15, 105, 20, 150); }
+    box(ctx, 440, 95, 490, 92, 6, '#253843'); ctx.fillStyle = '#ffe79a'; ctx.font = '800 22px monospace'; ctx.textAlign = 'center'; ctx.fillText('PLATAFORMA 2', 685, 133); ctx.font = '15px monospace'; ctx.fillText('SAÍDA: QUANDO DER', 685, 163);
+    for (const x of [230, 640, 1050]) { box(ctx, x - 130, 430, 260, 16, 8, '#577c82'); box(ctx, x - 120, 446, 12, 110, 3, '#46575d'); box(ctx, x + 108, 446, 12, 110, 3, '#46575d'); }
+    box(ctx, 90, 330, 260, 46, 5, '#f2c14e'); ctx.fillStyle = '#443a2d'; ctx.font = '700 18px Nunito'; ctx.fillText('CAFÉ DA ESTRADA', 220, 359);
+  } }],
+  tint: { col: '#9fc3ce', a: 0.035 },
+};
+
+// Feira livre de bairro, com toldos e caixas de frutas.
+const feiraLivre: Env = {
+  id: 'feiraLivre', name: 'Feira livre', mood: 'happy',
+  layers: [{ depth: 0.35, static: (ctx) => { sky(ctx, 'dia'); hills(ctx, 470, 22, '#a5c88c', 17); treeRow(ctx, 390, '#6b9462', 17, 8, 0.5); } }, { depth: 1, static: (ctx) => {
+    floor(ctx, 'concreto', '#c6bca9');
+    for (const [x, col] of [[80, '#e4572e'], [430, '#f2c14e'], [780, '#3d7bd9'], [1130, '#2f8f6f']] as [number, string][]) {
+      box(ctx, x, 280, 320, 24, 3, col); box(ctx, x + 20, 304, 280, 125, 5, '#8a5a3a'); box(ctx, x + 8, 268, 304, 12, 2, '#4e4439');
+      for (let i = 0; i < 6; i++) { const fc = ['#e4572e', '#f2c14e', '#7bbf55', '#c2273d'][i % 4]; ctx.fillStyle = fc; ctx.beginPath(); ctx.arc(x + 48 + i * 42, 390 + (i % 2) * 9, 15, 0, 7); ctx.fill(); }
+    }
+    box(ctx, 400, 90, 480, 72, 8, '#fbf3e4'); ctx.fillStyle = '#3d4c38'; ctx.font = '900 32px Nunito'; ctx.textAlign = 'center'; ctx.fillText('FEIRA DE HOJE', 640, 136);
+    ctx.fillStyle = '#fff3b0'; ctx.font = '700 18px Nunito'; ctx.fillText('LEVE 3 — PAGUE 3', 640, 202);
+  } }],
+};
+
+// Ponto de ônibus com cobertura curta e horário otimista.
+const pontoOnibus: Env = {
+  id: 'pontoOnibus', name: 'Ponto de ônibus', mood: 'calm',
+  layers: [{ depth: 0.3, static: (ctx) => { sky(ctx, 'amanhecer'); skyline(ctx, 430, '#9ba8a2', 17, 0); clouds(ctx, 0, 19, 4, 90, 250); } }, { depth: 1, static: (ctx) => {
+    floor(ctx, 'calcada', '#b7b5ad'); ctx.fillStyle = '#777d7d'; ctx.fillRect(X0, 614, WW, 46); ctx.fillStyle = '#e9d76d'; ctx.fillRect(X0, 612, WW, 4);
+    box(ctx, 840, 170, 390, 18, 5, '#617c84'); box(ctx, 870, 187, 12, 300, 4, '#52656b'); box(ctx, 1190, 187, 12, 300, 4, '#52656b');
+    box(ctx, 870, 350, 320, 14, 6, '#536a70'); box(ctx, 890, 364, 12, 82, 3, '#48595f'); box(ctx, 1160, 364, 12, 82, 3, '#48595f');
+    box(ctx, 170, 200, 260, 170, 6, '#f4efe2'); ctx.fillStyle = '#35454a'; ctx.font = '800 20px monospace'; ctx.textAlign = 'center'; ctx.fillText('LINHA 404', 300, 241); ctx.font = '15px monospace'; ctx.fillText('PREVISÃO: EM BREVE', 300, 275); ctx.fillText('BREVE = CONCEITO', 300, 316);
+    P('orelhao', ctx, 570, GROUND, 0, {}, 0.72);
+  } }],
+};
+
+// UPA de bairro com triagem, relógio e cadeiras de espera.
+const upa: Env = {
+  id: 'upa', name: 'UPA', mood: 'tense',
+  layers: [{ depth: 1, static: (ctx) => {
+    wall(ctx, '#d9e8e4', 'liso'); floor(ctx, 'piso', '#c9d6d3');
+    box(ctx, 450, 75, 380, 85, 6, '#f3f5ef'); ctx.fillStyle = '#2e6d73'; ctx.font = '900 34px Nunito'; ctx.textAlign = 'center'; ctx.fillText('UPA • TRIAGEM', 640, 127);
+    box(ctx, 105, 215, 300, 60, 5, '#f2c14e'); ctx.fillStyle = '#493c2c'; ctx.font = '700 16px Nunito'; ctx.fillText('CLASSIFICAÇÃO DE RISCO', 255, 251);
+    box(ctx, 145, 400, 310, 95, 7, '#5d8290'); box(ctx, 145, 490, 20, 85, 3, '#667276'); box(ctx, 435, 490, 20, 85, 3, '#667276');
+    box(ctx, 815, 400, 310, 95, 7, '#709199'); box(ctx, 815, 490, 20, 85, 3, '#667276'); box(ctx, 1095, 490, 20, 85, 3, '#667276');
+    box(ctx, 930, 220, 260, 88, 5, '#eef3f0'); ctx.fillStyle = '#3b5961'; ctx.font = '700 18px Nunito'; ctx.fillText('SENHA 187', 1060, 257); ctx.font = '14px Nunito'; ctx.fillText('CHAMANDO A 23', 1060, 284);
+    clock(ctx, 220, 110, 26, 0);
+  } }],
+  tint: { col: '#c1dcd8', a: 0.04 },
+};
+
+// Cartório antigo com balcão alto e arquivo que nunca acaba.
+const cartorio: Env = {
+  id: 'cartorio', name: 'Cartório', mood: 'calm',
+  layers: [{ depth: 1, static: (ctx) => {
+    wall(ctx, '#e5d9c2', 'painel', '#8b765e'); floor(ctx, 'madeira', '#8c6a4c');
+    box(ctx, 390, 76, 500, 80, 5, '#5d442e'); ctx.fillStyle = '#f6e8c9'; ctx.font = '900 31px serif'; ctx.textAlign = 'center'; ctx.fillText('TABELIONATO', 640, 126);
+    for (const x of [100, 1030]) { box(ctx, x, 180, 240, 270, 4, '#684a32'); for (let i = 0; i < 4; i++) { box(ctx, x + 12, 197 + i * 58, 216, 45, 2, '#b78d5b'); for (let k = 0; k < 5; k++) box(ctx, x + 22 + k * 39, 203 + i * 58, 31, 34, 2, ['#a76543', '#dfc89b', '#947a61'][k % 3], { top: false, lw: 0.6 }); } }
+    box(ctx, 365, 418, 550, 120, 5, '#755338'); box(ctx, 350, 404, 580, 16, 3, '#4d3829');
+    box(ctx, 485, 230, 310, 58, 5, '#fbf3e4'); ctx.fillStyle = '#5a4837'; ctx.font = '700 17px Nunito'; ctx.fillText('SENHA 88 • ATENDENDO A 3', 640, 265);
+    P('ventilador', ctx, 970, GROUND, 0, { state: 0.35 }, 0.6);
+  } }],
+};
+
+// Salão de beleza de bairro, espelhos e cadeiras sem marcas comerciais.
+const salaoBeleza: Env = {
+  id: 'salaoBeleza', name: 'Salão de beleza', mood: 'happy',
+  layers: [{ depth: 1, static: (ctx) => {
+    wall(ctx, '#dfc7c4', 'liso'); floor(ctx, 'piso', '#d7d0ca');
+    for (const x of [150, 505, 860]) { box(ctx, x, 145, 250, 245, 8, '#c99a2a'); box(ctx, x + 13, 158, 224, 216, 5, '#b8d5dc'); box(ctx, x + 22, 168, 15, 190, 3, '#dcebef', { top: false }); }
+    for (const x of [265, 620, 975]) { box(ctx, x - 67, 430, 134, 20, 9, '#7a3450'); box(ctx, x - 48, 450, 12, 130, 4, '#44454b'); box(ctx, x + 36, 450, 12, 130, 4, '#44454b'); }
+    box(ctx, 400, 62, 480, 60, 8, '#f6e9e5'); ctx.fillStyle = '#8b3e58'; ctx.font = '900 27px Nunito'; ctx.textAlign = 'center'; ctx.fillText('CORTE • ESCOVA • PIX', 640, 101);
+    for (let i = 0; i < 6; i++) box(ctx, 438 + i * 34, 382, 20, 35, 4, ['#e4572e', '#f2c14e', '#8c6f99'][i % 3]);
+  } }],
+  tint: { col: '#f4cbd1', a: 0.035 },
+};
+
+// Lan house com monitores quadrados e relógio de minutos pagos.
+const lanHouse: Env = {
+  id: 'lanHouse', name: 'Lan house', mood: 'calm',
+  layers: [{ depth: 1, static: (ctx) => {
+    wall(ctx, '#b5b9bf', 'painel', '#707780'); floor(ctx, 'xadrez', '#b3b4b6');
+    box(ctx, 370, 52, 540, 68, 6, '#273a4b'); ctx.fillStyle = '#96e5ca'; ctx.font = '900 32px monospace'; ctx.textAlign = 'center'; ctx.fillText('1 HORA = 1 HORA', 640, 96);
+    for (const x of [100, 360, 620, 880, 1140]) { box(ctx, x, 250, 150, 100, 5, '#2b3039'); ctx.fillStyle = '#5794a0'; ctx.fillRect(x + 9, 260, 132, 78); box(ctx, x + 48, 350, 54, 46, 3, '#555d68'); box(ctx, x - 20, 407, 190, 18, 4, '#694b34'); box(ctx, x + 5, 425, 12, 150, 2, '#4a4140'); box(ctx, x + 140, 425, 12, 150, 2, '#4a4140'); }
+    box(ctx, 480, 500, 320, 42, 4, '#fbf3e4'); ctx.fillStyle = '#4c4c53'; ctx.font = '700 17px Nunito'; ctx.fillText('IMPRIME AQUI • SEM GARANTIA', 640, 527);
+  } }],
+};
+
+// Quadra de várzea com alambrado, trave e placar improvisado.
+const quadraVarzea: Env = {
+  id: 'quadraVarzea', name: 'Quadra de várzea', mood: 'happy',
+  layers: [{ depth: 0.25, static: (ctx) => { sky(ctx, 'tarde'); hills(ctx, 460, 30, '#90b778', 31); treeRow(ctx, 470, '#47734f', 32, 11, 0.65); } }, { depth: 1, static: (ctx) => {
+    floor(ctx, 'terra', '#98744e'); ctx.strokeStyle = '#eee4c9'; ctx.lineWidth = 3; ctx.strokeRect(110, 334, 1060, 260); ctx.beginPath(); ctx.moveTo(640, 335); ctx.lineTo(640, 594); ctx.stroke(); ctx.beginPath(); ctx.arc(640, 465, 58, 0, 7); ctx.stroke();
+    for (const x of [95, 1130]) { ctx.strokeStyle = '#eee4c9'; ctx.lineWidth = 7; ctx.strokeRect(x, 405, 68, 120); ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1; for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(x + i * 17, 405); ctx.lineTo(x + i * 17, 525); ctx.stroke(); } }
+    box(ctx, 470, 88, 340, 88, 4, '#473d30'); ctx.fillStyle = '#f2c14e'; ctx.font = '900 36px monospace'; ctx.textAlign = 'center'; ctx.fillText('CASA  1 × 0  VISITA', 640, 143);
+    ctx.fillStyle = '#fbf3e4'; ctx.font = '700 18px Nunito'; ctx.fillText('O PLACAR NÃO DISCUTE', 640, 214);
+  } }],
+  tint: { col: '#ffc77b', a: 0.035 },
+};
+
+// Posto independente, bombas antigas e cobertura desbotada.
+const postoGasolina: Env = {
+  id: 'postoGasolina', name: 'Posto de gasolina', mood: 'calm',
+  layers: [{ depth: 0.25, static: (ctx) => { sky(ctx, 'dia'); skyline(ctx, 430, '#9aa7a0', 24, 0); hills(ctx, 460, 24, '#91b17a', 25); } }, { depth: 1, static: (ctx) => {
+    floor(ctx, 'concreto', '#8b8982'); ctx.fillStyle = '#41454a'; ctx.fillRect(X0, 602, WW, 58); ctx.fillStyle = '#f2d36f'; ctx.fillRect(X0, 598, WW, 4);
+    box(ctx, 180, 160, 920, 40, 5, '#eee1c4'); box(ctx, 220, 198, 840, 24, 3, '#c2273d');
+    for (const x of [250, 520, 790, 1060]) { box(ctx, x, 218, 18, 266, 3, '#6b7376'); box(ctx, x - 80, 270, 178, 210, 8, '#d4d8d4'); box(ctx, x - 68, 284, 154, 62, 4, '#343d40'); ctx.fillStyle = '#a6efab'; ctx.font = '700 22px monospace'; ctx.textAlign = 'center'; ctx.fillText('00,00', x + 9, 323); box(ctx, x - 42, 365, 86, 20, 4, '#c2273d'); ctx.strokeStyle = '#30363a'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(x + 70, 380); ctx.bezierCurveTo(x + 120, 400, x + 80, 455, x + 49, 448); ctx.stroke(); }
+    box(ctx, 435, 60, 410, 50, 6, '#f4c14f'); ctx.fillStyle = '#4c473c'; ctx.font = '900 25px Nunito'; ctx.fillText('AUTO POSTO DO BAIRRO', 640, 93);
+  } }],
+};
+
 const delegacia: Env = {
   ...ruaNoite,
   id: 'delegacia', name: 'Abordagem policial', mood: 'tense',
@@ -1258,6 +1387,7 @@ export const ENVS: Record<string, Env> = {
   quartoBebe, quarto, sala, cozinha, maternidade, hospital, escola, biblioteca, escritorio, academia, restaurante, balada, tribunal, prisao, cassino,
   aeroporto, parque, patio, praia, ruaNoite, ruaChuva, ruaDia, casamento, acampamento, cemiterio, palco, zen, ceu, suburbio, cinema, universidade,
   concessionaria, delegacia, estudio, mercado, boteco, cafeteria, delegaciaInterna, diretoria,
+  loterica, rodoviaria, feiraLivre, pontoOnibus, upa, cartorio, salaoBeleza, lanHouse, quadraVarzea, postoGasolina,
 };
 
 export { X0, WW, FLOOR, roundRect, circle };

@@ -63,6 +63,16 @@ export const EXPRESSIONS = {
   chocado: E({ smile: -0.25, open: 0.6, browUp: 0.95, lidTop: -0.15, pupil: 0.55, wide: -0.2 }),
   serio: E({ smile: -0.12, browIn: -0.2, lidTop: 0.15 }),
   gritando: E({ smile: -0.3, open: 1, teeth: 0.6, tongue: 0.5, browIn: -0.8, wide: 0.2, anger: true }),
+  // Sorriso enviesado para comentário irônico.
+  sarcastico: E({ asym: 0.75, smile: 0.22, lidTop: 0.34, browUp: 0.25, browIn: -0.12 }),
+  // Olhar estreito de quem ouviu uma promessa improvável.
+  desconfiado: E({ smile: -0.05, lidTop: 0.16, lidBot: 0.3, browIn: 0.18, browUp: 0.12, pupil: 0.92 }),
+  // Tensão baixando depois de uma notícia boa.
+  aliviado: E({ smile: 0.42, lidTop: 0.3, browIn: 0.12, browUp: 0.12, blush: 0.12 }),
+  // Reação de enjoo sem transformar o mal-estar em piada.
+  enjoado: E({ smile: -0.62, open: 0.12, lidTop: 0.4, browIn: 0.48, asym: -0.25, sweat: true }),
+  // Cansaço pesado, sem sorriso.
+  derrotado: E({ smile: -0.72, lidTop: 0.58, browIn: 0.72, browUp: 0.08, asym: -0.12 }),
 } satisfies Record<string, Face>;
 
 export type ExprName = keyof typeof EXPRESSIONS;

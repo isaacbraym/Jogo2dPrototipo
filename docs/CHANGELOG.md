@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-23 — Lote 06: cenas, animações e ambientes (Codex)
+
+**Eventos novos:** 0. O lote ligou conteúdo existente às cenas; ampliou `assalto` para quatro escolhas com custo/risco e deu uma quarta escolha a `baileTerceiraIdade`.
+**Escolhas novas:** 2 — jogar bingo por R$ 20, com chance de prêmio de R$ 100 e mudanças de vínculo/humor; oferecer o celular velho sem chip no assalto, com chance de enganar e risco de perder também o aparelho principal.
+**Cenas (9):** `reuniaoZoom`, `furadeiraDomingo`, `ceiaNatal`, `festaJunina`, `feiraCiencias`, `enchente`, `assaltoOnibus`, `velorioCoxinha`, `bingoIdosos`.
+**Movimentos (14):** `espreguicar`, `bocejar`, `digitarFurioso`, `carregarCaixa`, `limparSuor`, `abanar`, `dancarQuadrilha`, `tropecarEscada`, `escorregar`, `desmaiar`, `ajoelharImplorar`, `contarDinheiro`, `selfie`, `gravarStory`.
+**Expressões (5):** `sarcastico`, `desconfiado`, `aliviado`, `enjoado`, `derrotado`.
+**Ambientes (10):** `loterica`, `rodoviaria`, `feiraLivre`, `pontoOnibus`, `upa`, `cartorio`, `salaoBeleza`, `lanHouse`, `quadraVarzea`, `postoGasolina`.
+**Objetos (8):** cenário `orelhao`, `carrinhoMercado`, `ventilador`, `vulcaoEscolar`; de mão `marmita`, `bilheteLoteria`, `sacola`, `guardaChuvaQuebrado`.
+**Ligações e cadeias:** `reuniaoQueEmailResolvia`, `furadeiraDomingo`, `ceiaNatal`, `festaJuninaEscola`, `feiraCienciasEscolar`, `enchenteNaRua`, `assalto`, `velorioCoxinha` e a nova escolha de `baileTerceiraIdade` usam as cenas correspondentes. `loteria` agora usa `loterica` e o bilhete de mão. No assalto, avisar o motorista pode falhar com perda de saúde/celular; correr traz risco de queda/celular; entregar perde o aparelho; o celular velho sem chip pode enganar o assaltante ou resultar na perda do principal. O bingo cobra a entrada e pode pagar prêmio; a derrota também altera humor/vínculo.
+**Flags novas:** nenhuma. Nenhuma necessidade de motor surgiu do conteúdo do lote.
+**Backlog:** seção G concluída; também fechados o assalto no ônibus da seção A e a cena pendente de `reuniaoQueEmailResolvia` na seção B. `vulcaoEscolar` foi incluído como objeto de cenário para a feira. Os itens de A ainda abertos são aposta online, reunião de condomínio, guincho/multa, Black Friday, mudança com amigos, plano que nega cirurgia e ser chamado(a) de senhor(a).
+**Verificação automática:** `npm run catalog` ✅ · `npm run check` ✅ · `npm run build` ✅. Houve um aviso de cobertura para 20 eventos que exigem estados acumulados/flags, relações ou espera por anos: `vizinhoLembra`, `cobrancaInesperada`, `justaCausaFeedback`, `estagiarioVirouChefe`, `indenizacaoTrabalhista`, `paisAchamBoletim`, `irmaoNaoDevolve`, `filhoAdolescenteRebelde`, `netoSoLigaNoPix`, `aprenderCelularComNeto`, `testamentoGato`, `familiaContestaTestamento`, `videoFirmaReaparece`, `colegasGreveLembram`, `amigoAjudaVolta`, `valentaoAdulto`, `colaNoDiploma`, `celularVolta`, `piramideContatoVolta`, `netoLembraConversa`. As duas escolhas sorteadas de `herancaBriga` foram cobertas nesta execução. O validador também não detecta uso estático das cenas preexistentes `beijoPraia` e `abordagem`, disponíveis via UI/dados dinâmicos.
+**Verificação visual:** as nove cenas conferidas em dois instantes e duas idades; dez ambientes, 14 movimentos, cinco expressões e objetos novos vistos no harness. Os dois desfechos do celular falso também foram conferidos. A caixa de `carregarCaixa` foi ajustada para aparecer nas mãos.
+**Pendências/pedidos de engine:** o lote não exigiu alteração no motor. Os pedidos H de reputação, saúde crônica e notícias de mundo foram acrescentados à fila; os itens de A e H seguem aguardando os próximos lotes/o agente de motor em `docs/PEDIDOS-ENGINE.md`.
+
 ## 2026-09-23 — Lote 05: variações, retornos e entrevistas (Codex)
 
 **Eventos (8 retornos):** `videoFirmaReaparece`, `colegasGreveLembram`, `amigoAjudaVolta`, `valentaoAdulto`, `colaNoDiploma`, `celularVolta`, `piramideContatoVolta`, `netoLembraConversa`.

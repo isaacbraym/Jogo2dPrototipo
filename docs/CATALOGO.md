@@ -39,7 +39,7 @@
 | `ofertaEmprego` | 18–62 | 📨 Oferta de emprego | 3 escolhas |
 | `bolsa` | 15–17 | 🏅 Olimpíada de conhecimento | 2 escolhas, única |
 | `viral` | 13–70 | 📱 Seu vídeo viralizou! | 2 escolhas |
-| `assalto` | 16–90 | 🔪 Assalto! | 3 escolhas |
+| `assalto` | 16–90 | 🔪 Assalto! | 4 escolhas |
 | `festaSurpresa` | 16–90 | 🎁 Festa surpresa! | automático |
 | `mudanca` | 20–60 | 🧳 Proposta de mudança | 2 escolhas, única |
 | `maratona` | 18–70 | 🏃 Maratona da cidade | 2 escolhas |
@@ -98,7 +98,7 @@
 | `netoSoLigaNoPix` | 45–100 | 📲 Vô, faz um Pix? | 3 escolhas |
 | `aprenderCelularComNeto` | 60–100 | 📱 Aula de celular com o neto | 3 escolhas, única |
 | `provaVidaInss` | 60–100 | 🗃️ Prova de vida | 3 escolhas, única |
-| `baileTerceiraIdade` | 60–100 | 🎶 Baile da terceira idade | 3 escolhas |
+| `baileTerceiraIdade` | 60–100 | 🎶 Baile da terceira idade | 4 escolhas |
 | `testamentoGato` | 60–100 | 🐈 O testamento do gato | 3 escolhas, única |
 | `familiaContestaTestamento` | 61–100 | 📜 A família leu o testamento | 3 escolhas, única |
 | `videoFirmaReaparece` | 21–90 | 📹 O vídeo voltou ao grupo | 2 escolhas, única |
@@ -210,7 +210,7 @@
 | `empresario` | 📈 Empreendedor(a) | `escritorio` | Investidor(a)-anjo |
 | `ator` | 🎬 Ator/Atriz | `palco` | Diretor(a) de elenco |
 
-## Cenas/situações — 64
+## Cenas/situações — 73
 
 | id | ambiente | chaves de `data` lidas |
 |---|---|---|
@@ -241,7 +241,7 @@
 | `ferias` | `praia` | `sub` |
 | `acampar` | `acampamento` |  |
 | `cassino` | `cassino` | `win` |
-| `loteria` | `sala` | `win`, `valor` |
+| `loteria` | `loterica` | `win`, `valor` |
 | `crime` | `ruaNoite` | `titulo`, `caught` |
 | `abordagem` | `delegacia` |  |
 | `julgamento` | `tribunal` | `fala`, `guilty` |
@@ -278,30 +278,39 @@
 | `comemoracao` | (dinâmico) | `env`, `titulo`, `sub` |
 | `telefonema` | (dinâmico) | `env`, `titulo`, `sub`, `fala`, `good` |
 | `dirigir` | `ruaDia` | `cor`, `ok` |
+| `reuniaoZoom` | `escritorio` |  |
+| `furadeiraDomingo` | `sala` |  |
+| `ceiaNatal` | `cozinha` |  |
+| `festaJunina` | `patio` |  |
+| `feiraCiencias` | `escola` |  |
+| `enchente` | `ruaChuva` | `acao`, `falhou` |
+| `assaltoOnibus` | `rodoviaria` | `acao`, `escapou`, `desmaio` |
+| `velorioCoxinha` | `cemiterio` | `nome` |
+| `bingoIdosos` | `sala` | `ganhou` |
 
 Ações físicas de `physical()` (use em `interacao` com `data.action`): `abracar` · `beijar` · `highFive` · `apertoMao` · `soco` · `piada` · `fofocar` · `consolar` · `desculpas` · `massagem` · `serenata` · `tapa` · `empurrar` · `dancar` · `discutir` · `elogiar` · `presente` · `conversar` · `pedirDinheiro` · `brincar`
 
-## Ambientes — 39
+## Ambientes — 49
 
-`quartoBebe` · `quarto` · `sala` · `cozinha` · `maternidade` · `hospital` · `escola` · `biblioteca` · `escritorio` · `academia` · `restaurante` · `balada` · `tribunal` · `prisao` · `cassino` · `aeroporto` · `parque` · `patio` · `praia` · `ruaNoite` · `ruaChuva` · `ruaDia` · `casamento` · `acampamento` · `cemiterio` · `palco` · `zen` · `ceu` · `suburbio` · `cinema` · `universidade` · `concessionaria` · `delegacia` · `estudio` · `mercado` · `boteco` · `cafeteria` · `delegaciaInterna` · `diretoria`
+`quartoBebe` · `quarto` · `sala` · `cozinha` · `maternidade` · `hospital` · `escola` · `biblioteca` · `escritorio` · `academia` · `restaurante` · `balada` · `tribunal` · `prisao` · `cassino` · `aeroporto` · `parque` · `patio` · `praia` · `ruaNoite` · `ruaChuva` · `ruaDia` · `casamento` · `acampamento` · `cemiterio` · `palco` · `zen` · `ceu` · `suburbio` · `cinema` · `universidade` · `concessionaria` · `delegacia` · `estudio` · `mercado` · `boteco` · `cafeteria` · `delegaciaInterna` · `diretoria` · `loterica` · `rodoviaria` · `feiraLivre` · `pontoOnibus` · `upa` · `cartorio` · `salaoBeleza` · `lanHouse` · `quadraVarzea` · `postoGasolina`
 
-## Movimentos — 100
+## Movimentos — 114
 
-**Em loop (estados):** `parado` · `feliz` · `triste` · `bracosCruzados` · `pensando` · `nervoso` · `maosNaCintura` · `andar` · `correr` · `esteira` · `dancar` · `dancar2` · `dancar3` · `comemorar` · `acenar` · `aplaudir` · `chorar` · `rir` · `furia` · `susto` · `darOmbros` · `facepalm` · `rezar` · `vitoria` · `joinha` · `apontar` · `lutar` · `sentar` · `sentarFeliz` · `digitar` · `estudar` · `deitado` · `deitadoDoente` · `sentarChao` · `engatinhar` · `meditar` · `ajoelhar` · `agachar` · `levantarPeso` · `rosca` · `telefone` · `mexerCelular` · `ler` · `lerSentado` · `beber` · `cafe` · `comer` · `cantar` · `tocarViolao` · `cozinhar` · `pintar` · `segurarBebe` · `varrer` · `dirigir` · `jogarVideogame` · `dormirEmPe` · `empurrarCarrinho` · `abracar` · `abracarTras` · `beijarTras` · `beijar` · `apertoMao` · `dor` · `olhoRoxo` · `caidoChao` · `ofegante` · `molhado` · `cochichar` · `rirDe` · `humilhado` · `consolar` · `massagem` · `desculpas` · `contarPiada` · `roubar` · `escoltado` · `escreverQuadro` · `sentarCabisbaixo` · `apontarBronca` · `seguranca` · `torcerFutebol` · `entrevistado` · `entrevistador`
+**Em loop (estados):** `parado` · `feliz` · `triste` · `bracosCruzados` · `pensando` · `nervoso` · `maosNaCintura` · `andar` · `correr` · `esteira` · `dancar` · `dancar2` · `dancar3` · `comemorar` · `acenar` · `aplaudir` · `chorar` · `rir` · `furia` · `susto` · `darOmbros` · `facepalm` · `rezar` · `vitoria` · `joinha` · `apontar` · `lutar` · `sentar` · `sentarFeliz` · `digitar` · `estudar` · `deitado` · `deitadoDoente` · `sentarChao` · `engatinhar` · `meditar` · `ajoelhar` · `agachar` · `levantarPeso` · `rosca` · `telefone` · `mexerCelular` · `ler` · `lerSentado` · `beber` · `cafe` · `comer` · `cantar` · `tocarViolao` · `cozinhar` · `pintar` · `segurarBebe` · `varrer` · `dirigir` · `jogarVideogame` · `dormirEmPe` · `empurrarCarrinho` · `abracar` · `abracarTras` · `beijarTras` · `beijar` · `apertoMao` · `dor` · `olhoRoxo` · `caidoChao` · `ofegante` · `molhado` · `cochichar` · `rirDe` · `humilhado` · `consolar` · `massagem` · `desculpas` · `contarPiada` · `roubar` · `escoltado` · `escreverQuadro` · `sentarCabisbaixo` · `apontarBronca` · `seguranca` · `torcerFutebol` · `entrevistado` · `entrevistador` · `digitarFurioso` · `carregarCaixa` · `abanar` · `dancarQuadrilha` · `ajoelharImplorar` · `contarDinheiro` · `gravarStory`
 
-**Ações (duração fixa):** `soco (0.8s)` · `tapa (0.75s)` · `chute (0.8s)` · `empurrar (0.8s)` · `highFive (1s)` · `cair (1.2s)` · `pular (0.9s)` · `reverencia (1.4s)` · `jogarChapeu (1s)` · `soprar (1.2s)` · `bater (0.6s)` · `estremecer (0.6s)` · `entregar (1s)` · `levantarChao (1.4s)` · `cabecada (0.9s)` · `socoForte (1s)` · `jogarBebida (1s)`
+**Ações (duração fixa):** `soco (0.8s)` · `tapa (0.75s)` · `chute (0.8s)` · `empurrar (0.8s)` · `highFive (1s)` · `cair (1.2s)` · `pular (0.9s)` · `reverencia (1.4s)` · `jogarChapeu (1s)` · `soprar (1.2s)` · `bater (0.6s)` · `estremecer (0.6s)` · `entregar (1s)` · `levantarChao (1.4s)` · `cabecada (0.9s)` · `socoForte (1s)` · `jogarBebida (1s)` · `espreguicar (1.6s)` · `bocejar (1.4s)` · `limparSuor (1.1s)` · `tropecarEscada (0.9s)` · `escorregar (0.9s)` · `desmaiar (1.2s)` · `selfie (1.3s)`
 
-## Expressões — 30
+## Expressões — 35
 
-`neutro` · `feliz` · `alegre` · `rindo` · `triste` · `chorando` · `bravo` · `furioso` · `surpreso` · `assustado` · `apaixonado` · `convencido` · `cansado` · `doente` · `enojado` · `pensativo` · `dormindo` · `beijo` · `determinado` · `envergonhado` · `tonto` · `encantado` · `concentrado` · `dor` · `ofegante` · `humilhado` · `desprezo` · `chocado` · `serio` · `gritando`
+`neutro` · `feliz` · `alegre` · `rindo` · `triste` · `chorando` · `bravo` · `furioso` · `surpreso` · `assustado` · `apaixonado` · `convencido` · `cansado` · `doente` · `enojado` · `pensativo` · `dormindo` · `beijo` · `determinado` · `envergonhado` · `tonto` · `encantado` · `concentrado` · `dor` · `ofegante` · `humilhado` · `desprezo` · `chocado` · `serio` · `gritando` · `sarcastico` · `desconfiado` · `aliviado` · `enjoado` · `derrotado`
 
-## Objetos de cena (`d.prop`) — 67
+## Objetos de cena (`d.prop`) — 71
 
-`bolo` · `presentes` · `baloes` · `mesa` · `mesaJantar` · `cadeira` · `sofa` · `cama` · `berco` · `tv` · `estante` · `planta` · `luminaria` · `escrivaninha` · `carteira` · `quadroNegro` · `armarios` · `balanco` · `banco` · `arvore` · `arbusto` · `carro` · `viatura` · `caçaNiquel` · `mesaPoker` · `fogueira` · `barraca` · `arco` · `lapide` · `leitoHospital` · `monitorCardiaco` · `bancoSupino` · `rackPesos` · `esteira` · `pedestalMic` · `caixaSom` · `globoDisco` · `bancadaJuiz` · `grades` · `balcaoBar` · `fogao` · `geladeira` · `mala` · `casaFachada` · `placaVendido` · `caixao` · `buqueChao` · `palco` · `podio` · `cavalete` · `ursinho` · `churrasqueira` · `fraseQuadro` · `cobertor` · `capeloVoando` · `fogo` · `cachorro` · `gato` · `aviao` · `bandeirinhas` · `livrosPilha` · `tapete` · `espelho` · `telescopio` · `cone` · `hidrante` · `poste`
+`bolo` · `presentes` · `baloes` · `mesa` · `mesaJantar` · `cadeira` · `sofa` · `cama` · `berco` · `tv` · `estante` · `planta` · `luminaria` · `escrivaninha` · `carteira` · `quadroNegro` · `armarios` · `balanco` · `banco` · `arvore` · `arbusto` · `carro` · `viatura` · `caçaNiquel` · `mesaPoker` · `fogueira` · `barraca` · `arco` · `lapide` · `orelhao` · `carrinhoMercado` · `ventilador` · `vulcaoEscolar` · `leitoHospital` · `monitorCardiaco` · `bancoSupino` · `rackPesos` · `esteira` · `pedestalMic` · `caixaSom` · `globoDisco` · `bancadaJuiz` · `grades` · `balcaoBar` · `fogao` · `geladeira` · `mala` · `casaFachada` · `placaVendido` · `caixao` · `buqueChao` · `palco` · `podio` · `cavalete` · `ursinho` · `churrasqueira` · `fraseQuadro` · `cobertor` · `capeloVoando` · `fogo` · `cachorro` · `gato` · `aviao` · `bandeirinhas` · `livrosPilha` · `tapete` · `espelho` · `telescopio` · `cone` · `hidrante` · `poste`
 
-## Objetos de mão (`propN`/`propF`) — 35
+## Objetos de mão (`propN`/`propF`) — 39
 
-`celular` · `livro` · `xicara` · `bebida` · `microfone` · `haltere` · `anel` · `buque` · `diploma` · `martelo` · `dinheiro` · `caixaPertences` · `maleta` · `guardaChuva` · `balao` · `presente` · `trofeu` · `papel` · `sorvete` · `ursinho` · `chocalho` · `cartas` · `camera` · `vassoura` · `placa` · `lanterna` · `tocha` · `controle` · `garfo` · `pincel` · `bola` · `violao` · `lupa` · `cigarro` · `pa`
+`celular` · `livro` · `xicara` · `bebida` · `microfone` · `haltere` · `anel` · `buque` · `diploma` · `martelo` · `dinheiro` · `caixaPertences` · `maleta` · `guardaChuva` · `balao` · `presente` · `trofeu` · `papel` · `sorvete` · `ursinho` · `chocalho` · `cartas` · `camera` · `vassoura` · `placa` · `lanterna` · `tocha` · `controle` · `garfo` · `pincel` · `bola` · `violao` · `lupa` · `cigarro` · `marmita` · `bilheteLoteria` · `sacola` · `guardaChuvaQuebrado` · `pa`
 
 ## Emotes (`d.emote`)
 

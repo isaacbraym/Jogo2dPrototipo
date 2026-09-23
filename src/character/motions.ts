@@ -1215,6 +1215,38 @@ MOTIONS.soco.fn = keyframes([
   [0.8, { lean: 0.05, chest: 0.05, armN: L(0.9, 2.1), armF: L(0.8, 2.2), handN: 'punho', handF: 'punho' }],
 ]);
 
+// ---- lote Luna: cenas brasileiras e rotinas cotidianas
+Object.assign(MOTIONS, {
+  // Espreguiçar depois de uma reunião comprida.
+  espreguicar: { loop: false, dur: 1.6, expr: 'cansado', fn: keyframes([[0, { chest: 0.08 }], [0.45, { chest: -0.18, lean: -0.08, armN: L(2.8, 0.45), armF: L(2.85, 0.4), shrugN: 0.5, shrugF: 0.5, handN: 'aberta', handF: 'aberta' }, Ease.outQuad], [1.1, { chest: -0.2, lean: -0.1, armN: L(2.9, 0.35), armF: L(2.9, 0.35), shrugN: 0.5, shrugF: 0.5 }, Ease.inOutSine], [1.6, { chest: 0.04, lean: 0, armN: L(0.1, 0.3), armF: L(-0.05, 0.3), shrugN: 0, shrugF: 0 }]]) },
+  // Bocejar cobrindo a boca.
+  bocejar: { loop: false, dur: 1.4, expr: 'cansado', fn: keyframes([[0, { head: 0.05 }], [0.35, { head: -0.08, chest: 0.12, armN: L(0.9, 0.45), handN: 'aberta', shrugN: 0.18 }, Ease.outQuad], [0.9, { head: -0.06, chest: 0.1, armN: L(0.9, 0.4), handN: 'aberta', shrugN: 0.15 }], [1.4, { head: 0, chest: 0, armN: L(0.1, 0.3), handN: 'aberta', shrugN: 0 }]]) },
+  // Digitar depressa quando o prazo vence.
+  digitarFurioso: { loop: true, expr: 'bravo', fn: (t: number) => { const k = S(t * 19); const p = breathe(P({ lean: 0.16, chest: 0.14, head: 0.08 }), t, 0.35); p.armN = L(1.08 + k * 0.06, 0.9); p.armF = L(1.0 - k * 0.05, 0.95); p.wristN = k * 0.16; p.wristF = -k * 0.15; p.handN = 'aberta'; p.handF = 'aberta'; return p; } },
+  // Segurar uma caixa junto ao corpo.
+  carregarCaixa: { loop: true, expr: 'cansado', propN: 'caixaPertences', fn: (t: number) => { const p = breathe(P({ lean: 0.14, chest: 0.18, hipTilt: S(t * 2) * 0.025 }), t, 0.5); p.armN = L(0.92, 1.28); p.armF = L(0.85, 1.3); p.handN = 'segura'; p.handF = 'segura'; p.legN = L(0.06, 0.08); p.legF = L(-0.05, 0.08); return p; } },
+  // Passar a mão na testa para limpar o suor.
+  limparSuor: { loop: false, dur: 1.1, expr: 'cansado', fn: keyframes([[0, { armN: L(0.1, 0.25) }], [0.4, { armN: L(1.2, 0.75), handN: 'aberta', head: 0.08 }, Ease.outQuad], [0.72, { armN: L(1.2, 0.7), handN: 'aberta', head: 0.08 }], [1.1, { armN: L(0.1, 0.25), head: 0 }]]) },
+  // Abanar o rosto no calor.
+  abanar: { loop: true, expr: 'cansado', fn: (t: number) => { const k = S(t * 10); const p = P({ chest: 0.04, head: -0.04, shrugN: 0.12 }); p.armN = L(0.92 + k * 0.08, 0.65); p.wristN = k * 0.45; p.handN = 'aberta'; p.armF = L(0.05, 0.25); return p; } },
+  // Dançar a quadrilha com passos laterais.
+  dancarQuadrilha: { loop: true, expr: 'feliz', fn: (t: number) => { const k = S(t * 5); const p = P({ hipTilt: k * 0.12, lean: 0.04, chest: -0.08, y: Math.abs(k) * 2 }); p.armN = L(2.2 + k * 0.25, 0.45); p.armF = L(-0.3 - k * 0.22, 0.35); p.handN = 'aberta'; p.handF = 'aberta'; p.legN = L(k * 0.2, 0.12); p.legF = L(-k * 0.18, 0.1); return p; } },
+  // Perder o equilíbrio ao descer um degrau.
+  tropecarEscada: { loop: false, dur: 0.9, expr: 'assustado', fn: keyframes([[0, { lean: 0, armN: L(0.1, 0.3) }], [0.22, { lean: -0.25, x: -5, armN: L(-0.5, 0.4), armF: L(2.7, 0.5), handN: 'aberta', handF: 'aberta' }, Ease.outQuad], [0.5, { lean: 0.42, x: 10, y: 8, armN: L(2.6, 0.3), armF: L(-0.45, 0.4), legN: L(0.5, 0.5), legF: L(-0.28, 0.15) }, Ease.inQuad], [0.9, { lean: 0.02, x: 0, y: 0, armN: L(0.1, 0.3), armF: L(0, 0.3), legN: L(0, 0), legF: L(0, 0) }]]) },
+  // Escorregar e abrir os braços para recuperar o equilíbrio.
+  escorregar: { loop: false, dur: 0.9, grounded: false, expr: 'assustado', fn: keyframes([[0, { lean: 0 }], [0.2, { lean: -0.18, armN: L(-0.55, 0.45), armF: L(2.7, 0.5), handN: 'aberta', handF: 'aberta' }, Ease.outQuad], [0.55, { rot: -0.38, y: 18, armN: L(2.5, 0.35), armF: L(-0.4, 0.3), legN: L(0.45, 0.65), legF: L(-0.3, 0.5) }, Ease.inQuad], [0.9, { rot: 0, y: 0, lean: 0, armN: L(0.1, 0.3), armF: L(0, 0.3), legN: L(0, 0), legF: L(0, 0) }]]) },
+  // Desmaiar com queda controlada até o chão.
+  desmaiar: { loop: false, dur: 1.2, grounded: false, expr: 'enjoado', fn: keyframes([[0, { lean: 0.02 }], [0.35, { lean: 0.28, head: 0.28, armN: L(-0.3, 0.4), armF: L(2.8, 0.45) }, Ease.inQuad], [0.8, { rot: 1.28, y: 42, lean: 0.08, armN: L(2.4, 0.35), armF: L(2.8, 0.25), legN: L(0.3, 0.25), legF: L(-0.25, 0.2) }, Ease.outQuad], [1.2, { rot: 1.28, y: 42, armN: L(2.4, 0.35), armF: L(2.8, 0.25), legN: L(0.3, 0.25), legF: L(-0.25, 0.2) }]]) },
+  // Ajoelhar para pedir uma segunda chance.
+  ajoelharImplorar: { loop: true, expr: 'assustado', fn: (t: number) => { const k = S(t * 2.4); const p = breathe(P({ y: 18, lean: 0.12, chest: 0.15, head: 0.18 }), t, 0.3); p.legN = L(0.22, 1.35); p.legF = L(-0.2, 1.35); p.armN = L(1.0 + k * 0.04, 1.0); p.armF = L(0.95 - k * 0.04, 1.0); p.handN = 'aberta'; p.handF = 'aberta'; return p; } },
+  // Contar notas e moedas na mão.
+  contarDinheiro: { loop: true, expr: 'concentrado', propN: 'dinheiro', fn: (t: number) => { const k = S(t * 8); const p = P({ lean: 0.1, head: 0.14, chest: 0.08 }); p.armN = L(1.05 + k * 0.12, 0.72); p.armF = L(0.55, 1.1); p.wristN = k * 0.12; p.handN = 'segura'; p.handF = 'aberta'; return p; } },
+  // Levantar o celular para tirar uma selfie.
+  selfie: { loop: false, dur: 1.3, expr: 'feliz', propN: 'camera', fn: keyframes([[0, { armN: L(0.2, 0.35), head: 0 }], [0.55, { armN: L(2.25, 0.42), wristN: -0.3, head: -0.1, chest: -0.06 }, Ease.outBack], [0.9, { armN: L(2.22, 0.38), wristN: -0.25, head: -0.1, chest: -0.06 }], [1.3, { armN: L(0.2, 0.35), wristN: 0, head: 0 }]]) },
+  // Gravar um recado curto para a rede social.
+  gravarStory: { loop: true, expr: 'convencido', propN: 'camera', fn: (t: number) => { const k = S(t * 3.5); const p = breathe(P({ lean: 0.03, chest: -0.04, head: -0.04 }), t, 0.35); p.armN = L(2.15 + k * 0.04, 0.35); p.armF = L(0.45 + k * 0.35, 0.65); p.handN = 'segura'; p.handF = 'aberta'; p.wristF = k * 0.3; return p; } },
+} as Record<string, Motion>);
+
 export type MotionName = keyof typeof MOTIONS;
 
 /** Ajusta a altura da pelve para manter o pé mais baixo no chão. */

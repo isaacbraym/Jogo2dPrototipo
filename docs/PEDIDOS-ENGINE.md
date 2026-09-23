@@ -32,3 +32,21 @@ Quando atendido: troque `[ABERTO]` por `[FEITO 2026-xx-xx]` e cite o commit.
 - **Problema:** `Rel` não inclui tia, sogro/sogra nem neto/neta. Os novos eventos identificam algumas pessoas por flags, mas a lista de relações as mostra como conhecidas e não pode consultá-las como parentes.
 - **Proposta:** adicionar `tia`, `sogro`, `sogra`, `neto` e `neta` a `Rel` e `REL_LABEL`, com persistência e migração de saves.
 - **Conteúdo que depende disso:** `tiaPerguntaNamoro`, `sograMoraJunto`, `netoSoLigaNoPix`, `aprenderCelularComNeto`, e o registro persistente do evento `netos`.
+
+### [ABERTO] Reputação separada por contexto
+- **Quem pediu / quando:** Backlog H, Codex, 2026-09-23
+- **Problema:** karma não representa como a pessoa é vista no bairro e no trabalho; usar a mesma escala mistura situações diferentes.
+- **Proposta:** persistir reputação de bairro e de trabalho, com limites e helpers próprios para ajustar/consultar valores.
+- **Conteúdo que depende disso:** retorno de favores e conflitos de vizinhança, confiança de colegas e reações a escolhas profissionais.
+
+### [ABERTO] Condições crônicas de saúde
+- **Quem pediu / quando:** Backlog H, Codex, 2026-09-23
+- **Problema:** o estado de saúde atual não guarda diagnósticos duradouros com efeitos anuais e tratamento.
+- **Proposta:** adicionar condições persistentes com diagnóstico, progressão/controle anual, custos de tratamento e migração de saves.
+- **Conteúdo que depende disso:** pressão alta, diabetes, acompanhamento médico e a ideia de cirurgia negada pelo plano de saúde.
+
+### [ABERTO] Notícias de mundo com efeito anual
+- **Quem pediu / quando:** Backlog H, Codex, 2026-09-23
+- **Problema:** eventos do mundo não alteram de forma compartilhada a economia, a saúde ou a vida dos personagens.
+- **Proposta:** modelar modificadores anuais comuns, determinísticos por ano e persistidos no save, para eventos genéricos sem referência a pessoas ou marcas reais.
+- **Conteúdo que depende disso:** crise econômica genérica e outros acontecimentos coletivos que influenciam escolhas e resultados de todos.

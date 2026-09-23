@@ -396,6 +396,26 @@ export const HELD: Record<string, { follow: boolean; draw: Held; off?: Pt }> = {
       ctx.beginPath(); ctx.arc(Math.sin(t * 2) * 3, -18 - ((t * 10) % 12), 3, 0, 7); ctx.fill();
     },
   },
+  // Marmita pequena para levar no trabalho.
+  marmita: {
+    follow: true, off: { x: 0, y: 3 },
+    draw: (ctx) => { box(ctx, -15, -9, 30, 18, 4, '#b9c7c6'); box(ctx, -16, -14, 32, 6, 3, '#dce2dc'); ctx.fillStyle = '#637475'; ctx.fillRect(-3, -13, 6, 3); },
+  },
+  // Bilhete de loteria com números impressos.
+  bilheteLoteria: {
+    follow: false,
+    draw: (ctx) => { box(ctx, -18, -14, 36, 22, 2, '#f2e8ba', { top: false, lw: 0.8 }); ctx.strokeStyle = '#756d4c'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(-15, -5); ctx.lineTo(15, -5); ctx.stroke(); ctx.fillStyle = '#3b403a'; ctx.font = '700 5px monospace'; ctx.textAlign = 'center'; ctx.fillText('08 17 23 41', 0, -8); ctx.fillText('SORTEIO', 0, 3); },
+  },
+  // Sacola de feira reutilizável.
+  sacola: {
+    follow: true, off: { x: 0, y: 4 },
+    draw: (ctx) => { const p = new Path2D(); p.moveTo(-12, -5); p.lineTo(12, -5); p.lineTo(10, 17); p.quadraticCurveTo(0, 20, -10, 17); p.closePath(); shape(ctx, p, '#e4572e'); ctx.strokeStyle = '#6d3d2b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -4, 7, Math.PI, 0); ctx.stroke(); ctx.fillStyle = '#7dbd58'; ctx.beginPath(); ctx.arc(-3, -9, 4, 0, 7); ctx.arc(4, -10, 4, 0, 7); ctx.fill(); },
+  },
+  // Guarda-chuva que já perdeu a disputa contra o vento.
+  guardaChuvaQuebrado: {
+    follow: true, off: { x: 0, y: 6 },
+    draw: (ctx) => { ctx.strokeStyle = '#665947'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(0, 5); ctx.lineTo(1, -23); ctx.quadraticCurveTo(1, -28, 6, -27); ctx.stroke(); const p = new Path2D(); p.moveTo(-20, -14); p.quadraticCurveTo(-10, -30, 0, -20); p.quadraticCurveTo(10, -31, 20, -15); p.lineTo(10, -18); p.lineTo(5, -7); p.lineTo(0, -17); p.lineTo(-8, -8); p.lineTo(-11, -19); p.closePath(); shape(ctx, p, '#3d7bd9', 1.1, null); ctx.strokeStyle = '#d4d6db'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(0, -3); ctx.moveTo(-10, -19); ctx.lineTo(-8, -7); ctx.moveTo(10, -19); ctx.lineTo(5, -6); ctx.stroke(); },
+  },
   pa: {
     follow: false,
     draw: (ctx) => {
@@ -798,6 +818,38 @@ export const PROPS: Record<string, SceneProp> = {
     ctx.fillText('R.I.P', 0, -110);
     ctx.fillRect(-30, -90, 60, 3); ctx.fillRect(-24, -78, 48, 3);
     if (o.state) { const f = new Path2D(); for (let i = 0; i < 3; i++) circle(f, -20 + i * 18, -8, 7); shape(ctx, f, '#e86a92', 1, null); }
+  },
+  // Orelhão azul de rua, com fone e fio enrolado.
+  orelhao: (ctx, _t, o) => {
+    const col = o.color ?? '#2c7890';
+    box(ctx, -8, -285, 16, 285, 3, '#606d70'); box(ctx, -53, -278, 106, 190, 12, col);
+    box(ctx, -39, -260, 78, 15, 4, '#d9e7da'); ctx.fillStyle = '#36554d'; ctx.font = '700 11px Nunito'; ctx.textAlign = 'center'; ctx.fillText('TELEFONE', 0, -249);
+    box(ctx, -28, -230, 56, 70, 5, '#24363c'); for (let i = 0; i < 3; i++) for (let k = 0; k < 3; k++) { ctx.fillStyle = '#d5d8d4'; ctx.beginPath(); ctx.arc(-14 + k * 14, -217 + i * 16, 3, 0, 7); ctx.fill(); }
+    box(ctx, -32, -146, 64, 14, 7, '#2f3439'); ctx.strokeStyle = '#343a3c'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(32, -140); for (let i = 0; i < 5; i++) ctx.quadraticCurveTo(45, -132 + i * 5, 33, -128 + i * 5); ctx.stroke();
+    ctx.fillStyle = '#f2c14e'; ctx.beginPath(); ctx.arc(31, -132, 5, 0, 7); ctx.fill();
+  },
+  // Carrinho de mercado de arame com alça e rodas.
+  carrinhoMercado: (ctx, _t, o) => {
+    const c = o.color ?? '#9aa2a2'; const p = new Path2D(); p.moveTo(-65, -105); p.lineTo(52, -105); p.lineTo(40, -45); p.lineTo(-40, -45); p.closePath(); shape(ctx, p, '#c8d0ce', 1.5); ctx.strokeStyle = c; ctx.lineWidth = 2;
+    for (let y = -96; y <= -53; y += 14) { ctx.beginPath(); ctx.moveTo(-57, y); ctx.lineTo(48, y); ctx.stroke(); }
+    for (let x = -48; x <= 42; x += 18) { ctx.beginPath(); ctx.moveTo(x, -102); ctx.lineTo(x * 0.72, -48); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(48, -104); ctx.lineTo(78, -130); ctx.stroke(); box(ctx, -22, -42, 10, 39, 2, '#687275'); box(ctx, 32, -42, 10, 39, 2, '#687275');
+    for (const x of [-18, 38]) { const w = new Path2D(); circle(w, x, -1, 9); shape(ctx, w, '#35393c', 1.2); const h = new Path2D(); circle(h, x, -1, 3); shape(ctx, h, '#c8d0ce', 0.8, null); }
+  },
+  // Ventilador de coluna com hélice giratória.
+  ventilador: (ctx, t, o) => {
+    const ligado = (o.state ?? 0) > 0.5; box(ctx, -5, -150, 10, 132, 4, '#aeb4b4'); box(ctx, -34, -16, 68, 10, 5, '#676d70');
+    const cage = new Path2D(); circle(cage, 0, -190, 52); shape(ctx, cage, '#9ea5a5', 2, null); ctx.strokeStyle = '#9ea5a5'; ctx.lineWidth = 1.2;
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; ctx.beginPath(); ctx.moveTo(Math.cos(a) * 8, -190 + Math.sin(a) * 8); ctx.lineTo(Math.cos(a) * 49, -190 + Math.sin(a) * 49); ctx.stroke(); }
+    for (let i = 0; i < 3; i++) { const a = (ligado ? t * 15 : 0) + i * Math.PI * 2 / 3; const p = new Path2D(); p.moveTo(0, -190); p.quadraticCurveTo(Math.cos(a + 0.5) * 40, -190 + Math.sin(a + 0.5) * 40, Math.cos(a) * 44, -190 + Math.sin(a) * 44); p.quadraticCurveTo(Math.cos(a - 0.4) * 20, -190 + Math.sin(a - 0.4) * 20, 0, -190); shape(ctx, p, '#c5ccca', 1, null); }
+    const hub = new Path2D(); circle(hub, 0, -190, 8); shape(ctx, hub, '#6d7475', 1, null);
+  },
+  // Maquete de vulcão escolar com lava de papel crepom.
+  vulcaoEscolar: (ctx, t, o) => {
+    const c = o.color ?? '#8a5a3a'; const p = new Path2D(); p.moveTo(-55, 0); p.lineTo(-27, -68); p.lineTo(-15, -52); p.lineTo(0, -102); p.lineTo(18, -52); p.lineTo(30, -66); p.lineTo(56, 0); p.closePath(); shape(ctx, p, c, 1.6);
+    const crater = new Path2D(); crater.ellipse(0, -97, 16, 6, 0, 0, 7); shape(ctx, crater, '#49362a', 1, null);
+    ctx.strokeStyle = '#e4572e'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-5, -92); ctx.quadraticCurveTo(-22, -52 + Math.sin(t * 4) * 3, -29, -12); ctx.moveTo(8, -92); ctx.quadraticCurveTo(24, -45 + Math.sin(t * 4 + 1) * 3, 32, -8); ctx.stroke();
+    ctx.fillStyle = '#f2c14e'; ctx.beginPath(); ctx.arc(0, -99, 5 + Math.sin(t * 7) * 1.2, 0, 7); ctx.fill();
   },
   leitoHospital: (ctx, _t, o) => {
     box(ctx, -150, -100, 300, 16, 4, '#c9ced6');

@@ -16,7 +16,7 @@ Itens marcados **[ENGINE]** precisam de mudança no motor → não implemente; c
 - [x] Curso de "mentalidade milionária" de coach (pagar R$ 1.997 / desistir / virar coach também) → `cursoMilionario`, `cobrancaInesperada`
 - [ ] Reunião de condomínio (virar síndico → poder + inimigos)
 - [ ] Carro guinchado / multa / flanelinha (pagar / discutir / "cuidar do carro" de novo)
-- [ ] Assalto no ônibus (entregar celular / resistir → risco alto / esconder celular falso)
+- [x] Assalto no ônibus (avisar o motorista / correr / entregar o celular ou um aparelho velho sem chip → risco e custo em qualquer saída) → `assalto`, cena `assaltoOnibus`
 - [ ] Black Friday (compra parcelada → dívida nos anos seguintes)
 - [ ] Mudança de apartamento com amigos "que têm carro" (vínculo sobe ou desce; sofá entalado na escada)
 - [ ] Plano de saúde nega cirurgia (processar / pagar / SUS → fila → consequência de saúde)
@@ -27,7 +27,7 @@ Itens marcados **[ENGINE]** precisam de mudança no motor → não implemente; c
 - [x] Estagiário mais competente que você (ensinar / sabotar → ele vira seu chefe anos depois) → `estagiarioBrilhante`, `estagiarioVirouChefe`
 - [x] Colega leva crédito pelo seu trabalho (confrontar / denunciar ao RH com consequências) → `colegaRoubaCredito`
 - [x] Happy hour obrigatório (convívio opcional só no convite) → `happyHourObrigatorio`
-- [ ] Reunião que podia ser e-mail (evento criado; cena dedicada `reuniaoZoom` pendente no lote G) → `reuniaoQueEmailResolvia`
+- [x] Reunião que podia ser e-mail (evento ligado à cena dedicada) → `reuniaoQueEmailResolvia`, `reuniaoZoom`
 - [x] Assédio moral do chefe (denunciar → risco / processo trabalhista anos depois → indenização) → `assedioMoralChefe`, `indenizacaoTrabalhista`
 - [x] Layoff "somos uma família" (demissão em massa; acerto; caixa de pertences) → `layoffSomosFamilia`
 - [x] Greve / paralisação (aderir ou continuar trabalhando → efeitos sobre equipe e desempenho) → `greveParalisacao`
@@ -69,12 +69,12 @@ Itens marcados **[ENGINE]** precisam de mudança no motor → não implemente; c
 - [x] Adicionar 20 textos de entrevistador/reprovação: 8 recusas em `REJECT` e 3 perguntas `GENERIC` com 9 respostas.
 
 ## G. Cenas, animações e ambientes (P2)
-- [ ] Ambientes: `loterica`, `rodoviaria`, `feiraLivre`, `pontoOnibus`, `upa`, `cartorio`, `salaoBeleza`, `lanHouse`, `quadraVarzea`, `postoGasolina`
-- [ ] Movimentos: `espreguicar`, `bocejar`, `digitarFurioso`, `carregarCaixa`, `limparSuor`, `abanar` (calor), `dancarQuadrilha`,
+- [x] Ambientes: `loterica`, `rodoviaria`, `feiraLivre`, `pontoOnibus`, `upa`, `cartorio`, `salaoBeleza`, `lanHouse`, `quadraVarzea`, `postoGasolina`
+- [x] Movimentos: `espreguicar`, `bocejar`, `digitarFurioso`, `carregarCaixa`, `limparSuor`, `abanar` (calor), `dancarQuadrilha`,
       `tropecarEscada`, `escorregar`, `desmaiar`, `ajoelharImplorar`, `contarDinheiro`, `selfie`, `gravarStory`
-- [ ] Expressões: `sarcastico`, `desconfiado`, `aliviado`, `enjoado`, `derrotado`
-- [ ] Objetos: `orelhao`, `carrinhoMercado`, `ventilador`, `marmita` (mão), `bilheteLoteria` (mão), `sacola` (mão), `guardaChuvaQuebrado` (mão)
-- [ ] Cenas: `reuniaoZoom`, `furadeiraDomingo`, `ceiaNatal`, `festaJunina`, `feiraCiencias`, `enchente`, `assaltoOnibus`, `velorioCoxinha`, `bingoIdosos`
+- [x] Expressões: `sarcastico`, `desconfiado`, `aliviado`, `enjoado`, `derrotado`
+- [x] Objetos: `orelhao`, `carrinhoMercado`, `ventilador`, `vulcaoEscolar`, `marmita` (mão), `bilheteLoteria` (mão), `sacola` (mão), `guardaChuvaQuebrado` (mão)
+- [x] Cenas: `reuniaoZoom`, `furadeiraDomingo`, `ceiaNatal`, `festaJunina`, `feiraCiencias`, `enchente`, `assaltoOnibus`, `velorioCoxinha`, `bingoIdosos`
 
 ## H. Sistemas (precisam do motor) **[ENGINE]**
 - [ ] Memória de NPC: rancor/gratidão por pessoa (hoje só `bond`) → NPC lembra de agressões e favores.

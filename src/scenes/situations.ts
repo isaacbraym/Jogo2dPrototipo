@@ -936,11 +936,10 @@ const S: Situation[] = [
   },
   {
     id: 'loteria',
-    env: 'sala',
+    env: 'loterica',
     run: async (d, c) => {
-      d.prop('tv', 1000, GROUND - 20, { z: -1 });
       const p = P(d, c, 640, { facing: 1 });
-      p.propN = 'papel';
+      p.propN = 'bilheteLoteria';
       d.loop(p, 'ler');
       d.caption('Resultado da loteria', undefined, 2.4);
       await d.wait(1.6);
@@ -1746,6 +1745,211 @@ const S: Situation[] = [
       if (c.data?.ok !== false) { d.loop(inst, 'joinha'); await d.say(inst, 'Aprovado(a)!', 1.4); d.loop(p, 'comemorar'); d.sfx('success'); }
       else { d.loop(inst, 'darOmbros'); await d.say(inst, 'Reprovado(a). Tente de novo.', 1.6); d.loop(p, 'triste'); }
       await d.wait(1.2);
+    },
+  },
+  // Reunião remota em que o microfone é o personagem mais presente.
+  {
+    id: 'reuniaoZoom',
+    env: 'escritorio',
+    run: async (d, c) => {
+      d.prop('mesa', 640, GROUND + 10, { z: -0.6, opts: { color: '#6d4b2e' } });
+      d.prop('tv', 990, GROUND - 40, { z: -0.8, scale: 0.8 });
+      d.prop('cadeira', 470, GROUND, { z: -0.5, opts: { color: '#3d7bd9' } });
+      const p = P(d, c, 470, { facing: 1, motion: 'entrevistado' });
+      p.propN = 'marmita';
+      const chefe = O(d, other(c, 0, 7812, undefined, 48), 850, { facing: -1, motion: 'entrevistador' });
+      d.caption('Chamada sem pauta', 'A câmera ligada. O assunto, não.', 2.5);
+      await d.say(chefe, 'Você está no mudo.', 1.5);
+      await d.act(p, 'bocejar');
+      d.loop(p, 'digitarFurioso'); d.expr(p, 'desconfiado'); d.sfx('tick');
+      await d.say(p, 'Estou anotando os próximos passos.', 1.8);
+      await d.act(p, 'espreguicar');
+      d.loop(chefe, 'bracosCruzados'); d.expr(chefe, 'serio');
+      await d.wait(0.8);
+    },
+  },
+  // Furadeira no domingo cedo interrompe o descanso do apartamento.
+  {
+    id: 'furadeiraDomingo',
+    env: 'sala',
+    run: async (d, c) => {
+      d.prop('sofa', 420, GROUND + 2, { z: -0.5, scale: 0.82 });
+      d.prop('ventilador', 1110, GROUND, { z: -0.4, scale: 0.72, opts: { state: 1 } });
+      const p = P(d, c, 500, { facing: 1, motion: 'sentarCabisbaixo' });
+      const vizinho = O(d, other(c, 0, 8071, undefined, 42), 910, { facing: -1, motion: 'bracosCruzados' });
+      d.caption('Domingo, 7h02', 'A parede começou a trabalhar.', 2.4);
+      await d.wait(0.4); d.shake(3); d.sfx('thud');
+      await d.act(p, 'espreguicar');
+      d.loop(p, 'abanar'); d.expr(p, 'bravo');
+      await d.say(p, 'Tem horário para essa obra?', 1.8);
+      d.loop(vizinho, 'carregarCaixa');
+      await d.act(vizinho, 'limparSuor');
+      await d.say(vizinho, 'É só mais um furo.', 1.5);
+      await d.wait(0.7);
+    },
+  },
+  // Ceia em família: uma pergunta simples atravessa a mesa inteira.
+  {
+    id: 'ceiaNatal',
+    env: 'cozinha',
+    run: async (d, c) => {
+      d.prop('mesa', 650, GROUND + 4, { z: -0.4, scale: 1.15, opts: { color: '#8a5a3a' } });
+      d.prop('bolo', 650, GROUND - 20, { z: -0.2, scale: 0.62 });
+      const p = P(d, c, 460, { facing: 1, motion: 'sentarCabisbaixo' });
+      const parente = O(d, other(c, 0, 2512, undefined, 58), 790, { facing: -1, motion: 'contarPiada' });
+      const parente2 = O(d, other(c, 1, 2513, undefined, 52), 1010, { facing: -1, motion: 'sentarCabisbaixo', scale: 0.9 });
+      d.caption('Ceia de Natal', 'O pavê trouxe assunto e parentes.', 2.5);
+      await d.say(parente, 'E quem trouxe a sobremesa?', 1.6);
+      d.expr(p, 'sarcastico');
+      await d.say(p, 'A sobremesa trouxe a conversa.', 1.7);
+      d.expr(parente2, 'pensativo');
+      await d.wait(0.8);
+      d.loop(p, 'feliz');
+    },
+  },
+  // Quadrilha escolar com barraca, bandeirinhas e passos improvisados.
+  {
+    id: 'festaJunina',
+    env: 'patio',
+    run: async (d, c) => {
+      d.prop('bandeirinhas', 640, 190, { z: -1, opts: { scale: 900 } });
+      d.prop('barraca', 980, GROUND, { z: -0.5, scale: 0.8, opts: { color: '#e4572e' } });
+      const p = P(d, c, 530, { facing: 1, motion: 'dancarQuadrilha' });
+      const par = O(d, other(c, 0, 6017, undefined, 12), 780, { facing: -1, motion: 'dancarQuadrilha' });
+      par.propN = 'sacola';
+      d.caption('Arraiá da escola', 'A coreografia tinha testemunhas.', 2.5);
+      d.sfx('applause');
+      await d.say(par, 'Olha a chuva!', 1.3);
+      d.emote(p, 'exclamacao');
+      await d.act(p, 'selfie');
+      d.loop(p, 'dancarQuadrilha'); d.loop(par, 'dancarQuadrilha');
+      await d.wait(1.1);
+      d.sfx('cheer');
+      await d.wait(0.8);
+    },
+  },
+  // Vulcão escolar transborda; a professora ajuda a reorganizar a feira.
+  {
+    id: 'feiraCiencias',
+    env: 'escola',
+    run: async (d, c) => {
+      d.prop('mesa', 790, GROUND + 3, { z: -0.4, scale: 1.1, opts: { color: '#8a5a3a' } });
+      const vulcao = d.prop('vulcaoEscolar', 790, GROUND - 4, { z: 0.2, scale: 0.8, opts: { state: 1 } });
+      const p = P(d, c, 500, { facing: 1, motion: 'estudar' });
+      d.expr(p, 'concentrado');
+      const professora = O(d, other(c, 0, 9411, 'f', 38), 990, { facing: -1, motion: 'bracosCruzados' });
+      d.caption('Feira de ciências', 'A experiência pediu mais espaço.', 2.5);
+      await d.wait(0.5); d.shake(2); d.sfx('splash');
+      d.fx('poeira', vulcao.x, GROUND - 110, 8, { speed: 30, size: 5, life: 1.1 });
+      await d.act(p, 'escorregar');
+      d.loop(p, 'ajoelharImplorar'); d.expr(p, 'envergonhado');
+      await d.say(p, 'A lava estava no roteiro.', 1.8);
+      d.loop(professora, 'bracosCruzados'); d.expr(professora, 'serio');
+      await d.say(professora, 'Vamos secar a mesa primeiro.', 1.8);
+      d.expr(p, 'serio');
+      await d.wait(0.8);
+    },
+  },
+  // Mutirão na água alta, com um móvel pesado e ajuda dos vizinhos.
+  {
+    id: 'enchente',
+    env: 'ruaChuva',
+    run: async (d, c) => {
+      d.prop('sofa', 340, GROUND, { z: -0.4, scale: 0.8 });
+      d.prop('carro', 1110, GROUND - 6, { z: -0.6, scale: 0.82, opts: { color: '#6d8791' } });
+      const p = P(d, c, 490, { facing: 1, motion: 'carregarCaixa' });
+      const vizinha = O(d, other(c, 0, 4316, 'f', 35), 820, { facing: -1, motion: 'carregarCaixa' });
+      vizinha.propN = 'guardaChuvaQuebrado';
+      d.caption('Mutirão na chuva', 'A rua virou corredor de água.', 2.5);
+      d.sfx('splash'); d.shake(1.5);
+      if (c.data?.acao === 'filmar') {
+        d.loop(p, 'gravarStory');
+        await d.say(p, 'A água chegou à calçada.', 1.8);
+        d.expr(vizinha, 'serio');
+        await d.say(vizinha, 'Guarda o celular e vem ajudar.', 1.8);
+      } else {
+        await d.say(vizinha, 'Pega a caixa de cima!', 1.5);
+        d.loop(p, 'carregarCaixa'); d.loop(vizinha, 'carregarCaixa');
+        if (c.data?.falhou) { await d.act(p, 'tropecarEscada'); d.emote(p, 'suor'); d.expr(p, 'dor'); }
+        else { await d.act(p, 'carregarCaixa'); d.emote(p, 'suor'); }
+      }
+      await d.wait(1);
+    },
+  },
+  // Assalto dentro do ônibus: tensão, escolha e saída segura.
+  {
+    id: 'assaltoOnibus',
+    env: 'rodoviaria',
+    run: async (d, c) => {
+      d.prop('cadeira', 340, GROUND, { z: -0.5, scale: 0.9, opts: { color: '#3d7bd9' } });
+      d.prop('cadeira', 570, GROUND, { z: -0.5, scale: 0.9, opts: { color: '#3d7bd9' } });
+      const p = P(d, c, 490, { facing: 1, motion: 'susto' });
+      const assaltante = O(d, other(c, 0, 6639, 'm', 28), 870, { facing: -1, motion: 'seguranca' });
+      const passageira = O(d, other(c, 1, 6640, 'f', 44), 1070, { facing: -1, motion: 'entrevistado', scale: 0.9 });
+      d.caption('No ônibus à noite', 'O corredor ficou em silêncio.', 2.5);
+      await d.say(assaltante, 'Celulares na bolsa. Sem gritar.', 1.8);
+      d.expr(p, 'assustado'); d.loop(p, 'bracosCruzados');
+      if (c.data?.acao === 'reagir') {
+        d.loop(passageira, 'ajoelharImplorar');
+        await d.say(passageira, 'Leva o aparelho e deixa todos sair.', 2);
+        if (c.data?.escapou) { d.loop(assaltante, 'darOmbros'); await d.moveActor(assaltante, 1230, GROUND, 0.8); d.expr(p, 'aliviado'); }
+        else { assaltante.propN = 'celular'; d.expr(p, 'dor'); await d.wait(0.5); }
+      } else if (c.data?.acao === 'correr') {
+        if (c.data?.escapou) { await d.moveActor(p, 220, GROUND, 1.1); d.expr(p, 'aliviado'); }
+        else { await d.act(p, 'escorregar'); assaltante.propN = 'celular'; d.expr(p, 'dor'); }
+      } else if (c.data?.acao === 'entregar') {
+        p.propN = 'celular';
+        await d.say(p, 'Aqui. Só deixa a porta livre.', 1.7);
+        d.expr(assaltante, 'serio');
+        p.propN = undefined;
+      } else if (c.data?.acao === 'falso') {
+        p.propN = 'celular';
+        await d.say(p, 'Esse velho ainda liga. Pode ficar.', 1.6);
+        p.propN = undefined;
+        assaltante.propN = 'celular';
+        if (c.data?.escapou) { d.expr(p, 'aliviado'); await d.say(assaltante, 'Desce logo.', 1.2); }
+        else { d.expr(p, 'dor'); await d.wait(0.5); }
+      }
+      if (c.data?.desmaio) {
+        await d.act(passageira, 'desmaiar');
+        d.expr(p, 'triste');
+        await d.wait(0.7);
+      }
+      await d.wait(0.8);
+    },
+  },
+  // Despedida no velório, com apoio aos parentes presentes.
+  {
+    id: 'velorioCoxinha',
+    env: 'cemiterio',
+    run: async (d, c) => {
+      d.prop('mesa', 920, GROUND + 3, { z: -0.5, scale: 0.72, opts: { color: '#6d4b2e' } });
+      const p = P(d, c, 500, { facing: 1, motion: 'sentarCabisbaixo' });
+      p.propN = 'xicara';
+      const familiar = O(d, other(c, 0, 7215, undefined, 54), 790, { facing: -1, motion: 'sentarCabisbaixo' });
+      d.caption('Uma despedida', c.data?.nome ?? 'A família está reunida.', 2.6);
+      d.sfx('sad');
+      await d.say(familiar, 'Obrigado por ficar com a gente.', 1.8);
+      d.expr(p, 'triste'); d.loop(p, 'sentarCabisbaixo');
+      await d.wait(1.1);
+      d.expr(familiar, 'triste');
+      await d.wait(0.8);
+    },
+  },
+  // Bingo comunitário em que a cartela vale mais que o prêmio.
+  {
+    id: 'bingoIdosos',
+    env: 'sala',
+    run: async (d, c) => {
+      d.prop('mesa', 680, GROUND + 8, { z: -0.5, scale: 0.88, opts: { color: '#7a5236' } });
+      const p = P(d, c, 470, { facing: 1, motion: 'contarDinheiro' });
+      const vizinho = O(d, other(c, 0, 3391, undefined, 72), 840, { facing: -1, motion: 'torcerFutebol' });
+      d.caption('Bingo do bairro', 'A cartela cheia tem torcida.', 2.5);
+      await d.say(vizinho, 'B-12! Confere a coluna.', 1.6);
+      d.sfx(c.data?.ganhou === false ? 'sad' : c.data?.ganhou === true ? 'coin' : 'tick');
+      if (c.data?.ganhou === false) { d.expr(p, 'derrotado'); await d.say(p, 'Faltou só um número.', 1.6); }
+      else { d.emote(p, 'estrela'); d.expr(p, 'feliz'); await d.say(p, 'Bingo! Uma rodada para a mesa.', 1.8); }
+      await d.wait(1);
     },
   },
 ];
