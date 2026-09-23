@@ -14,6 +14,10 @@ export interface Outcome {
   scene?: SceneReq;
   log?: string | false; // texto para o diário (padrão: text)
   followUp?: PendingEvent; // novo evento encadeado
+  next?: Outcome; // consequência encadeada (mostrada em seguida, com cena própria)
+  skipCard?: boolean; // não mostra cartão de resultado (usado em cadeias como entrevistas)
+  mood?: 'tenso' | 'triste' | 'ferido' | 'feliz'; // humor da próxima cena em casa
+  react?: { npc?: { expr?: string; emote?: string; say?: string; motion?: string }; player?: { expr?: string; emote?: string; say?: string; motion?: string } };
 }
 
 export interface EvCtx {
@@ -69,6 +73,7 @@ export interface Interaction {
   id: string;
   label: string;
   icon: string;
+  group?: string;
   cond: (L: Life, p: Person) => boolean;
   run: (L: Life, p: Person) => Outcome;
 }

@@ -6,7 +6,8 @@ import {
   Life, STAT_KEYS, STAT_LABEL, StatKey, Person, money, fullName, REL_LABEL, playerCast, cast, partner, children, stat, addLog, byRel, Tone, newId,
 } from '../game/state';
 import { ageUp, resolveAction, isPending, outcomeFromEvent, evChoices, continueAsChild } from '../game/life';
-import { ACTIONS, INTERACTIONS, jobOffers, applyJob, workHard, askPromotion, quitJob } from '../game/activities';
+import { ACTIONS, INTERACTIONS, jobOffers, workHard, askPromotion, quitJob } from '../game/activities';
+import { startInterview } from '../game/interviews';
 import { Outcome, PendingEvent, SceneReq, Action } from '../game/types';
 import { eventTitle } from '../game/events';
 import { saveLife, downloadJSON } from '../game/storage';
@@ -32,6 +33,7 @@ export function gameScreen(app: App, L: Life) {
   let busy = false;
   const host = h('div.stage-host');
   const stage = new Stage(host);
+  stage.onSceneStart = () => { stage.scene.padBottom = cardPad; };
 
   // ------------------------------------------------ HUD
   const hudPortrait = h('div');
@@ -210,7 +212,9 @@ export function gameScreen(app: App, L: Life) {
       ['Família', L.people.filter((p) => ['mae', 'pai', 'irmao', 'irma', 'avo', 'avoM'].includes(p.rel))],
       ['Filhos', L.people.filter((p) => ['filho', 'filha'].includes(p.rel))],
       ['Amizades', L.people.filter((p) => p.alive && ['amigo', 'amiga'].includes(p.rel))],
-      ['Outros', L.people.filter((p) => p.alive && ['ex', 'colega'].includes(p.rel))],
+      ['Trabalho', L.people.filter((p) => p.alive && ['chefe', 'colegaTrab'].includes(p.rel))],
+      ['Escola', L.people.filter((p) => p.alive && ['colega', 'professor'].includes(p.rel))],
+      ['Outros', L.people.filter((p) => p.alive && ['ex', 'conhecido'].includes(p.rel)).slice(-8)],
     ];
     let any = false;
     for (const [g, ps] of groups) {
@@ -243,7 +247,19 @@ export function gameScreen(app: App, L: Life) {
           h('small.muted', null, `Relacionamento: ${p.bond}%`),
         ),
       ),
-      h('div.inter-grid', null, ...list.map((it) => h('button.inter', { onclick: () => { close(); doOutcome(() => it.run(L, p)); } }, h('span.em', null, it.icon), it.label))),
+      ...(() => {
+        const groups = new Map<string, typeof list>();
+        for (const it of list) {
+          const g = it.group ?? 'Interações';
+          if (!groups.has(g)) groups.set(g, []);
+          groups.get(g)!.push(it);
+        }
+        const order = ['Interações', 'Conversa', 'Carinho', 'Agressão'];
+        return [...groups.entries()].sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0])).flatMap(([g, its]) => [
+          h('div.sec-title' + (g === 'Agressão' ? '.danger' : ''), null, g === 'Agressão' ? '⚠️ Agressão (há consequências)' : g),
+          h('div.inter-grid', null, ...its.map((it) => h('button.inter' + (g === 'Agressão' ? '.bad' : ''), { onclick: () => { close(); doOutcome(() => it.run(L, p)); } }, h('span.em', null, it.icon), it.label))),
+        ]);
+      })(),
     );
     const close = modal(p.first, body);
   }
@@ -283,7 +299,7 @@ export function gameScreen(app: App, L: Life) {
       tabBody.appendChild(h('div.job', null,
         h('span.em', null, c.icon),
         h('div', null, h('b', null, c.title), h('small', null, `${money(c.salary)}/ano · ${c.edu === 'faculdade' ? 'exige faculdade' + (c.curso ? ' (' + c.curso + ')' : '') : c.edu === 'medio' ? 'exige ensino médio' : 'sem requisitos'}`)),
-        h('button.btn.small.primary', { disabled: busy, onclick: () => doOutcome(() => applyJob(L, c)) }, 'Candidatar'),
+        h('button.btn.small.primary', { disabled: busy, onclick: () => lock(async () => { await presentEvent(startInterview(L, c)); }) }, 'Candidatar'),
       ));
     }
   }
@@ -325,6 +341,7 @@ export function gameScreen(app: App, L: Life) {
       clear(evLayer);
       const choose = (i: number) => {
         c.classList.add('out');
+        setPad(0);
         setTimeout(() => { c.remove(); resolve(i); }, 220);
       };
       const btns = o.choices?.length
@@ -337,9 +354,16 @@ export function gameScreen(app: App, L: Life) {
         btns,
       );
       evLayer.appendChild(c);
+      // sobe a cena para que os personagens não fiquem atrás do cartão
+      requestAnimationFrame(() => setPad(Math.min(c.offsetHeight + 24, stage.h * 0.55)));
       if (o.tone === 'especial') sfx.chime();
       else sfx.pop();
     });
+  }
+  let cardPad = 0;
+  function setPad(v: number) {
+    cardPad = v;
+    stage.scene.padBottom = v;
   }
 
   function snap(): Snap {
@@ -366,11 +390,13 @@ export function gameScreen(app: App, L: Life) {
     const others = kid
       ? [...byRel(L, 'mae', 'pai'), ...byRel(L, 'irmao', 'irma').filter((s) => s.age < 25)]
       : [...(partner(L) ? [partner(L)!] : []), ...children(L).filter((k) => k.alive && k.age < 18)];
+    const forced = L.flags.moodNext as string | undefined;
+    delete L.flags.moodNext;
     return {
       id: 'casa',
       others: others.slice(0, 3),
       data: {
-        mood: L.stats.felicidade > 70 ? 'feliz' : L.stats.felicidade < 30 ? 'triste' : 'neutro',
+        mood: forced ?? (L.stats.saude < 25 ? 'ferido' : L.stats.felicidade > 70 ? 'feliz' : L.stats.felicidade < 30 ? 'triste' : 'neutro'),
         pets: L.pets.filter((p) => p.alive).map((p) => ({ kind: p.kind, color: p.color })),
       },
     };
@@ -390,13 +416,35 @@ export function gameScreen(app: App, L: Life) {
     pr.then(() => { skipBtn.style.display = 'none'; stage.setSkip(false); });
   }
 
+  /** Aplica reações (expressão, fala, emote, movimento) aos atores da cena atual sem recarregá-la. */
+  function applyReact(r: Outcome['react']) {
+    if (!r) return;
+    const acts = stage.scene.actors;
+    const pa = acts.find((a) => a.name === L.player.first);
+    const npc = acts.find((a) => a !== pa && a.visible);
+    const apply = (a: typeof pa, x: NonNullable<Outcome['react']>['npc']) => {
+      if (!a || !x) return;
+      if (x.expr) a.setExpr(x.expr as any, 3.5);
+      if (x.say) a.say(x.say, Math.min(4.5, 1.6 + x.say.length * 0.045));
+      if (x.emote) a.emoteOn(x.emote as any);
+      if (x.motion) a.play(x.motion, { base: true });
+    };
+    apply(npc, r.npc);
+    apply(pa, r.player);
+  }
+
   async function presentOutcome(o: Outcome, before: Snap) {
     if (o.log !== false) addLog(L, o.text, o.tone, o.icon ?? (o.tone === 'bom' ? '😊' : o.tone === 'ruim' ? '😣' : o.tone === 'especial' ? '⭐' : '•'));
+    if (o.mood) L.flags.moodNext = o.mood;
     await playScene(o.scene);
+    applyReact(o.react);
     refresh(before);
-    if (o.tone === 'bom') sfx.success();
-    else if (o.tone === 'ruim') sfx.fail();
-    await card({ icon: o.icon ?? (o.tone === 'bom' ? '😊' : o.tone === 'ruim' ? '😣' : o.tone === 'especial' ? '🌟' : '📌'), title: o.title ?? (o.tone === 'bom' ? 'Deu certo!' : o.tone === 'ruim' ? 'Que pena...' : o.tone === 'especial' ? 'Momento especial!' : 'Resultado'), text: o.text, tone: o.tone, deltas: deltaChips(before) });
+    if (!o.skipCard) {
+      if (o.tone === 'bom') sfx.success();
+      else if (o.tone === 'ruim') sfx.fail();
+      await card({ icon: o.icon ?? (o.tone === 'bom' ? '😊' : o.tone === 'ruim' ? '😣' : o.tone === 'especial' ? '🌟' : '📌'), title: o.title ?? (o.tone === 'bom' ? 'Deu certo!' : o.tone === 'ruim' ? 'Que pena...' : o.tone === 'especial' ? 'Momento especial!' : 'Resultado'), text: o.text, tone: o.tone, deltas: deltaChips(before) });
+    }
+    if (o.next) await presentOutcome(o.next, snap());
     if (o.followUp) await presentEvent(o.followUp);
   }
 

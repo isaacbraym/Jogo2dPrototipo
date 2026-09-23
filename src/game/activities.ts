@@ -1,9 +1,10 @@
 import { Action, Outcome, Interaction, PendingEvent } from './types';
-import { Life, stat, bond, makePerson, partner, friends, money, newId, Person, spouse, he, addLog, REL_LABEL, children } from './state';
+import { Life, stat, bond, makePerson, partner, friends, money, newId, Person, spouse, he, addLog, REL_LABEL, children, leaveJobPeople } from './state';
 import { rng } from '../core/rng';
 import { CAREERS, Career } from './careers';
 import { DESTINOS, FILMES, PETS_NOMES } from './names';
 import { EVENTS } from './events';
+import { aggress, AGGRO, AggroKind, contextOf, envFor as aggroEnv } from './aggression';
 
 const O = (text: string, tone: Outcome['tone'], extra: Partial<Outcome> = {}): Outcome => ({ text, tone, ...extra });
 
@@ -204,13 +205,20 @@ export function askPromotion(L: Life): Outcome {
 export function quitJob(L: Life): Outcome {
   const j = L.job!;
   L.job = null;
+  leaveJobPeople(L);
   stat(L, 'felicidade', 4);
   return O(`Você pediu demissão do cargo de ${j.title}.`, 'neutro', { scene: { id: 'reflexao', data: { titulo: 'Novos ares', env: 'ruaDia', motion: 'feliz' } } });
 }
 
 // ------------------------------------------------ interações (relacionamentos)
 const romantic = (p: Person) => p.rel === 'namorado' || p.rel === 'namorada' || p.rel === 'conjuge';
-const envFor = (L: Life, p: Person) => (romantic(p) ? rng.pick(['sala', 'parque', 'praia']) : p.rel === 'amigo' || p.rel === 'amiga' ? rng.pick(['parque', 'ruaDia']) : L.player.age < 18 ? 'sala' : rng.pick(['sala', 'cozinha']));
+const envFor = (L: Life, p: Person) => {
+  const c = contextOf(L, p);
+  if (c === 'trabalho' || c === 'escola') return aggroEnv(L, c, p);
+  if (romantic(p)) return rng.pick(['sala', 'parque', 'praia']);
+  if (p.rel === 'amigo' || p.rel === 'amiga') return L.player.age < 18 ? rng.pick(['parque', 'patio']) : rng.pick(['parque', 'ruaDia', 'boteco']);
+  return L.player.age < 18 ? 'sala' : rng.pick(['sala', 'cozinha']);
+};
 const sc = (L: Life, p: Person, action: string) => ({ id: 'interacao', others: [p], data: { action, env: envFor(L, p) } });
 
 export const INTERACTIONS: Interaction[] = [
@@ -254,18 +262,65 @@ export const INTERACTIONS: Interaction[] = [
     id: 'discutir', label: 'Discutir', icon: '😤', cond: (L) => L.player.age >= 5,
     run: (L, p) => { bond(p, -rng.int(8, 14)); stat(L, 'felicidade', -4); return O(`Você e ${p.first} tiveram uma discussão feia.`, 'ruim', { scene: sc(L, p, 'discutir') }); },
   },
+  // ---------------- gestos gentis / conversa
   {
-    id: 'empurrar', label: 'Empurrar', icon: '✋', cond: (L) => L.player.age >= 4,
-    run: (L, p) => { bond(p, -rng.int(10, 16)); L.karma -= 3; return O(`Você empurrou ${p.first}. Clima péssimo.`, 'ruim', { scene: sc(L, p, 'empurrar') }); },
+    id: 'piada', label: 'Contar piada', icon: '🤡', group: 'Conversa', cond: (L) => L.player.age >= 6,
+    run: (L, p) => {
+      const piada = rng.pick(['Por que o pão não entende a batata? Porque o pão é francês.', 'Sabe o que o zero disse pro oito? Que cinto maneiro!', 'O que é um pontinho amarelo no céu? Um yellowcóptero.', 'Qual o contrário de volátil? Vem cá, sobrinho.']);
+      const ok = rng.chance(0.45 + L.stats.inteligencia / 300);
+      bond(p, ok ? rng.int(4, 8) : -2);
+      return O(ok ? `"${piada}" — ${p.first} riu tanto que roncou.` : `"${piada}" — Silêncio. Dava pra ouvir um grilo. ${p.first} só disse: "tá".`, ok ? 'bom' : 'neutro', { scene: { ...sc(L, p, 'piada'), data: { ...sc(L, p, 'piada').data, piada, ok } } });
+    },
   },
   {
-    id: 'tapa', label: 'Dar um tapa', icon: '🖐️', cond: (L) => L.player.age >= 6,
-    run: (L, p) => { bond(p, -rng.int(15, 25)); L.karma -= 5; return O(`PÁ! ${p.first} não vai esquecer isso tão cedo.`, 'ruim', { scene: sc(L, p, 'tapa') }); },
+    id: 'fofocar', label: 'Fofocar', icon: '🤫', group: 'Conversa', cond: (L) => L.player.age >= 8,
+    run: (L, p) => {
+      const alvo = L.people.find((x) => x.alive && x !== p && x.rel !== 'mae' && x.rel !== 'pai');
+      bond(p, rng.int(2, 6));
+      L.karma -= 2;
+      if (alvo && rng.chance(0.3)) { bond(alvo, -15); return O(`A fofoca sobre ${alvo.first} vazou — e adivinha quem foi apontado(a) como fonte? Pois é.`, 'ruim', { scene: sc(L, p, 'fofocar') }); }
+      return O(`Você e ${p.first} passaram uma hora falando mal dos outros. Terapêutico.`, 'neutro', { scene: sc(L, p, 'fofocar') });
+    },
   },
   {
-    id: 'soco', label: 'Dar um soco', icon: '👊', cond: (L) => L.player.age >= 8,
-    run: (L, p) => { bond(p, -rng.int(25, 40)); L.karma -= 10; if (rng.chance(0.2) && L.player.age >= 18) { L.crime.ficha += 1; return O(`${p.first} prestou queixa por agressão!`, 'ruim', { scene: sc(L, p, 'soco') }); } return O(`Você acertou ${p.first} em cheio. Isso vai ter consequências.`, 'ruim', { scene: sc(L, p, 'soco') }); },
+    id: 'consolar', label: 'Consolar', icon: '🫂', group: 'Conversa', cond: (L) => L.player.age >= 5,
+    run: (L, p) => { bond(p, rng.int(6, 11)); L.karma += 2; return O(`Você ouviu os desabafos de ${p.first} por horas. Nem olhou o celular. Isso é amor.`, 'bom', { scene: sc(L, p, 'consolar') }); },
   },
+  {
+    id: 'desculpas', label: 'Pedir desculpas', icon: '🙏', group: 'Conversa', cond: (_L, p) => p.bond < 60,
+    run: (L, p) => {
+      const ok = rng.chance(0.35 + p.bond / 150 + (p.traits.includes('gentil') ? 0.2 : 0));
+      const s = sc(L, p, 'desculpas');
+      s.data = { ...s.data, ok } as any;
+      if (ok) { bond(p, rng.int(10, 20)); return O(`${p.first} aceitou suas desculpas. Com ressalvas, mas aceitou.`, 'bom', { scene: s }); }
+      bond(p, -3);
+      return O(`${p.first} ouviu tudo e respondeu: "desculpa não conserta nada". Saiu andando.`, 'ruim', { scene: s, mood: 'triste' });
+    },
+  },
+  {
+    id: 'massagem', label: 'Fazer massagem', icon: '💆', group: 'Carinho', cond: (L, p) => L.player.age >= 14 && ['namorado', 'namorada', 'conjuge', 'mae', 'pai', 'avo', 'avoM'].includes(p.rel),
+    run: (L, p) => { bond(p, rng.int(6, 10)); return O(`${p.first} derreteu na massagem. Você descobriu um nó nas costas do tamanho de uma noz.`, 'bom', { scene: sc(L, p, 'massagem') }); },
+  },
+  {
+    id: 'serenata', label: 'Fazer serenata', icon: '🎸', group: 'Carinho', cond: (L, p) => L.player.age >= 13 && ['namorado', 'namorada', 'conjuge', 'amigo', 'amiga'].includes(p.rel),
+    run: (L, p) => {
+      const ok = rng.chance(0.4 + (L.flags.musica ? 0.3 : 0));
+      bond(p, ok ? rng.int(10, 16) : -4);
+      const s = sc(L, p, 'serenata');
+      s.data = { ...s.data, ok } as any;
+      return ok ? O(`Serenata impecável. ${p.first} chorou, a vizinha chorou, até o cachorro uivou junto.`, 'especial', { scene: s })
+        : O(`Você desafinou tanto que o vizinho jogou um chinelo. ${p.first} fingiu que não te conhecia.`, 'ruim', { scene: s });
+    },
+  },
+  // ---------------- agressões (com consequências reais)
+  ...(Object.keys(AGGRO) as AggroKind[]).map((k): Interaction => ({
+    id: 'agg_' + k,
+    label: AGGRO[k].label,
+    icon: AGGRO[k].icon,
+    group: 'Agressão',
+    cond: (L, p) => L.player.age >= (k === 'xingar' || k === 'empurrar' ? 4 : k === 'roubar' ? 8 : 6) && !(k === 'roubar' && p.age < 10),
+    run: (L, p) => aggress(L, p, k),
+  })),
   {
     id: 'terminar', label: 'Terminar namoro', icon: '💔', cond: (_L, p) => p.rel === 'namorado' || p.rel === 'namorada',
     run: (L, p) => { p.rel = 'ex'; bond(p, -30); stat(L, 'felicidade', -8); return O(`Você terminou com ${p.first}.`, 'ruim', { scene: { id: 'termino', others: [p] } }); },

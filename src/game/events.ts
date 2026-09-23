@@ -1,8 +1,10 @@
 import { LifeEvent, Outcome, EvCtx } from './types';
+import { hireStaff, leaveJobPeople } from './state';
 import { Life, stat, bond, addLog, makePerson, partner, parents, friends, children, pickRandom, he, money, newId, Person, spouse, byRel } from './state';
 import { rng } from '../core/rng';
 import { inherit } from '../character/appearance';
 import { CURSOS, CAREERS, careerById } from './careers';
+import { aggress } from './aggression';
 import { DESTINOS, PETS_NOMES } from './names';
 
 const O = (text: string, tone: Outcome['tone'], extra: Partial<Outcome> = {}): Outcome => ({ text, tone, ...extra });
@@ -299,7 +301,7 @@ export const EVENTS: LifeEvent[] = [
     id: 'propinaChefe', min: 20, max: 65, weight: (L) => (L.job ? 3 : 0), icon: '🕴️', title: 'Proposta suspeita',
     text: () => 'Um colega propõe desviar um pouco da verba da empresa. "Ninguém vai notar", ele diz.',
     choices: [
-      { label: 'Topar', icon: '🤑', run: (L) => { L.karma -= 12; if (rng.chance(0.4)) { L.job = null; L.crime.ficha += 1; stat(L, 'felicidade', -15); return O('Foram descobertos! Você foi demitido(a) por justa causa.', 'ruim', { scene: { id: 'demissao' } }); } L.money += 20000; return O('Você embolsou R$ 20 mil... e uma consciência pesada.', 'neutro'); } },
+      { label: 'Topar', icon: '🤑', run: (L) => { L.karma -= 12; if (rng.chance(0.4)) { L.job = null; leaveJobPeople(L); L.crime.ficha += 1; stat(L, 'felicidade', -15); return O('Foram descobertos! Você foi demitido(a) por justa causa.', 'ruim', { scene: { id: 'demissao' } }); } L.money += 20000; return O('Você embolsou R$ 20 mil... e uma consciência pesada.', 'neutro'); } },
       { label: 'Denunciar', icon: '📢', run: (L) => { L.karma += 8; if (L.job) L.job.perf += 15; return O('A diretoria elogiou sua integridade.', 'bom', { scene: { id: 'promocao', data: { cargo: 'Funcionário(a) exemplar' } } }); } },
       { label: 'Recusar em silêncio', icon: '🤐', run: () => O('Você ficou fora disso.', 'neutro') },
     ],
@@ -312,8 +314,8 @@ export const EVENTS: LifeEvent[] = [
     },
     text: (_L, c) => { const car = careerById(c.s!)!; return `Uma empresa viu seu perfil e ofereceu uma vaga de ${car.titles[0]} (${money(car.salary)}/ano). ${car.icon}`; },
     choices: [
-      { label: 'Aceitar a vaga', icon: '🤝', run: (L, c) => { const car = careerById(c.s!)!; L.job = { id: car.id, title: car.titles[0], salary: car.salary, perf: 55, years: 0, level: 0 }; L.jobHistory.push(car.titles[0]); stat(L, 'felicidade', 8); return O(`Contratado(a) como ${car.titles[0]}! Bem-vindo(a) à equipe.`, 'especial', { scene: { id: 'entrevista', data: { ok: true, cargo: car.titles[0] } } }); } },
-      { label: 'Negociar salário', icon: '💬', run: (L, c) => { const car = careerById(c.s!)!; if (rng.chance(0.45 + L.stats.inteligencia / 300)) { const sal = Math.round(car.salary * 1.2); L.job = { id: car.id, title: car.titles[0], salary: sal, perf: 55, years: 0, level: 0 }; L.jobHistory.push(car.titles[0]); stat(L, 'felicidade', 10); return O(`Negociação vencida! ${car.titles[0]} com ${money(sal)}/ano.`, 'especial', { scene: { id: 'entrevista', data: { ok: true, cargo: car.titles[0] } } }); } return O('A empresa retirou a proposta. Ops!', 'ruim', { scene: { id: 'entrevista', data: { ok: false, cargo: car.titles[0] } } }); } },
+      { label: 'Aceitar a vaga', icon: '🤝', run: (L, c) => { const car = careerById(c.s!)!; L.job = { id: car.id, title: car.titles[0], salary: car.salary, perf: 55, years: 0, level: 0 }; L.jobHistory.push(car.titles[0]); hireStaff(L, car.titles[0]); stat(L, 'felicidade', 8); return O(`Contratado(a) como ${car.titles[0]}! Bem-vindo(a) à equipe.`, 'especial', { scene: { id: 'entrevista', data: { ok: true, cargo: car.titles[0] } } }); } },
+      { label: 'Negociar salário', icon: '💬', run: (L, c) => { const car = careerById(c.s!)!; if (rng.chance(0.45 + L.stats.inteligencia / 300)) { const sal = Math.round(car.salary * 1.2); L.job = { id: car.id, title: car.titles[0], salary: sal, perf: 55, years: 0, level: 0 }; L.jobHistory.push(car.titles[0]); hireStaff(L, car.titles[0]); stat(L, 'felicidade', 10); return O(`Negociação vencida! ${car.titles[0]} com ${money(sal)}/ano.`, 'especial', { scene: { id: 'entrevista', data: { ok: true, cargo: car.titles[0] } } }); } return O('A empresa retirou a proposta. Ops!', 'ruim', { scene: { id: 'entrevista', data: { ok: false, cargo: car.titles[0] } } }); } },
       { label: 'Recusar', icon: '🙅', run: () => O('Você preferiu esperar algo melhor.', 'neutro') },
     ],
   },
@@ -383,11 +385,112 @@ export const EVENTS: LifeEvent[] = [
       { label: 'Tirar o videogame', icon: '🎮', run: (L, c) => { bond(c.person!, -4); stat(L, 'felicidade', -1); return O('Castigo aplicado. Silêncio na casa.', 'neutro'); } },
     ],
   },
+  // ======================================================== vida real, versão ácida
+  {
+    id: 'churrasco', min: 8, max: 90, weight: 5, icon: '🍖', title: 'Churrasco de família',
+    text: () => 'Domingo de churrasco. O tio chega com a camisa do time e solta: "É pavê ou pa comê?". Todo mundo olha pra você.',
+    scene: (L) => ({ id: 'churrasco', others: [...parents(L), ...byRel(L, 'irmao', 'irma')].slice(0, 3) }),
+    choices: [
+      { label: 'Rir amarelo', icon: '😬', run: (L) => { stat(L, 'felicidade', -1); parents(L).forEach((p) => bond(p, 2)); return O('Você riu pela 47ª vez da mesma piada. A família te ama. O seu amor-próprio, nem tanto.', 'neutro', { react: { player: { expr: 'envergonhado' } } }); } },
+      { label: '"Tio, essa piada é mais velha que o senhor."', icon: '🔥', run: (L) => { stat(L, 'felicidade', 4); parents(L).forEach((p) => bond(p, -3)); return O('Silêncio no quintal. Até a picanha parou de chiar. Sua mãe te deu aquele olhar.', 'neutro', { react: { player: { expr: 'convencido' }, npc: { expr: 'chocado', say: 'Nossa... que grosso(a).' } } }); } },
+      { label: 'Fugir pra perto da churrasqueira', icon: '🥩', run: (L) => { stat(L, 'felicidade', 5); stat(L, 'saude', -1); return O('Você virou o(a) assador(a) oficial e comeu o melhor pedaço antes de todo mundo. Estratégia.', 'bom'); } },
+    ],
+  },
+  {
+    id: 'golpeZap', min: 30, max: 95, weight: 4, icon: '📱', title: '"Oi mãe, troquei de número"',
+    text: () => 'Mensagem de um número desconhecido: "Oi, sou eu, seu filho(a)/sobrinho(a). Troquei de número. Me faz um PIX de R$ 2.000 urgente?"',
+    choices: [
+      { label: 'Fazer o PIX', icon: '💸', run: (L) => { L.money -= 2000; stat(L, 'felicidade', -8); return O('Caiu no golpe. O "sobrinho" sumiu, o dinheiro também. Agora você é o assunto do grupo da família.', 'ruim', { scene: { id: 'telefonema', data: { fala: 'Como assim não era você?!', good: false } } }); } },
+      { label: 'Pedir um áudio', icon: '🎙️', run: (L) => { stat(L, 'felicidade', 3); return O('O golpista sumiu na hora. Você é mais esperto(a) que 90% do grupo da família.', 'bom'); } },
+      { label: 'Trollar o golpista', icon: '🤡', run: (L) => { stat(L, 'felicidade', 8); return O('Você mandou 40 figurinhas e um PIX de R$ 0,01 com a mensagem "tá aí, filho". O golpista te bloqueou.', 'bom'); } },
+    ],
+  },
+  {
+    id: 'piramide', min: 20, max: 80, weight: (L) => (L.money > 3000 ? 4 : 0), icon: '📈', title: 'Oportunidade imperdível',
+    setup: () => ({ n: rng.int(3, 10) * 1000 }),
+    text: (_L, c) => `Um conhecido jura que investiu num "clube de investimentos" que rende 30% ao mês. "É só colocar ${money(c.n!)} e chamar mais 3 amigos."`,
+    choices: [
+      { label: 'Investir tudo!', icon: '🚀', cond: (L, c) => L.money >= c.n!, run: (L, c) => { if (rng.chance(0.15)) { L.money += c.n!; stat(L, 'felicidade', 8); return O(`Surpresa: você saiu antes do colapso e dobrou o dinheiro. Seus 3 amigos, não.`, 'neutro'); } L.money -= c.n!; stat(L, 'felicidade', -10); L.karma -= 3; return O(`O "clube" era uma pirâmide. O dono fugiu pra Dubai. Você perdeu ${money(c.n!)} e 3 amizades.`, 'ruim', { scene: { id: 'reflexao', data: { titulo: 'Pirâmide desabou', env: 'boteco', motion: 'facepalm' } } }); } },
+      { label: '"Isso é pirâmide, amigo."', icon: '🔺', run: (L) => { stat(L, 'felicidade', 2); return O('Ele ficou ofendido e te chamou de "mentalidade de pobre". Seis meses depois, estava no jornal.', 'bom'); } },
+    ],
+  },
+  {
+    id: 'transito', min: 18, max: 85, weight: (L) => (L.licenca ? 5 : 1), icon: '🚗', title: 'Fechada no trânsito',
+    setup: (L) => ({ person: makePerson(rng, { age: L.player.age + rng.int(-10, 15), rel: 'conhecido', bond: 20 }) }),
+    text: (_L, c) => `Um motorista te fechou, buzinou e ainda mostrou o dedo. Ele desceu do carro gritando: "Tá olhando o quê?!"`,
+    scene: (_L, c) => ({ id: 'transito', others: [c.person!] }),
+    choices: [
+      { label: 'Respirar fundo e seguir', icon: '🧘', run: (L) => { stat(L, 'felicidade', -2); L.karma += 2; return O('Você contou até dez, xingou baixinho e seguiu viagem. Saúde mental: preservada. Orgulho: nem tanto.', 'neutro', { react: { player: { expr: 'serio' } } }); } },
+      { label: 'Xingar de volta', icon: '🤬', run: (L, c) => { c.person!.first = c.person!.first; L.people.push(c.person!); return aggress(L, c.person!, 'xingar'); } },
+      { label: 'Descer pra brigar', icon: '👊', run: (L, c) => { L.people.push(c.person!); return aggress(L, c.person!, 'soco'); } },
+    ],
+  },
+  {
+    id: 'filaSUS', min: 25, max: 95, weight: (L) => (L.stats.saude < 60 ? 5 : 2), icon: '🏥', title: 'Fila do pronto-socorro',
+    text: () => 'Dor nas costas insuportável. No pronto-socorro, a senha é a 187. Estão chamando a 23.',
+    scene: () => ({ id: 'filaHospital' }),
+    choices: [
+      { label: 'Esperar com dignidade', icon: '⏳', run: (L) => { stat(L, 'saude', 4); stat(L, 'felicidade', -5); return O('Nove horas depois, o médico olhou 30 segundos e receitou dipirona. Funcionou. Revoltante, mas funcionou.', 'neutro', { scene: { id: 'medico', data: { good: true, fala: 'Toma dipirona e repousa. Próximo!' } } }); } },
+      { label: 'Fingir desmaio pra passar na frente', icon: '🎭', run: (L) => { if (rng.chance(0.4)) { stat(L, 'saude', 5); return O('Oscar de melhor atuação. Você foi atendido(a) em 10 minutos. A culpa, porém, dura até hoje.', 'neutro', { scene: { id: 'medico', data: { good: true, fala: 'Hmm... desmaio curioso esse.' } } }); } stat(L, 'felicidade', -6); L.karma -= 3; return O('A enfermeira viu você abrindo um olho pra conferir. Voltou pro fim da fila, sob vaias.', 'ruim', { mood: 'triste' }); } },
+      { label: 'Desistir e tomar chá', icon: '🍵', run: (L) => { stat(L, 'saude', -4); return O('Chá de boldo não cura hérnia. Quem diria.', 'ruim'); } },
+    ],
+  },
+  {
+    id: 'festaFirma', min: 18, max: 70, weight: (L) => (L.job ? 6 : 0), icon: '🎄', title: 'Confraternização da firma',
+    setup: (L) => ({ person: L.people.find((p) => p.alive && p.rel === 'chefe') }),
+    text: () => 'Festa de fim de ano da empresa: open bar, karaokê e o chefe já está sem gravata. O que você faz?',
+    scene: (L, c) => ({ id: 'festaFirma', others: [...(c.person ? [c.person] : []), ...L.people.filter((p) => p.alive && p.rel === 'colegaTrab')].slice(0, 3) }),
+    choices: [
+      { label: 'Dançar em cima da mesa', icon: '🕺', run: (L, c) => { stat(L, 'felicidade', 8); if (L.job) L.job.perf -= 10; if (c.person) bond(c.person, -5); return O('Você virou lenda da firma — e figurinha no grupo do RH. Na segunda, ninguém te olhava nos olhos.', 'neutro', { react: { player: { motion: 'dancar2' } } }); } },
+      { label: 'Puxar saco do chefe', icon: '🍑', run: (L, c) => { if (L.job) L.job.perf += 10; if (c.person) bond(c.person, 10); L.people.filter((p) => p.rel === 'colegaTrab').forEach((p) => bond(p, -6)); return O('Promoção mais perto, colegas mais longe. "Babão(ona)" é seu novo apelido.', 'neutro', { react: { player: { motion: 'joinha', expr: 'convencido' } } }); } },
+      { label: 'Comer e ir embora cedo', icon: '🥡', run: (L) => { stat(L, 'felicidade', 3); return O('Você levou quentinha escondida na bolsa. Missão cumprida sem constrangimento.', 'bom'); } },
+    ],
+  },
+  {
+    id: 'chefeHumilha', min: 18, max: 70, weight: (L) => (L.job && L.people.some((p) => p.alive && p.rel === 'chefe') ? 5 : 0), icon: '😤', title: 'Humilhação na reunião',
+    setup: (L) => ({ person: L.people.find((p) => p.alive && p.rel === 'chefe') }),
+    text: (_L, c) => `Na reunião, ${c.person!.first} (seu/sua chefe) apresentou SUA ideia como se fosse dele(a) e ainda disse que seu último relatório "parecia feito por um estagiário sonolento".`,
+    scene: (L, c) => ({ id: 'reuniao', others: [c.person!, ...L.people.filter((p) => p.alive && p.rel === 'colegaTrab')].slice(0, 3) }),
+    choices: [
+      { label: 'Engolir o choro', icon: '😶', run: (L) => { stat(L, 'felicidade', -6); if (L.job) L.job.perf += 3; return O('Você sorriu, concordou e chorou no banheiro depois. Clássico corporativo.', 'ruim', { mood: 'triste', react: { player: { motion: 'humilhado' } } }); } },
+      { label: 'Responder na lata', icon: '🗯️', run: (L, c) => { if (rng.chance(0.45)) { if (L.job) L.job.perf += 8; bond(c.person!, -10); return O('"A ideia era minha e está no e-mail de terça." A sala ficou em silêncio. Você ganhou respeito (e um inimigo).', 'bom', { react: { player: { motion: 'apontarBronca', expr: 'determinado' }, npc: { expr: 'chocado' } } }); } return aggress(L, c.person!, 'xingar'); } },
+      { label: 'Jogar o café na cara dele(a)', icon: '☕', run: (L, c) => aggress(L, c.person!, 'jogarBebida') },
+    ],
+  },
+  {
+    id: 'provocacaoEscola', min: 8, max: 17, weight: (L) => (L.people.some((p) => p.alive && p.rel === 'colega') ? 7 : 0), icon: '😠', title: 'Provocação no recreio',
+    setup: (L) => ({ person: pickRandom(L.people.filter((p) => p.alive && p.rel === 'colega')) }),
+    text: (_L, c) => `${c.person!.first} começou a zoar seu cabelo, sua roupa e sua mãe — nessa ordem — na frente da turma inteira.`,
+    choices: [
+      { label: 'Ignorar', icon: '🙉', run: (L) => { stat(L, 'felicidade', -4); return O('Você fingiu que não ouviu. A turma achou que você não ouviu mesmo. Vitória silenciosa.', 'neutro', { mood: 'triste' }); } },
+      { label: 'Zoar de volta', icon: '🎤', run: (L, c) => { if (rng.chance(0.5 + L.stats.inteligencia / 300)) { stat(L, 'felicidade', 8); bond(c.person!, -8); return O(`Você devolveu com uma zoeira tão boa que ${c.person!.first} ficou sem resposta. A turma fez "UUUUH".`, 'bom', { scene: { id: 'agressao', others: [c.person!], data: { kind: 'humilhar', env: 'patio', ctx: 'escola' } } }); } stat(L, 'felicidade', -6); return O('Você gaguejou e ainda levou mais zoeira. Péssima tarde.', 'ruim', { mood: 'triste' }); } },
+      { label: 'Partir pra cima', icon: '👊', run: (L, c) => aggress(L, c.person!, 'soco') },
+      { label: 'Contar pro(a) professor(a)', icon: '🧑‍🏫', run: (L, c) => { bond(c.person!, -5); L.karma += 1; return O('A professora deu uma bronca geral. Você ganhou fama de "X9", mas ficou sem olho roxo.', 'neutro'); } },
+    ],
+  },
+  {
+    id: 'recuperacao', min: 10, max: 17, weight: (L) => (L.edu.nota < 55 ? 8 : 0), icon: '📉', title: 'De recuperação',
+    text: () => 'Você ficou de recuperação em matemática. A prova é amanhã. Seus pais ainda não sabem.',
+    choices: [
+      { label: 'Estudar a madrugada inteira', icon: '📚', run: (L) => { const ok = rng.chance(0.45 + L.stats.inteligencia / 220); L.edu.nota += ok ? 15 : 4; stat(L, 'saude', -3); return ok ? O('Passou raspando! Nota 6,0 — a nota mais linda da sua vida.', 'bom', { scene: { id: 'aula', data: { good: true } } }) : O('Reprovou mesmo assim. Seus pais descobriram pelo boletim no grupo da escola.', 'ruim', { scene: { id: 'brigaFamilia', others: parents(L).slice(0, 1) } }); } },
+      { label: 'Colar com a calculadora do celular', icon: '📱', run: (L) => { if (rng.chance(0.4)) { L.edu.nota += 10; return O('Deu certo. Você não aprendeu nada, mas passou. Bem-vindo(a) ao sistema.', 'neutro'); } L.flags.infracoes = ((L.flags.infracoes as number) ?? 0) + 1; parents(L).forEach((p) => bond(p, -8)); return O('Pego(a) colando. Zero, detenção e seus pais chamados. Combo completo.', 'ruim', { scene: { id: 'detencao', data: { frase: 'Não devo colar na prova' } } }); } },
+      { label: 'Fingir que está doente', icon: '🤒', run: (L) => { if (rng.chance(0.35)) return O('Atestado conseguido. Ganhou uma semana a mais pra estudar (e não estudou).', 'neutro'); parents(L).forEach((p) => bond(p, -5)); return O('Sua mãe botou o termômetro: 36,5°C. Você foi pra prova e ainda de castigo.', 'ruim', { mood: 'triste' }); } },
+    ],
+  },
+  {
+    id: 'vizinho', min: 18, max: 90, weight: 3, icon: '🔊', title: 'Vizinho do paredão',
+    text: () => 'São 3 da manhã de uma terça. O vizinho ligou um paredão de som com funk e sertanejo AO MESMO TEMPO.',
+    choices: [
+      { label: 'Bater na porta e reclamar', icon: '🚪', run: (L) => { const p = makePerson(rng, { age: rng.int(25, 60), rel: 'conhecido', bond: 30 }); L.people.push(p); if (rng.chance(0.5)) { stat(L, 'felicidade', 3); return O(`${p.first} pediu desculpas e baixou o som. Milagre.`, 'bom', { scene: { id: 'interacao', others: [p], data: { action: 'desculpas', env: 'ruaNoite', ok: true } } }); } return O(`${p.first} aumentou o volume "em sua homenagem". Guerra declarada.`, 'ruim', { scene: { id: 'interacao', others: [p], data: { action: 'discutir', env: 'ruaNoite' } }, mood: 'tenso' }); } },
+      { label: 'Ligar pra polícia', icon: '🚓', run: (L) => { stat(L, 'felicidade', 2); return O('A viatura chegou às 11h da manhã seguinte. O som já tinha acabado. Serviço excelente.', 'neutro'); } },
+      { label: 'Colocar seu próprio som mais alto', icon: '📢', run: (L) => { stat(L, 'felicidade', 6); stat(L, 'saude', -3); L.karma -= 2; return O('Batalha de caixas de som até o sol nascer. O prédio inteiro te odeia. Valeu a pena.', 'neutro', { scene: { id: 'balada' } }); } },
+    ],
+  },
   {
     id: 'aposentarAuto', min: 65, max: 75, weight: (L) => (L.job && !L.retired ? 30 : 0), icon: '🏖️', title: 'Hora de se aposentar?',
     text: () => 'Depois de tantos anos de trabalho, a aposentadoria está logo ali.',
     choices: [
-      { label: 'Aposentar!', icon: '🎉', run: (L) => { L.retired = true; L.flags.aposentadoria = Math.round((L.job?.salary ?? 20000) * 0.6); L.job = null; stat(L, 'felicidade', 12); return O('Você se aposentou! Agora é só curtir a vida.', 'especial', { scene: { id: 'aposentadoria' } }); } },
+      { label: 'Aposentar!', icon: '🎉', run: (L) => { L.retired = true; L.flags.aposentadoria = Math.round((L.job?.salary ?? 20000) * 0.6); L.job = null; leaveJobPeople(L); stat(L, 'felicidade', 12); return O('Você se aposentou! Agora é só curtir a vida.', 'especial', { scene: { id: 'aposentadoria' } }); } },
       { label: 'Trabalhar mais um pouco', icon: '💪', run: (L) => { stat(L, 'saude', -3); return O('Você ainda tem lenha pra queimar.', 'neutro') } },
     ],
   },

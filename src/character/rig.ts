@@ -24,6 +24,15 @@ export interface Pose {
   sy: number;
   handN: Hand;
   handF: Hand;
+  // ossos extras (coluna em 2 segmentos, pescoço, clavículas, punhos, quadril)
+  chest: number; // dobra do peito sobre o abdômen (+ = curva p/ frente)
+  neck: number; // inclinação do pescoço (independente da cabeça)
+  shrugN: number; // elevação do ombro próximo (+ = sobe)
+  shrugF: number;
+  wristN: number; // rotação da mão
+  wristF: number;
+  hipTilt: number; // inclinação lateral do quadril (+ = quadril próximo sobe)
+  breath: number; // expansão do tórax
 }
 
 export const restPose = (): Pose => ({
@@ -31,6 +40,7 @@ export const restPose = (): Pose => ({
   armN: { a: 0.06, b: 0.12 }, armF: { a: -0.06, b: 0.12 },
   legN: { a: 0.02, b: 0 }, legF: { a: -0.02, b: 0 },
   footN: 0, footF: 0, sx: 1, sy: 1, handN: 'aberta', handF: 'aberta',
+  chest: 0, neck: 0, shrugN: 0, shrugF: 0, wristN: 0, wristF: 0, hipTilt: 0, breath: 0,
 });
 
 export function copyPose(p: Pose): Pose {
@@ -45,6 +55,8 @@ export function blendPose(a: Pose, b: Pose, t: number): Pose {
     armN: lerpLimb(a.armN, b.armN, t), armF: lerpLimb(a.armF, b.armF, t), legN: lerpLimb(a.legN, b.legN, t), legF: lerpLimb(a.legF, b.legF, t),
     footN: lerp(a.footN, b.footN, t), footF: lerp(a.footF, b.footF, t), sx: lerp(a.sx, b.sx, t), sy: lerp(a.sy, b.sy, t),
     handN: t < 0.5 ? a.handN : b.handN, handF: t < 0.5 ? a.handF : b.handF,
+    chest: lerp(a.chest, b.chest, t), neck: lerp(a.neck, b.neck, t), shrugN: lerp(a.shrugN, b.shrugN, t), shrugF: lerp(a.shrugF, b.shrugF, t),
+    wristN: lerp(a.wristN, b.wristN, t), wristF: lerp(a.wristF, b.wristF, t), hipTilt: lerp(a.hipTilt, b.hipTilt, t), breath: lerp(a.breath, b.breath, t),
   };
 }
 

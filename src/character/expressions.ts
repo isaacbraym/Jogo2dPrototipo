@@ -26,7 +26,7 @@ export interface Face {
 }
 
 export const NEUTRAL: Face = {
-  browIn: 0, browUp: 0, lidTop: 0.02, lidBot: 0, smile: 0.12, open: 0, wide: 0, teeth: 0, tongue: 0, pupil: 1, asym: 0, pucker: 0,
+  browIn: 0, browUp: 0, lidTop: 0.02, lidBot: 0, smile: 0.04, open: 0, wide: 0, teeth: 0, tongue: 0, pupil: 1, asym: 0, pucker: 0,
   happyEyes: false, tears: false, blush: 0, sweat: false, heartEyes: false, anger: false, dizzy: false, sparkle: false,
 };
 
@@ -56,6 +56,12 @@ export const EXPRESSIONS = {
   tonto: E({ smile: -0.2, open: 0.3, dizzy: true, browIn: 0.4 }),
   encantado: E({ smile: 0.9, open: 0.3, teeth: 1, sparkle: true, browUp: 0.4, pupil: 1.3 }),
   concentrado: E({ smile: -0.05, browIn: -0.35, lidTop: 0.25, asym: -0.15 }),
+  dor: E({ smile: -0.55, browIn: 0.85, lidTop: 0.55, lidBot: 0.3, open: 0.22, teeth: 1, wide: 0.25, sweat: true, pupil: 0.8 }),
+  ofegante: E({ smile: -0.15, open: 0.5, browIn: 0.35, lidTop: 0.3, tongue: 0.2, sweat: true, blush: 0.4 }),
+  humilhado: E({ smile: -0.35, browIn: 0.7, lidTop: 0.45, blush: 1, sweat: true, pupil: 0.9 }),
+  desprezo: E({ smile: 0.15, asym: -0.9, lidTop: 0.42, lidBot: 0.15, browIn: -0.45 }),
+  chocado: E({ smile: -0.25, open: 0.6, browUp: 0.95, lidTop: -0.15, pupil: 0.55, wide: -0.2 }),
+  serio: E({ smile: -0.12, browIn: -0.2, lidTop: 0.15 }),
   gritando: E({ smile: -0.3, open: 1, teeth: 0.6, tongue: 0.5, browIn: -0.8, wide: 0.2, anger: true }),
 } satisfies Record<string, Face>;
 

@@ -41,10 +41,17 @@ function keyframes(frames: KF[]) {
 }
 
 const breathe = (p: Pose, t: number, k = 1) => {
-  p.y += S(t * 1.7) * 1.1 * k;
-  p.armN.a += S(t * 1.7) * 0.015 * k;
-  p.armF.a -= S(t * 1.7) * 0.015 * k;
+  const b = S(t * 1.7);
+  p.y += b * 0.8 * k;
+  p.breath += (b + 1) * 0.5 * k;
+  p.shrugN += b * 0.08 * k;
+  p.shrugF += b * 0.08 * k;
+  p.armN.a += b * 0.015 * k;
+  p.armF.a -= b * 0.015 * k;
   p.head += S(t * 0.45) * 0.025 * k;
+  p.neck += S(t * 0.31 + 1) * 0.02 * k;
+  p.wristN += S(t * 0.9) * 0.08 * k;
+  p.wristF += S(t * 0.8 + 2) * 0.08 * k;
   return p;
 };
 
@@ -61,6 +68,14 @@ function walkCycle(t: number, c: MotionCtx, amp: number, bend: number, armAmp: n
   p.armF = L(s * armAmp, 0.25 + Math.max(0, s) * armAmp * 0.8);
   p.y = -Math.abs(co) * 3;
   p.head = S(ph * 2) * 0.02;
+  // quadril balança com o passo, peito contra-rota, ombros acompanham os braços
+  p.hipTilt = s * 0.35;
+  p.chest = -s * 0.03 + Math.abs(co) * 0.02;
+  p.shrugN = Math.max(0, -s) * 0.25;
+  p.shrugF = Math.max(0, s) * 0.25;
+  p.wristN = -s * 0.2;
+  p.wristF = s * 0.2;
+  p.neck = -lean * 0.4;
   return p;
 }
 
@@ -89,8 +104,9 @@ export const MOTIONS: Record<string, Motion> = {
   triste: {
     loop: true,
     fn: (t) => {
-      const p = P({ lean: 0.1, head: 0.3 });
+      const p = P({ lean: 0.06, chest: 0.22, neck: 0.18, head: 0.2, shrugN: -0.35, shrugF: -0.35 });
       p.armN = L(0.02, 0.05); p.armF = L(-0.02, 0.05);
+      p.wristN = 0.3; p.wristF = 0.3;
       return breathe(p, t * 0.6, 1.4);
     },
     expr: 'triste',
@@ -161,7 +177,8 @@ export const MOTIONS: Record<string, Motion> = {
     loop: true,
     fn: (t) => {
       const b = t * 2 * PI * 1.1;
-      const p = P({ x: S(b) * 9, lean: S(b) * 0.06, head: S(b * 2) * 0.1 });
+      const p = P({ x: S(b) * 9, lean: S(b) * 0.06, head: S(b * 2) * 0.1, chest: S(b * 2) * 0.12, hipTilt: S(b) * 0.7, neck: -S(b * 2) * 0.08 });
+      p.shrugN = Math.max(0, S(b * 2)) * 0.6; p.wristF = S(b * 2) * 0.5;
       p.y = -Math.abs(S(b * 2)) * 6;
       p.armN = L(2.4 + S(b * 2) * 0.35, 0.4 + S(b * 2) * 0.3);
       p.armF = L(-0.2 + S(b) * 0.4, 1.2);
@@ -176,7 +193,9 @@ export const MOTIONS: Record<string, Motion> = {
     loop: true,
     fn: (t) => {
       const b = t * 2 * PI * 1.2;
-      const p = P({ head: S(b) * 0.12 });
+      const p = P({ head: S(b) * 0.12, chest: -Math.abs(S(b)) * 0.1, hipTilt: C(b) * 0.4 });
+      p.shrugN = 0.5 + S(b) * 0.3; p.shrugF = 0.5 - S(b) * 0.3;
+      p.wristN = S(b * 2) * 0.6; p.wristF = -S(b * 2) * 0.6;
       p.y = -Math.abs(S(b)) * 10;
       p.armN = L(-2.55 + S(b) * 0.3, 0.3 - S(b) * 0.3);
       p.armF = L(2.6 - S(b) * 0.3, 0.3 + S(b) * 0.3);
@@ -191,7 +210,8 @@ export const MOTIONS: Record<string, Motion> = {
     loop: true,
     fn: (t) => {
       const b = t * 2 * PI;
-      const p = P({ x: S(b) * 14, lean: -S(b) * 0.1 });
+      const p = P({ x: S(b) * 14, lean: -S(b) * 0.1, chest: S(b) * 0.14, hipTilt: -S(b) * 0.8, neck: S(b) * 0.1 });
+      p.shrugN = Math.max(0, S(b)) * 0.4; p.shrugF = Math.max(0, -S(b)) * 0.4;
       p.armN = L(1.3 + S(b) * 0.6, 1.2); p.armF = L(1.3 - S(b) * 0.6, 1.2);
       p.handN = 'punho'; p.handF = 'punho';
       p.legN = L(0.2 + S(b) * 0.25, 0.3); p.legF = L(-0.2 + S(b) * 0.25, 0.3);
@@ -209,6 +229,7 @@ export const MOTIONS: Record<string, Motion> = {
       const p = P();
       p.y = -air * 42 + (ph < 0.08 || ph > 0.92 ? 6 : 0);
       p.sy = 1 + (air - 0.5) * 0.1; p.sx = 1 - (air - 0.5) * 0.07;
+      p.chest = -air * 0.18; p.neck = -air * 0.12; p.shrugN = 0.8; p.shrugF = 0.8; p.breath = 1;
       p.armN = L(-2.55 - S(t * 12) * 0.12, 0.25); p.armF = L(2.6 - S(t * 12) * 0.12, 0.25);
       p.handN = 'punho'; p.handF = 'punho';
       p.legN = L(0.1 + air * 0.25, air * 0.8); p.legF = L(-0.1 - air * 0.1, air * 1.1);
@@ -220,9 +241,13 @@ export const MOTIONS: Record<string, Motion> = {
     loop: true,
     fn: (t) => {
       const p = breathe(P(), t);
-      p.armF = L(2.45, 0.45 + S(t * 9) * 0.4);
+      p.armF = L(2.45, 0.45 + S(t * 9) * 0.3);
+      p.wristF = S(t * 9 + 0.6) * 0.55;
+      p.shrugF = 0.5;
+      p.chest = -0.04;
       p.handF = 'acena';
       p.head = -0.05;
+      p.neck = S(t * 4.5) * 0.05;
       return p;
     },
     expr: 'feliz',
@@ -242,8 +267,10 @@ export const MOTIONS: Record<string, Motion> = {
   chorar: {
     loop: true,
     fn: (t) => {
-      const p = P({ lean: 0.12, head: 0.3 });
+      const sob = Math.max(0, S(t * 5)) ** 2;
+      const p = P({ lean: 0.08, chest: 0.2 + sob * 0.08, neck: 0.12, head: 0.2 });
       p.armN = L(0.95, 2.45); p.armF = L(0.85, 2.5);
+      p.shrugN = 0.3 + sob * 0.5; p.shrugF = 0.3 + sob * 0.5;
       p.y = S(t * 18) * 1.2;
       p.handN = 'aberta'; p.handF = 'aberta';
       return p;
@@ -253,7 +280,8 @@ export const MOTIONS: Record<string, Motion> = {
   rir: {
     loop: true,
     fn: (t) => {
-      const p = P({ lean: -0.12 + S(t * 13) * 0.035, head: -0.22 });
+      const p = P({ lean: -0.06 + S(t * 13) * 0.02, chest: -0.12 + S(t * 13) * 0.05, head: -0.18, neck: -0.06, breath: 1 });
+      p.shrugN = 0.3 + S(t * 13) * 0.25; p.shrugF = 0.3 + S(t * 13) * 0.25;
       p.armN = L(0.55, 1.45); p.armF = L(0.15, 0.35 + S(t * 13) * 0.1);
       p.y = S(t * 13) * 1.4;
       return p;
@@ -263,7 +291,8 @@ export const MOTIONS: Record<string, Motion> = {
   furia: {
     loop: true,
     fn: (t) => {
-      const p = P({ lean: 0.12, x: S(t * 30) * 1.5 });
+      const p = P({ lean: 0.08, chest: 0.12, neck: 0.1, head: -0.1, x: S(t * 30) * 1.5, breath: 0.6 + S(t * 6) * 0.4 });
+      p.shrugN = 0.45; p.shrugF = 0.45;
       p.armN = L(0.25, 0.6); p.armF = L(-0.2, 0.6);
       p.handN = 'punho'; p.handF = 'punho';
       p.footN = Math.max(0, S(t * 8)) * 0.4;
@@ -284,8 +313,11 @@ export const MOTIONS: Record<string, Motion> = {
   darOmbros: {
     loop: true,
     fn: (t) => {
-      const p = breathe(P({ head: 0.12 }), t);
+      const k = Math.max(0, S(t * 2.2));
+      const p = breathe(P({ head: 0.12, neck: -0.08 }), t);
+      p.shrugN = k * 1.1; p.shrugF = k * 1.1;
       p.armN = L(-0.35, 1.7); p.armF = L(0.35, -1.7);
+      p.wristN = -0.6 * k; p.wristF = 0.6 * k;
       p.handN = 'aberta'; p.handF = 'aberta';
       return p;
     },
@@ -885,12 +917,311 @@ export const MOTIONS: Record<string, Motion> = {
   },
 };
 
+// ======================================================================= consequências físicas / agressões
+Object.assign(MOTIONS, {
+  dor: {
+    loop: true,
+    fn: (t: number) => {
+      const tr = S(t * 23) * 0.012;
+      const p = P({ lean: 0.18 + tr, chest: 0.32, neck: 0.12, head: 0.12, x: S(t * 2) * 1.5, shrugN: 0.4, shrugF: 0.4 });
+      p.armN = L(0.55, 1.55); p.armF = L(0.35, 1.7);
+      p.legN = L(0.12, 0.35); p.legF = L(-0.08, 0.3);
+      p.handN = 'aberta'; p.handF = 'aberta';
+      return p;
+    },
+    expr: 'dor',
+  },
+  olhoRoxo: {
+    loop: true,
+    fn: (t: number) => {
+      const p = P({ lean: 0.06, chest: 0.1, head: 0.14, neck: 0.1 });
+      p.armN = L(0.8, 2.5); p.handN = 'aberta'; p.wristN = -0.3;
+      p.armF = L(0.1, 0.4);
+      return breathe(p, t, 1.4);
+    },
+    expr: 'dor',
+  },
+  caidoChao: {
+    loop: true,
+    grounded: false,
+    fn: (t: number) => {
+      const p = P({ rot: -1.52, y: 46, head: 0.05 + S(t * 3) * 0.04, chest: 0.1 });
+      p.armN = L(1.9, 0.9 + S(t * 3) * 0.1); p.armF = L(2.0, 0.3);
+      p.legN = L(0.4, 0.6); p.legF = L(0.1, 0.2);
+      return p;
+    },
+    expr: 'dor',
+  },
+  levantarChao: {
+    loop: false,
+    dur: 1.4,
+    grounded: false,
+    fn: keyframes([
+      [0, { rot: -1.52, y: 46, armN: L(1.9, 0.9), armF: L(2.0, 0.3), legN: L(0.4, 0.6) }],
+      [0.5, { rot: -0.6, y: 60, lean: 0.4, chest: 0.3, armN: L(0.3, 0.2), armF: L(0.4, 0.2), legN: L(1.3, 2.2), legF: L(0.4, 1.4) }, Ease.outQuad],
+      [1.0, { y: 30, lean: 0.35, chest: 0.25, armN: L(0.6, 0.3), armF: L(0.5, 0.3), legN: L(0.8, 1.6), legF: L(0.3, 0.9) }],
+      [1.4, { lean: 0.1, chest: 0.2, head: 0.1 }],
+    ]),
+    expr: 'dor',
+  },
+  ofegante: {
+    loop: true,
+    fn: (t: number) => {
+      const b = (S(t * 5) + 1) / 2;
+      const p = P({ lean: 0.42, chest: 0.2 - b * 0.06, neck: -0.25, head: -0.1, breath: b * 1.4 });
+      p.shrugN = b * 0.5; p.shrugF = b * 0.5;
+      p.armN = L(0.75, 0.25); p.armF = L(0.7, 0.3);
+      p.legN = L(0.35, 0.45); p.legF = L(-0.2, 0.3);
+      p.handN = 'aberta'; p.handF = 'aberta';
+      return p;
+    },
+    expr: 'ofegante',
+  },
+  cabecada: {
+    loop: false,
+    dur: 0.9,
+    fn: keyframes([
+      [0, {}],
+      [0.3, { lean: -0.2, chest: -0.25, neck: -0.3, head: -0.25, shrugN: 0.5, shrugF: 0.5, armN: L(-0.3, 1.2), armF: L(-0.3, 1.2), handN: 'punho', handF: 'punho' }, Ease.outQuad],
+      [0.4, { lean: 0.35, chest: 0.3, neck: 0.3, head: 0.3, x: 16, armN: L(0.3, 1.0), armF: L(0.3, 1.0), handN: 'punho', handF: 'punho', legN: L(0.4, 0.3) }, Ease.inCubic],
+      [0.9, { lean: 0.08, chest: 0.05 }],
+    ]),
+    events: [{ t: 0.4, name: 'hit' }],
+    expr: 'furioso',
+  },
+  socoForte: {
+    loop: false,
+    dur: 1.0,
+    fn: keyframes([
+      [0, {}],
+      [0.32, { lean: -0.16, chest: -0.3, shrugN: 0.6, armN: L(0.1, 2.4), armF: L(0.8, 2.1), handN: 'punho', handF: 'punho', legN: L(0.25, 0.3), legF: L(-0.3, 0.2), wristN: -0.3 }, Ease.outQuad],
+      [0.42, { lean: 0.36, chest: 0.35, x: 18, shrugN: 0.2, armN: L(1.6, 0.0), armF: L(0.6, 2.2), handN: 'punho', handF: 'punho', legN: L(0.55, 0.35), legF: L(-0.4, 0.1) }, Ease.inCubic],
+      [0.65, { lean: 0.3, chest: 0.3, x: 18, armN: L(1.5, 0.05), armF: L(0.6, 2.2), handN: 'punho', handF: 'punho', legN: L(0.55, 0.35), legF: L(-0.4, 0.1) }],
+      [1.0, { lean: 0.1, chest: 0.1, armN: L(0.9, 2.1), armF: L(0.8, 2.2), handN: 'punho', handF: 'punho' }],
+    ]),
+    events: [{ t: 0.42, name: 'hit' }],
+    expr: 'furioso',
+  },
+  jogarBebida: {
+    loop: false,
+    dur: 1.0,
+    fn: keyframes([
+      [0, { armN: L(0.7, 1.4), handN: 'segura' }],
+      [0.3, { lean: -0.08, chest: -0.15, armN: L(0.2, 1.8), handN: 'segura', shrugN: 0.4 }, Ease.outQuad],
+      [0.42, { lean: 0.2, chest: 0.2, armN: L(1.8, 0.1), handN: 'segura', wristN: 0.9 }, Ease.inQuad],
+      [1.0, { lean: 0.05, armN: L(0.6, 1.0), handN: 'segura' }],
+    ]),
+    events: [{ t: 0.42, name: 'splash' }],
+    expr: 'desprezo',
+    propN: 'bebida',
+  },
+  molhado: {
+    loop: true,
+    fn: (t: number) => {
+      const p = P({ lean: -0.1, chest: -0.08, head: S(t * 14) * 0.08, shrugN: 0.7, shrugF: 0.7 });
+      p.armN = L(-0.45, 0.4); p.armF = L(0.5, 0.4);
+      p.wristN = S(t * 12) * 0.6; p.wristF = -S(t * 12) * 0.6;
+      p.handN = 'aberta'; p.handF = 'aberta';
+      return p;
+    },
+    expr: 'chocado',
+  },
+  cochichar: {
+    loop: true,
+    fn: (t: number) => {
+      const p = breathe(P({ lean: 0.16, chest: 0.12, neck: 0.12, head: 0.08 }), t);
+      p.armN = L(0.95, 2.35); p.handN = 'aberta'; p.wristN = 0.4;
+      p.armF = L(0.2, 0.5);
+      p.shrugN = 0.3;
+      return p;
+    },
+    expr: 'desprezo',
+  },
+  rirDe: {
+    loop: true,
+    fn: (t: number) => {
+      const k = S(t * 12);
+      const p = P({ lean: -0.08 + k * 0.03, chest: -0.14 + k * 0.05, head: -0.15, breath: 1 });
+      p.armF = L(1.45, 0.05); p.handF = 'aponta';
+      p.armN = L(0.55, 1.45); p.shrugN = 0.3 + k * 0.2;
+      p.y = k * 1.2;
+      return p;
+    },
+    expr: 'rindo',
+  },
+  humilhado: {
+    loop: true,
+    fn: (t: number) => {
+      const p = P({ lean: 0.04, chest: 0.3, neck: 0.2, head: 0.25, shrugN: 0.8, shrugF: 0.8 });
+      p.armN = L(0.55, 1.2); p.armF = L(0.5, 1.25);
+      p.wristN = 0.4; p.wristF = 0.4;
+      p.legN = L(0.05, 0.1); p.legF = L(-0.05, 0.15);
+      return breathe(p, t, 0.6);
+    },
+    expr: 'humilhado',
+  },
+  consolar: {
+    loop: true,
+    fn: (t: number) => {
+      const p = breathe(P({ lean: 0.1, chest: 0.08, head: 0.18, neck: 0.1 }), t);
+      p.armN = L(1.25, 0.55 + S(t * 2) * 0.05); p.handN = 'aberta'; p.wristN = 0.5;
+      return p;
+    },
+    expr: 'triste',
+  },
+  massagem: {
+    loop: true,
+    fn: (t: number) => {
+      const k = S(t * 6);
+      const p = P({ lean: 0.14, chest: 0.1, head: 0.2 });
+      p.armN = L(1.2, 0.9 + k * 0.12); p.armF = L(1.1, 1.0 - k * 0.12);
+      p.wristN = k * 0.5; p.wristF = -k * 0.5;
+      p.shrugN = 0.2; p.shrugF = 0.2;
+      return p;
+    },
+    expr: 'feliz',
+  },
+  desculpas: {
+    loop: true,
+    fn: (t: number) => {
+      const p = breathe(P({ lean: 0.2, chest: 0.2, neck: 0.15, head: 0.25, shrugN: 0.35, shrugF: 0.35 }), t, 0.7);
+      p.armN = L(0.6, 1.85); p.armF = L(0.6, 1.85);
+      return p;
+    },
+    expr: 'envergonhado',
+  },
+  contarPiada: {
+    loop: true,
+    fn: (t: number) => {
+      const b = t * 2 * PI * 0.9;
+      const p = P({ lean: -0.03 + S(b) * 0.04, chest: S(b * 2) * 0.08, head: S(b) * 0.08, neck: -0.05 });
+      p.armN = L(0.7 + S(b) * 0.5, 1.2 + C(b) * 0.3); p.armF = L(0.9 - S(b) * 0.4, 1.0);
+      p.handN = 'aberta'; p.handF = 'aponta';
+      p.wristN = S(b * 2) * 0.5; p.shrugN = Math.max(0, S(b)) * 0.4;
+      return p;
+    },
+    expr: 'convencido',
+  },
+  roubar: {
+    loop: true,
+    fn: (t: number) => {
+      const k = (S(t * 3) + 1) / 2;
+      const p = P({ lean: 0.3, chest: 0.12, neck: -0.1, y: 10, head: -0.05 });
+      p.armN = L(0.8 + k * 0.6, 0.6 - k * 0.4); p.handN = 'aberta'; p.wristN = k * 0.4;
+      p.armF = L(-0.3, 1.2);
+      p.legN = L(0.35, 0.8); p.legF = L(-0.3, 0.6);
+      return p;
+    },
+    expr: 'convencido',
+  },
+  escoltado: {
+    loop: true,
+    fn: (t: number, c: MotionCtx) => {
+      const p = walkCycle(t, c, 0.3, 0.5, 0, 0.1);
+      p.armN = L(-0.35, 0.8); p.armF = L(-0.3, 0.8);
+      p.chest = 0.25; p.neck = 0.15; p.head = 0.25; p.shrugN = 0.3; p.shrugF = 0.3;
+      return p;
+    },
+    expr: 'humilhado',
+  },
+  escreverQuadro: {
+    loop: true,
+    fn: (t: number) => {
+      const k = t * 5;
+      const p = breathe(P({ lean: 0.02, head: -0.12, neck: -0.05 }), t, 0.5);
+      p.armF = L(2.0 + S(k) * 0.12, 0.35 + C(k * 0.7) * 0.12); p.handF = 'segura';
+      p.shrugF = 0.6; p.wristF = S(k) * 0.3;
+      p.armN = L(0.1, 0.4);
+      return p;
+    },
+    expr: 'cansado',
+    propF: 'pincel',
+  },
+  sentarCabisbaixo: {
+    loop: true,
+    fn: (t: number) => {
+      const p = sit(P({ lean: 0.15, chest: 0.3, neck: 0.2, head: 0.25, shrugN: -0.2, shrugF: -0.2 }));
+      p.armN = L(0.7, 0.6); p.armF = L(0.65, 0.7);
+      return breathe(p, t * 0.6, 1.2);
+    },
+    expr: 'triste',
+  },
+  apontarBronca: {
+    loop: true,
+    fn: (t: number) => {
+      const k = S(t * 7);
+      const p = P({ lean: 0.1, chest: 0.08 + k * 0.03, neck: 0.05 });
+      p.armF = L(1.45 + k * 0.08, 0.25 + k * 0.15); p.handF = 'aponta'; p.wristF = k * 0.3;
+      p.armN = L(-0.5, 1.9); p.handN = 'punho';
+      p.shrugF = 0.4;
+      return p;
+    },
+    expr: 'bravo',
+  },
+  seguranca: {
+    loop: true,
+    fn: (t: number) => {
+      const p = breathe(P({ lean: -0.03, chest: -0.05, breath: 1 }), t);
+      p.armN = L(0.35, 1.9); p.armF = L(0.3, 1.95);
+      p.handN = 'punho'; p.handF = 'punho';
+      p.legN = L(0.18, 0.05); p.legF = L(-0.18, 0.05);
+      p.shrugN = 0.3; p.shrugF = 0.3;
+      return p;
+    },
+    expr: 'serio',
+  },
+  torcerFutebol: {
+    loop: true,
+    fn: (t: number) => {
+      const k = S(t * 6);
+      const p = sit(P({ lean: 0.1 + k * 0.05, chest: 0.1 }));
+      p.armN = L(1.2 + k * 0.5, 0.6); p.armF = L(0.9, 1.4);
+      p.handN = 'punho'; p.shrugN = Math.max(0, k) * 0.7;
+      return p;
+    },
+    expr: 'gritando',
+  },
+  entrevistado: {
+    loop: true,
+    fn: (t: number) => {
+      const p = sit(P({ lean: 0.05, chest: 0.05 }));
+      p.armN = L(0.55, 1.1); p.armF = L(0.5, 1.15);
+      p.wristN = S(t * 3) * 0.25;
+      p.legN.b += S(t * 7) * 0.05;
+      return breathe(p, t);
+    },
+    expr: 'assustado',
+  },
+  entrevistador: {
+    loop: true,
+    fn: (t: number) => {
+      const p = sit(P({ lean: -0.04, chest: -0.03 }));
+      p.armN = L(0.9, 1.3); p.handN = 'segura';
+      p.armF = L(0.8, 1.2);
+      p.head = S(t * 0.7) * 0.05;
+      return breathe(p, t);
+    },
+    expr: 'serio',
+    propN: 'papel',
+  },
+} as Record<string, Motion>);
+
+// soco básico com rotação de tronco
+MOTIONS.soco.fn = keyframes([
+  [0, { lean: 0 }],
+  [0.22, { lean: -0.12, chest: -0.22, shrugN: 0.5, armN: L(0.3, 2.3), armF: L(0.8, 2.1), handN: 'punho', handF: 'punho', legN: L(0.2, 0.2), legF: L(-0.25, 0.2) }, Ease.outQuad],
+  [0.32, { lean: 0.3, chest: 0.25, x: 12, armN: L(1.55, 0.02), armF: L(0.7, 2.2), handN: 'punho', handF: 'punho', legN: L(0.45, 0.3), legF: L(-0.35, 0.1) }, Ease.inQuad],
+  [0.5, { lean: 0.28, chest: 0.22, x: 12, armN: L(1.5, 0.05), armF: L(0.7, 2.2), handN: 'punho', handF: 'punho', legN: L(0.45, 0.3), legF: L(-0.35, 0.1) }],
+  [0.8, { lean: 0.05, chest: 0.05, armN: L(0.9, 2.1), armF: L(0.8, 2.2), handN: 'punho', handF: 'punho' }],
+]);
+
 export type MotionName = keyof typeof MOTIONS;
 
 /** Ajusta a altura da pelve para manter o pé mais baixo no chão. */
-export function groundDrop(p: Pose, thigh: number, shin: number): number {
-  const ext = (l: Limb) => thigh * Math.cos(l.a) + shin * Math.cos(l.a - l.b);
-  const e = Math.max(ext(p.legN), ext(p.legF));
+export function groundDrop(p: Pose, thigh: number, shin: number, hipW = 80): number {
+  const tilt = p.hipTilt * hipW * 0.08;
+  const ext = (l: Limb, hy: number) => hy + thigh * Math.cos(l.a) + shin * Math.cos(l.a - l.b);
+  const e = Math.max(ext(p.legN, -tilt), ext(p.legF, tilt));
   return thigh + shin - e;
 }
 

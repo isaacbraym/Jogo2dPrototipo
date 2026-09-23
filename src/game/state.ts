@@ -10,11 +10,13 @@ export const STAT_KEYS: StatKey[] = ['felicidade', 'saude', 'inteligencia', 'apa
 export const STAT_LABEL: Record<StatKey, string> = { felicidade: 'Felicidade', saude: 'Saúde', inteligencia: 'Inteligência', aparencia: 'Aparência' };
 
 export type Rel =
-  | 'mae' | 'pai' | 'irmao' | 'irma' | 'amigo' | 'amiga' | 'namorado' | 'namorada' | 'conjuge' | 'ex' | 'filho' | 'filha' | 'colega' | 'avo' | 'avoM';
+  | 'mae' | 'pai' | 'irmao' | 'irma' | 'amigo' | 'amiga' | 'namorado' | 'namorada' | 'conjuge' | 'ex' | 'filho' | 'filha' | 'colega' | 'avo' | 'avoM'
+  | 'chefe' | 'colegaTrab' | 'professor' | 'conhecido';
 
 export const REL_LABEL: Record<Rel, string> = {
   mae: 'Mãe', pai: 'Pai', irmao: 'Irmão', irma: 'Irmã', amigo: 'Amigo', amiga: 'Amiga', namorado: 'Namorado', namorada: 'Namorada',
-  conjuge: 'Cônjuge', ex: 'Ex', filho: 'Filho', filha: 'Filha', colega: 'Colega', avo: 'Avô', avoM: 'Avó',
+  conjuge: 'Cônjuge', ex: 'Ex', filho: 'Filho', filha: 'Filha', colega: 'Colega de escola', avo: 'Avô', avoM: 'Avó',
+  chefe: 'Chefe', colegaTrab: 'Colega de trabalho', professor: 'Professor(a)', conhecido: 'Conhecido(a)',
 };
 
 export interface Person {
@@ -221,3 +223,32 @@ export function pickRandom<T>(arr: T[]): T | undefined {
 }
 
 export const he = (p: { sex: Sex }, m: string, f: string) => (p.sex === 'f' ? f : m);
+
+/** Cria chefe e colegas ao entrar num emprego (substitui os anteriores). */
+export function hireStaff(L: Life, jobTitle: string) {
+  L.people.filter((x) => x.rel === 'chefe' || x.rel === 'colegaTrab').forEach((x) => (x.rel = 'conhecido'));
+  const r = rng;
+  const boss = makePerson(r, { age: Math.max(28, L.player.age + r.int(5, 20)), rel: 'chefe', bond: r.int(35, 60) });
+  boss.job = 'Chefe de ' + jobTitle.toLowerCase();
+  L.people.push(boss);
+  for (let i = 0; i < 2; i++) {
+    const c = makePerson(r, { age: Math.max(18, L.player.age + r.int(-6, 8)), rel: 'colegaTrab', bond: r.int(35, 65) });
+    c.job = jobTitle;
+    L.people.push(c);
+  }
+  L.flags.advertencias = 0;
+}
+
+export function leaveJobPeople(L: Life) {
+  L.people.filter((x) => x.rel === 'chefe' || x.rel === 'colegaTrab').forEach((x) => (x.rel = 'conhecido'));
+}
+
+/** Turma nova: dois colegas e um(a) professor(a). */
+export function enrollSchool(L: Life) {
+  L.people.filter((x) => x.rel === 'colega' || x.rel === 'professor').forEach((x) => (x.rel = 'conhecido'));
+  const r = rng;
+  for (let i = 0; i < 2; i++) L.people.push(makePerson(r, { age: L.player.age + r.int(-1, 1), rel: 'colega', bond: r.int(40, 70) }));
+  const prof = makePerson(r, { age: r.int(28, 60), rel: 'professor', bond: r.int(45, 65) });
+  prof.job = r.pick(['Matemática', 'Português', 'História', 'Ciências', 'Educação Física']);
+  L.people.push(prof);
+}

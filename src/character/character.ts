@@ -112,21 +112,17 @@ export function drawCharacter(ctx: Ctx, apIn: Appearance, d: Dims, pose: Pose, f
   ctx.translate(pose.x, -legLen + pose.y);
   ctx.rotate(pose.rot);
 
-  // --- geometria
+  // --- geometria (esqueleto compartilhado com IK/âncoras)
   const lean = rc.lean;
   const rot = (x: number, y: number, a: number): Pt => ({ x: x * Math.cos(a) - y * Math.sin(a), y: x * Math.sin(a) + y * Math.cos(a) });
-  const tg = torsoGeom(rc);
-  const T = d.torso;
-  rc.neck = rot(tg.cx * 0.5, -T, lean);
-  const sy = tg.yS + d.armW * 0.42;
-  rc.shoulderN = rot(-d.shoulderW * 0.43 * tg.kL, sy, lean);
-  rc.shoulderF = rot(d.shoulderW * 0.43 * tg.kR - turn * d.shoulderW * 0.14, sy, lean);
-  const hAng = lean + pose.head * 0.35;
-  const neckTop = { x: rc.neck.x + Math.sin(hAng) * d.neckLen, y: rc.neck.y - Math.cos(hAng) * d.neckLen };
-  rc.headAng = lean + pose.head;
-  rc.head = { x: neckTop.x + Math.sin(rc.headAng) * d.headH * 0.4, y: neckTop.y - Math.cos(rc.headAng) * d.headH * 0.4 };
-  rc.hipN = { x: -d.hipW * 0.22 * (1 - 0.25 * turn), y: 0 };
-  rc.hipF = { x: d.hipW * 0.22 * (1 - 0.6 * turn), y: 0 };
+  const sk = skeleton(d, pose, turn);
+  rc.neck = sk.neck;
+  rc.shoulderN = sk.shoulderN;
+  rc.shoulderF = sk.shoulderF;
+  rc.headAng = sk.headAng;
+  rc.head = sk.head;
+  rc.hipN = sk.hipN;
+  rc.hipF = sk.hipF;
 
   const hg = headGeom(rc);
   const inHead = (fn: () => void) => {
@@ -136,9 +132,33 @@ export function drawCharacter(ctx: Ctx, apIn: Appearance, d: Dims, pose: Pose, f
     fn();
     ctx.restore();
   };
+  // tronco em dois segmentos: abdômen (lean) + peito (lean + chest), unidos no pivô com sobreposição
+  const bent = Math.abs(pose.chest) > 0.004 || Math.abs(pose.breath) > 0.004;
   const inTorso = (fn: () => void) => {
+    if (!bent) {
+      ctx.save();
+      ctx.rotate(lean);
+      fn();
+      ctx.restore();
+      return;
+    }
+    const yP = sk.pivotY;
     ctx.save();
     ctx.rotate(lean);
+    ctx.beginPath();
+    ctx.rect(-400, yP - 12, 800, 800);
+    ctx.clip();
+    fn();
+    ctx.restore();
+    ctx.save();
+    ctx.rotate(lean);
+    ctx.translate(0, yP);
+    ctx.rotate(pose.chest);
+    ctx.scale(1 + pose.breath * 0.04, 1 + pose.breath * 0.015);
+    ctx.translate(0, -yP);
+    ctx.beginPath();
+    ctx.rect(-400, -800, 800, 800 + yP + 2);
+    ctx.clip();
     fn();
     ctx.restore();
   };
@@ -197,15 +217,59 @@ export function drawCharacter(ctx: Ctx, apIn: Appearance, d: Dims, pose: Pose, f
   };
 }
 
-/** Posição local da cabeça sem desenhar (para retratos / balões). */
-export function headAnchor(d: Dims, pose: Pose): Pt {
-  const legLen = legLength(d);
+export interface Skeleton {
+  lean: number;
+  pivotY: number;
+  neck: Pt;
+  shoulderN: Pt;
+  shoulderF: Pt;
+  headAng: number;
+  head: Pt;
+  hipN: Pt;
+  hipF: Pt;
+}
+
+/**
+ * Esqueleto no quadro da pelve (y para baixo): pelve → abdômen → peito (pivô) → clavículas/ombros,
+ * pescoço → cabeça, e quadris com inclinação lateral.
+ */
+export function skeleton(d: Dims, pose: Pose, turn: number): Skeleton {
   const lean = pose.lean + d.hunch;
   const T = d.torso;
-  const nx = Math.sin(lean) * T, ny = -Math.cos(lean) * T;
-  const hAng = lean + pose.head;
-  const x = nx + Math.sin(hAng) * (d.neckLen + d.headH * 0.4);
-  const y = ny - Math.cos(hAng) * (d.neckLen + d.headH * 0.4);
+  const pivotY = -T * 0.42;
+  const kL = 1 - 0.1 * turn, kR = 1 - 0.2 * turn;
+  const cx = turn * d.shoulderW * 0.1;
+  const yS = -T + 5;
+  const cc = Math.cos(pose.chest), cs = Math.sin(pose.chest);
+  const bx = 1 + pose.breath * 0.04;
+  // ponto do peito → quadro da pelve
+  const up = (x: number, y: number): Pt => {
+    const lx = x * bx, ly = y - pivotY;
+    const rx = lx * cc - ly * cs, ry = lx * cs + ly * cc + pivotY;
+    return { x: rx * Math.cos(lean) - ry * Math.sin(lean), y: rx * Math.sin(lean) + ry * Math.cos(lean) };
+  };
+  const sy = yS + d.armW * 0.42;
+  const neck = up(cx * 0.5, -T);
+  const shoulderN = up(-d.shoulderW * 0.43 * kL, sy - pose.shrugN * d.armW * 0.55);
+  const shoulderF = up(d.shoulderW * 0.43 * kR - turn * d.shoulderW * 0.14, sy - pose.shrugF * d.armW * 0.55);
+  const base = lean + pose.chest + pose.neck;
+  const hAng = base + pose.head * 0.35;
+  const neckTop = { x: neck.x + Math.sin(hAng) * d.neckLen, y: neck.y - Math.cos(hAng) * d.neckLen };
+  const headAng = base + pose.head;
+  const head = { x: neckTop.x + Math.sin(headAng) * d.headH * 0.4, y: neckTop.y - Math.cos(headAng) * d.headH * 0.4 };
+  const tilt = pose.hipTilt * d.hipW * 0.08;
+  return {
+    lean, pivotY, neck, shoulderN, shoulderF, headAng, head,
+    hipN: { x: -d.hipW * 0.22 * (1 - 0.25 * turn), y: -tilt },
+    hipF: { x: d.hipW * 0.22 * (1 - 0.6 * turn), y: tilt },
+  };
+}
+
+/** Posição local da cabeça sem desenhar (para retratos / balões). */
+export function headAnchor(d: Dims, pose: Pose, turn = 0.3): Pt {
+  const legLen = legLength(d);
+  const sk = skeleton(d, pose, turn);
+  const { x, y } = sk.head;
   const r = { x: x * Math.cos(pose.rot) - y * Math.sin(pose.rot), y: x * Math.sin(pose.rot) + y * Math.cos(pose.rot) };
   return { x: (r.x + pose.x) * pose.sx, y: (r.y - legLen + pose.y) * pose.sy };
 }

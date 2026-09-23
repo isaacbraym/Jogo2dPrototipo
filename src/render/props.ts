@@ -180,6 +180,20 @@ const HELD: Record<string, { follow: boolean; draw: Held; off?: Pt }> = {
       }
     },
   },
+  caixaPertences: {
+    follow: false,
+    draw: (ctx) => {
+      // plantinha e porta-retrato saindo da caixa
+      ctx.strokeStyle = '#2f8f6f'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-8, -8); ctx.lineTo(-10, -30); ctx.moveTo(-8, -8); ctx.lineTo(-2, -26); ctx.stroke();
+      ctx.fillStyle = '#3fa56a'; ctx.beginPath(); ctx.ellipse(-10, -32, 5, 8, -0.3, 0, 7); ctx.ellipse(-1, -28, 5, 8, 0.4, 0, 7); ctx.fill();
+      box(ctx, 4, -24, 16, 20, 1, '#c99a2a', { top: false, lw: 0.8 });
+      ctx.fillStyle = '#9fd3ee'; ctx.fillRect(7, -21, 10, 14);
+      box(ctx, -26, -8, 52, 34, 2, '#c8a27a');
+      ctx.strokeStyle = 'rgba(90,60,30,0.6)'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(-26, 2); ctx.lineTo(26, 2); ctx.stroke();
+    },
+  },
   maleta: {
     follow: false,
     draw: (ctx) => {
@@ -982,6 +996,45 @@ export const PROPS: Record<string, SceneProp> = {
     void t;
   },
   ursinho: (ctx, t) => HELD.ursinho.draw(ctx, t, true),
+  churrasqueira: (ctx, t) => {
+    // churrasqueira de tijolo com espetos e fumaça
+    box(ctx, -80, -150, 160, 150, 4, '#b0694a');
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    for (let y = -146; y < 0; y += 18) for (let x = -76 + ((y / 18) % 2) * 18; x < 70; x += 36) ctx.fillRect(x, y, 34, 2);
+    box(ctx, -90, -160, 180, 16, 3, '#8a8f98');
+    ctx.fillStyle = '#23242b'; ctx.fillRect(-70, -128, 140, 50);
+    for (let i = 0; i < 6; i++) { ctx.fillStyle = Math.sin(t * 9 + i) > 0 ? '#ff6a2a' : '#c2273d'; ctx.beginPath(); ctx.arc(-55 + i * 22, -84, 7, 0, 7); ctx.fill(); }
+    for (let i = 0; i < 3; i++) {
+      box(ctx, -96, -178 - i * 4 + i * 0, 192, 4, 1, '#c9c9cc', { top: false, lw: 0.5 });
+      const mp = new Path2D(); roundRect(mp, -60 + i * 38, -190, 30, 16, 6);
+      part(ctx, mp, i === 1 ? '#8e2c48' : '#a8543a', '#6d2334', '#3a1010', 1, null);
+    }
+    box(ctx, 50, -290, 34, 130, 3, '#8a5a3a');
+    for (let i = 0; i < 4; i++) {
+      const k = (t * 0.5 + i / 4) % 1;
+      ctx.fillStyle = `rgba(210,210,210,${0.45 * (1 - k)})`;
+      ctx.beginPath(); ctx.arc(67 + Math.sin(t + i) * 8, -300 - k * 120, 14 + k * 20, 0, 7); ctx.fill();
+    }
+  },
+  fraseQuadro: (ctx, _t, o) => {
+    const text = ((o as any).text as string) ?? 'Não devo bagunçar';
+    ctx.fillStyle = '#23483a';
+    ctx.fillRect(-150, -180, 300, 160);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(-150, -180, 300, 160); ctx.clip();
+    ctx.font = '17px "Patrick Hand", "Comic Sans MS", cursive';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    const lines = 7;
+    const shown = (o.state ?? 1) * lines;
+    for (let i = 0; i < lines; i++) {
+      const k = Math.max(0, Math.min(1, shown - i));
+      if (k <= 0) break;
+      const full = text + '.';
+      ctx.fillText(full.slice(0, Math.ceil(full.length * k)), -140, -160 + i * 21);
+    }
+    ctx.restore();
+  },
   cobertor: (ctx, _t, o) => {
     const c = o.color ?? '#a9cfe6';
     const p = new Path2D();

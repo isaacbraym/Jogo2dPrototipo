@@ -1,4 +1,4 @@
-import { Life, stat, bond, addLog, parents, children, partner, money, byRel, makePerson, he, Tone, Person } from './state';
+import { Life, stat, bond, addLog, parents, children, partner, money, byRel, makePerson, he, Tone, Person, enrollSchool, leaveJobPeople } from './state';
 import { EVENTS } from './events';
 import { PendingEvent, SceneReq, Outcome, Action, LifeEvent, EvCtx } from './types';
 import { rng } from '../core/rng';
@@ -70,6 +70,9 @@ export function ageUp(L: Life): YearResult {
   // ---- educação
   if (age === 14 && L.edu.stage === 'fundamental') { L.edu.stage = 'medio'; note('Comecei o ensino médio.', 'neutro', '🏫'); }
   if (age >= 6 && age < 18 && L.edu.stage === 'nenhum') L.edu.stage = 'fundamental';
+  if (age === 6 || age === 14) enrollSchool(L);
+  if (age === 18) L.people.filter((x) => x.rel === 'colega' || x.rel === 'professor').forEach((x) => (x.rel = 'conhecido'));
+  if (age < 18 && (L.flags.infracoes as number) > 0) L.flags.infracoes = Math.max(0, (L.flags.infracoes as number) - 1);
   if (L.edu.stage === 'faculdade') {
     L.flags.anosFacul = ((L.flags.anosFacul as number) ?? 0) + 1;
     // mensalidade: pais ajudam se o vínculo for bom
@@ -86,8 +89,9 @@ export function ageUp(L: Life): YearResult {
     const net = Math.round(j.salary * 0.62);
     L.money += net;
     if (j.perf < 15 && rng.chance(0.5)) {
-      note(`Fui demitido(a) do cargo de ${j.title}.`, 'ruim', '📦');
+      note(`Fui demitido(a) do cargo de ${j.title}. Desempenho "abaixo das expectativas", disseram.`, 'ruim', '📦');
       L.job = null;
+      leaveJobPeople(L);
       stat(L, 'felicidade', -12);
     }
   } else if (L.retired) {

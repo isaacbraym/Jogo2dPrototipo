@@ -23,7 +23,21 @@ type Ctrl =
   | { kind: 'seg'; key: K; label: string; opts: { id: string; name: string }[] }
   | { kind: 'custom'; render: () => HTMLElement };
 
-interface Cat { id: string; name: string; icon: string; zoom: 'full' | 'head' | 'face'; ctrls: () => Ctrl[] }
+type Focus = 'full' | 'head' | 'face' | 'eyes' | 'body' | 'legs' | 'feet';
+interface Cat { id: string; name: string; icon: string; zoom: Focus; ctrls: () => Ctrl[] }
+
+/** Parte do corpo a enquadrar ao editar cada parâmetro. */
+function focusOf(key: string | undefined, fallback: Focus): Focus {
+  if (!key) return fallback;
+  if (/^(height|weight|muscle|legLength)$/.test(key)) return 'full';
+  if (/^(shoulders|chest|hips|neckLength|neckWidth|top|topColor|topColor2|topPattern|necklace|tattoo)$/.test(key)) return 'body';
+  if (/^(bottom|bottomColor)$/.test(key)) return 'legs';
+  if (/^(shoes|shoesColor)$/.test(key)) return 'feet';
+  if (/^(eye|iris|pupil|lashes|lids|brow)/.test(key)) return 'eyes';
+  if (/^(nose|mouth|lip|facialHair|eyeshadow|lipstick|glasses|scar|freckles|moles|blush)/.test(key)) return 'face';
+  if (/^(face|jaw|chin|cheeks|skin|undertone|ear|hair|hat|earrings|accColor)/.test(key)) return 'head';
+  return fallback;
+}
 
 export function editorScreen(app: App, opts: { presets?: boolean; ap?: Appearance } = {}) {
   let ap: Appearance = opts.ap ? cloneAppearance(opts.ap) : randomAppearance(rng, rng.chance(0.5) ? 'f' : 'm');
@@ -54,16 +68,21 @@ export function editorScreen(app: App, opts: { presets?: boolean; ap?: Appearanc
     const uiTop = ((stageBox.querySelector('.ed-stage-top') as HTMLElement | null)?.offsetHeight ?? 56) + 4;
     const avail = H - uiBottom - uiTop;
     const shift = (z: number) => (uiBottom - uiTop) / 2 / (base * z);
-    if (zoomMode === 'full') {
-      const z = Math.max(0.7, Math.min(3, (avail * 0.9) / (actor.d.total * base)));
-      sc.focus(640, GROUND - actor.d.total * 0.5 + shift(z), z);
-    } else if (zoomMode === 'head') {
-      const z = Math.max(1, Math.min(5, (avail * 0.72) / (actor.d.headH * 1.5 * base)));
-      sc.focus(hw.x, hw.y + actor.d.headH * 0.2 + shift(z), z);
-    } else {
-      const z = Math.max(1.2, Math.min(7, (avail * 0.78) / (actor.d.headH * base)));
-      sc.focus(hw.x + 4, hw.y + actor.d.headH * 0.05 + shift(z), z);
-    }
+    const d = actor.d;
+    const legLen = d.thigh + d.shin + d.ankle;
+    // enquadramento por parte do corpo: [centro x, centro y, altura de mundo a caber]
+    const F: Record<Focus, [number, number, number]> = {
+      full: [640, GROUND - d.total * 0.5, d.total * 1.1],
+      head: [hw.x, hw.y + d.headH * 0.2, d.headH * 1.55],
+      face: [hw.x + 4, hw.y + d.headH * 0.06, d.headH * 1.05],
+      eyes: [hw.x + 4, hw.y + d.headH * 0.02, d.headH * 0.62],
+      body: [640, GROUND - legLen - d.torso * 0.45, d.torso * 1.9 + d.neckLen],
+      legs: [640, GROUND - legLen * 0.52, legLen * 1.25],
+      feet: [640, GROUND - d.shin * 0.3, d.shin * 0.95],
+    };
+    const [fx, fy, span] = F[zoomMode];
+    const z = Math.max(0.7, Math.min(9, (avail * 0.88) / (span * base)));
+    sc.focus(fx, fy + shift(z), z);
   };
 
   const applyAp = (push = true) => {
@@ -126,7 +145,7 @@ export function editorScreen(app: App, opts: { presets?: boolean; ap?: Appearanc
       ],
     },
     {
-      id: 'olhos', name: 'Olhos', icon: 'eye', zoom: 'face', ctrls: () => [
+      id: 'olhos', name: 'Olhos', icon: 'eye', zoom: 'eyes', ctrls: () => [
         { kind: 'tiles', key: 'eyeShape', label: 'Formato', opts: EYE_SHAPES, view: 'eyes' },
         { kind: 'colors', key: 'iris', label: 'Cor da íris', palette: EYE_COLORS },
         { kind: 'slider', key: 'eyeSize', label: 'Tamanho' },
@@ -139,7 +158,7 @@ export function editorScreen(app: App, opts: { presets?: boolean; ap?: Appearanc
       ],
     },
     {
-      id: 'sobrancelhas', name: 'Sobrancelha', icon: 'brow', zoom: 'face', ctrls: () => [
+      id: 'sobrancelhas', name: 'Sobrancelha', icon: 'brow', zoom: 'eyes', ctrls: () => [
         { kind: 'tiles', key: 'browStyle', label: 'Modelo', opts: BROW_STYLES, view: 'eyes' },
         { kind: 'colors', key: 'browColor', label: 'Cor', palette: HAIR_COLORS },
         { kind: 'slider', key: 'browThickness', label: 'Espessura' },
@@ -180,7 +199,7 @@ export function editorScreen(app: App, opts: { presets?: boolean; ap?: Appearanc
       ],
     },
     {
-      id: 'barba', name: 'Pelos faciais', icon: 'beard', zoom: 'head', ctrls: () => [
+      id: 'barba', name: 'Pelos faciais', icon: 'beard', zoom: 'face', ctrls: () => [
         { kind: 'tiles', key: 'facialHair', label: 'Estilo', opts: FACIAL_HAIR, view: 'face' },
         { kind: 'colors', key: 'facialHairColor', label: 'Cor', palette: HAIR_COLORS },
       ],
@@ -193,7 +212,7 @@ export function editorScreen(app: App, opts: { presets?: boolean; ap?: Appearanc
       ],
     },
     {
-      id: 'roupas', name: 'Roupas', icon: 'shirt', zoom: 'full', ctrls: () => [
+      id: 'roupas', name: 'Roupas', icon: 'shirt', zoom: 'body', ctrls: () => [
         { kind: 'tiles', key: 'top', label: 'Parte de cima', opts: TOPS, view: 'body' },
         { kind: 'colors', key: 'topColor', label: 'Cor principal', palette: CLOTH_COLORS },
         { kind: 'tiles', key: 'topPattern', label: 'Estampa', opts: PATTERNS, view: 'body' },
@@ -254,9 +273,56 @@ export function editorScreen(app: App, opts: { presets?: boolean; ap?: Appearanc
   function renderPanel() {
     clear(panel);
     thumbJobs.length = 0;
-    panel.appendChild(h('h3', null, cat.name));
-    for (const c of cat.ctrls()) panel.appendChild(renderCtrl(c));
+    const ctrls = cat.ctrls();
+    const idx = CATS.indexOf(cat);
+    panel.appendChild(h('div.panel-head', null,
+      h('h3', null, cat.name),
+      h('span.count', null, `${idx + 1}/${CATS.length} · ${ctrls.filter((c) => c.kind !== 'custom').length || 5} ajustes`),
+    ));
+    // índice rápido: todos os ajustes da categoria visíveis de uma vez
+    const labeled = ctrls.filter((c): c is Exclude<Ctrl, { kind: 'custom' }> => c.kind !== 'custom');
+    const els: HTMLElement[] = [];
+    if (labeled.length > 2) {
+      panel.appendChild(h('div.ctrl-index', null, ...labeled.map((c, i) => h('button.chip.mini', {
+        onclick: () => {
+          const el = els[i];
+          el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          zoomMode = focusOf(c.key as string, cat.zoom);
+          el?.classList.add('flash');
+          setTimeout(() => el?.classList.remove('flash'), 900);
+        },
+      }, c.label))));
+    }
+    for (const c of ctrls) {
+      const el = renderCtrl(c);
+      if (c.kind !== 'custom') {
+        els.push(el);
+        el.addEventListener('pointerdown', () => {
+          const f = focusOf(c.key as string, cat.zoom);
+          if (f !== zoomMode) { zoomMode = f; }
+          panel.querySelectorAll('.ctrl.active').forEach((x) => x.classList.remove('active'));
+          el.classList.add('active');
+        });
+      }
+      panel.appendChild(el);
+    }
+    // navegação entre categorias
+    const prev = CATS[idx - 1], next = CATS[idx + 1];
+    panel.appendChild(h('div.cat-nav', null,
+      prev ? h('button.btn.small', { onclick: () => selectCat(prev) }, icon('back'), prev.name) : h('span'),
+      next ? h('button.btn.small.purple', { onclick: () => selectCat(next) }, next.name, icon('next')) : h('span'),
+    ));
+    panel.scrollTop = 0;
     scheduleThumbs();
+  }
+
+  function selectCat(c: Cat) {
+    cat = c;
+    cats.querySelectorAll('.ed-cat').forEach((x, i) => x.classList.toggle('on', CATS[i] === c));
+    (cats.children[CATS.indexOf(c)] as HTMLElement)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    zoomMode = c.zoom;
+    renderPanel();
+    sfx.swoosh();
   }
 
   function renderCtrl(c: Ctrl): HTMLElement {
@@ -334,14 +400,7 @@ export function editorScreen(app: App, opts: { presets?: boolean; ap?: Appearanc
 
   // ------------------------------------------------ categorias (coluna)
   const cats = h('div.ed-cats', null, ...CATS.map((c) => {
-    const b = h('button.ed-cat' + (c === cat ? '.on' : ''), { onclick: () => {
-      cat = c;
-      cats.querySelectorAll('.ed-cat').forEach((x) => x.classList.remove('on'));
-      b.classList.add('on');
-      zoomMode = c.zoom;
-      renderPanel();
-      sfx.swoosh();
-    } }, icon(c.icon), c.name);
+    const b = h('button.ed-cat' + (c === cat ? '.on' : ''), { onclick: () => selectCat(c) }, icon(c.icon), c.name);
     return b;
   }));
 
@@ -359,7 +418,7 @@ export function editorScreen(app: App, opts: { presets?: boolean; ap?: Appearanc
     return b;
   }));
   const POSES: [string, string, string?][] = [['parado', '🧍 Parado'], ['acenar', '👋 Acenar'], ['dancar', '💃 Dançar'], ['rir', '😂 Rir'], ['chorar', '😢 Chorar'], ['furia', '😡 Bravo'], ['pular', '🦘 Pular'], ['apaixonado', '😍 Amor', 'expr'], ['surpreso', '😲 Susto', 'expr']];
-  const poseChips = h('div.chips', null, ...POSES.map(([m, n, kind]) => h('button.chip', { onclick: () => {
+  const poseChips = h('div.chips.poses', null, ...POSES.map(([m, n, kind]) => h('button.chip', { onclick: () => {
     if (kind === 'expr') { actor.setExpr(m as any, 2.2); actor.play('feliz'); return; }
     actor.setExpr('neutro');
     actor.play(m);
@@ -476,7 +535,9 @@ export function editorScreen(app: App, opts: { presets?: boolean; ap?: Appearanc
     h('div.ed-stage-top', null, ageChips),
     h('div.ed-stage-ui', null,
       poseChips,
-      h('div.turn-row', null, h('span', null, 'GIRAR'), turnIn, flipBtn),
+      h('div.turn-row', null,
+        h('button.chip.pose-toggle', { onclick: () => stageBox.classList.toggle('show-poses') }, '🎭 Poses'),
+        h('span', null, 'GIRAR'), turnIn, flipBtn),
     ),
   );
 

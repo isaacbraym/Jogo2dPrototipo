@@ -203,7 +203,7 @@ export function drawArm(rc: RC, near: boolean) {
     ctx.quadraticCurveTo(e.x, e.y + 2, e.x + 4, e.y - 1);
     ctx.stroke();
   }
-  drawHand(rc, w, fa, near ? rc.pose.handN : rc.pose.handF, f);
+  drawHand(rc, w, fa + (near ? rc.pose.wristN : rc.pose.wristF), near ? rc.pose.handN : rc.pose.handF, f);
 }
 
 export function drawHand(rc: RC, w: Pt, ang: number, hand: Hand, isFar: boolean) {

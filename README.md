@@ -23,10 +23,11 @@ crime, família, morte e herança — tudo desenhado por código, sem nenhum ass
 | Three.js 2.5D | Sem ganho real para um jogo essencialmente 2D. |
 | **Canvas 2D + TypeScript + Vite (escolhido)** | Controle total do pipeline vetorial, gradientes, sombreamento cel, Path2D, composição aditiva de luz; zero assets; ~9 ms/quadro com 8 personagens em renderização por software. |
 
-- **Personagem**: rig esquelético procedural (pelve, tronco, pescoço, cabeça, braços e pernas de 2 ossos),
+- **Personagem**: rig esquelético procedural (pelve com inclinação, coluna em 2 segmentos (lombar + peito), respiração,
+  ombros com *shrug*, pescoço, cabeça, pulsos, braços e pernas de 2 ossos),
   IK analítico de 2 ossos, *crossfade* entre poses, keyframes com easing (antecipação, impacto, squash & stretch),
   solver de contato com o chão, mola física para cabelo/brincos, piscadas e olhar dirigido.
-- **Expressões**: 23 expressões paramétricas interpoladas (sobrancelha, pálpebras, boca com dentes/língua,
+- **Expressões**: 29 expressões paramétricas interpoladas (sobrancelha, pálpebras, boca com dentes/língua,
   lágrimas, rubor, suor, veia de raiva, olhos de coração, olhos tontos...).
 - **Aparência**: 60+ parâmetros — corpo, rosto (7 formatos + 5 sliders), pele (16 tons + custom, subtom, sardas,
   pintas, rubor), olhos (8 formatos, 8 sliders, íris), sobrancelhas (8), nariz (8), boca (6), orelhas (5),
@@ -40,7 +41,8 @@ crime, família, morte e herança — tudo desenhado por código, sem nenhum ass
   demissão, academia, balada, show, médico, hospital, tropeço, férias, acampamento, cassino, loteria,
   crime, prisão, julgamento, cela, bebê, adoção de pet, passeio, funeral, morte, meditação, briga
   familiar, cinema, casa nova, carro novo, viagem, aposentadoria, cozinha em chamas, biblioteca,
-  pintura, videogame, prova de direção...).
+  pintura, videogame, prova de direção, agressão com revide, detenção, diretoria, demissão escoltada,
+  boletim de ocorrência, entrevista no local da vaga, churrasco, trânsito, fila do SUS, festa da firma, reunião...).
 - **Áudio**: efeitos e trilha generativa sintetizados em WebAudio (sem arquivos).
 
 ## Estrutura
@@ -61,6 +63,14 @@ src/
 - **Ações físicas**: barra no palco (acenar, dançar, pular, comemorar, rir, chorar, bravo, pensar, meditar, reverência)
   e clique direto nos personagens; na aba *Relações*, interações animadas (abraço, beijo, toca aqui, aperto de mão,
   dança, presente, elogio, discussão, empurrão, tapa, soco...).
+- **Agressões com consequência** (estilo BitLife): xingar, pegadinha, empurrar, jogar bebida, humilhar, tapa,
+  roubar, soco, chute, cabeçada. A vítima pode se esquivar, revidar ou se machucar; no trabalho vem advertência
+  ou justa causa (escoltado pelo segurança); na escola, detenção → suspensão → expulsão conforme reincidência;
+  em família/relacionamento, castigo ou término; adultos podem levar B.O., multa, processo e prisão.
+- **Entrevistas realistas**: cada vaga tem entrevista no ambiente certo (caixa no mercado, músico no boteco,
+  barista na cafeteria, policial na delegacia...), escolha de roupa (terno no boteco pega mal), perguntas com
+  humor ácido e um teste prático. A chance de contratação depende das respostas, atributos, ficha e sorte —
+  reprovar faz parte.
 - Abas: Vida (diário), Atividades (30+), Relações, Carreira (16 profissões com promoções), Perfil (bens, 18 conquistas, save).
 - Morte gera obituário com momentos marcantes; é possível continuar a linhagem como um dos filhos.
 

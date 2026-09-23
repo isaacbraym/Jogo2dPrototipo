@@ -2,7 +2,7 @@ import { Appearance } from './appearance';
 import { computeDims, Dims, Pose, blendPose, copyPose, solveIK } from './rig';
 import { EXPRESSIONS, ExprName, Face, blendFace, NEUTRAL } from './expressions';
 import { MOTIONS, groundDrop, Motion } from './motions';
-import { drawCharacter, CharFrame, legLength } from './character';
+import { drawCharacter, CharFrame, legLength, skeleton } from './character';
 import { Ctx, roundRect, heartPath, starPath } from '../render/draw';
 import { clamp, damp, Ease, lerp } from '../core/math';
 import { rng } from '../core/rng';
@@ -200,7 +200,7 @@ export class Actor {
     }
     let target = this.motion.fn(this.motionT, { speed: this.speed * (this.run ? 2.1 : 1), seed: this.id });
     if (this.motion.grounded !== false && target.rot === 0) {
-      target = { ...target, y: target.y + groundDrop(target, this.d.thigh, this.d.shin) };
+      target = { ...target, y: target.y + groundDrop(target, this.d.thigh, this.d.shin, this.d.hipW) };
     }
     if (this.fromPose && this.fade < 1) {
       this.fade = Math.min(1, this.fade + dt / this.fadeDur);
@@ -273,11 +273,9 @@ export class Actor {
       const legLen = legLength(this.d);
       const lx = ((tgt.x - this.x) * this.facing) / this.scale - this.pose.x;
       const ly = (tgt.y - (this.y - this.elev)) / this.scale + legLen - this.pose.y;
-      const lean = this.pose.lean + this.d.hunch;
-      const sy = -this.d.torso + 5 + this.d.armW * 0.42;
-      const sxv = near ? -this.d.shoulderW * 0.43 * (1 - 0.1 * this.turn) : this.d.shoulderW * 0.43 * (1 - 0.2 * this.turn) - this.turn * this.d.shoulderW * 0.14;
-      const shx = sxv * Math.cos(lean) - sy * Math.sin(lean), shy = sxv * Math.sin(lean) + sy * Math.cos(lean);
-      const sol = solveIK(shx, shy, lx, ly, this.d.upperArm, this.d.foreArm, 1);
+      const sk = skeleton(this.d, this.pose, this.turn);
+      const sh = near ? sk.shoulderN : sk.shoulderF;
+      const sol = solveIK(sh.x, sh.y, lx, ly, this.d.upperArm, this.d.foreArm, 1);
       // compensa o “splay” aplicado em armPoints
       const probe = armPoints({ d: this.d, turn: this.turn } as any, { x: 0, y: 0 }, { a: 0, b: 0 }, near);
       const splay = probe.a;

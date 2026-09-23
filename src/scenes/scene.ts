@@ -106,6 +106,9 @@ export class Scene {
   night = 0; // escurecimento extra
   minViewW = 760; // largura mínima de mundo visível (telas estreitas)
   alive = true; // falso quando a cena é substituída (encerra loops ambientes)
+  meta?: Record<string, any>; // dados da situação acessíveis aos roteiros auxiliares
+  padBottom = 0; // px ocupados por UI sobre a base da tela (a câmera sobe a cena)
+  private padCur = 0;
   onBeat?: (dt: number) => void;
 
   constructor(envId: string) {
@@ -235,7 +238,9 @@ export class Scene {
     // limita câmera à área do mundo
     const halfW = viewW / 2;
     const camX = clamp(c.x, X0 + halfW, X0 + WW - halfW);
-    const camY = viewH >= 720 ? 720 - viewH / 2 : clamp(c.y, viewH / 2, 720 - viewH / 2);
+    this.padCur += (this.padBottom - this.padCur) * 0.12;
+    const padW = this.padCur / scale; // em unidades de mundo
+    const camY = (viewH >= 720 ? 720 - viewH / 2 : clamp(c.y, viewH / 2, 720 - viewH / 2)) + padW * 0.85;
     this.view = { x0: camX - halfW, x1: camX + halfW, scale, w, h, y0: camY - viewH / 2 };
     const res = Math.min(2, Math.max(1, dpr * baseScale * 1.15));
 

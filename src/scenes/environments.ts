@@ -1022,6 +1022,232 @@ const estudio: Env = {
   vignette: 0.45,
 };
 
+// ======================================================================= ambientes de trabalho / consequências
+function productShelf(ctx: Ctx, x: number, y: number, w: number, levels: number, seed: number) {
+  box(ctx, x, y, w, levels * 62 + 14, 3, '#dfe3e8');
+  const r = new RNG(seed);
+  const cols = ['#e4572e', '#f2c14e', '#3d7bd9', '#6fbf6a', '#e86a92', '#9b5de5', '#f39237', '#5ec3e8', '#fbfaf6', '#c2273d'];
+  for (let l = 0; l < levels; l++) {
+    const sy = y + 10 + l * 62;
+    ctx.fillStyle = '#b9c0c9'; ctx.fillRect(x + 4, sy + 52, w - 8, 6);
+    let px = x + 8;
+    while (px < x + w - 20) {
+      const pw = r.range(14, 26), ph = r.range(26, 48), c = r.pick(cols);
+      if (r.chance(0.3)) {
+        // garrafa
+        box(ctx, px + pw * 0.3, sy + 52 - ph - 10, pw * 0.4, 12, 2, shade(c, -0.2), { top: false, lw: 0.6 });
+        box(ctx, px, sy + 52 - ph, pw, ph, 5, c, { top: false, lw: 0.7 });
+      } else {
+        box(ctx, px, sy + 52 - ph, pw, ph, 2, c, { top: false, lw: 0.7 });
+        ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fillRect(px + 3, sy + 52 - ph * 0.6, pw - 6, ph * 0.22);
+      }
+      px += pw + 3;
+    }
+  }
+}
+
+const mercado: Env = {
+  id: 'mercado', name: 'Supermercado', mood: 'calm',
+  layers: [{
+    depth: 1,
+    static: (ctx) => {
+      wall(ctx, '#f4efe2', 'liso');
+      ctx.fillStyle = '#c2273d'; ctx.fillRect(X0, 40, WW, 56);
+      ctx.fillStyle = '#fff'; ctx.font = '900 40px Nunito, sans-serif'; ctx.textAlign = 'center';
+      for (let x = X0 + 300; x < X0 + WW; x += 900) ctx.fillText('SUPERMERCADO BOM PREÇO', x, 82);
+      for (let i = 0; i < 7; i++) productShelf(ctx, -300 + i * 290, 150, 250, 5, i * 7 + 1);
+      // cartazes de oferta
+      for (const [x, t] of [[200, 'OFERTA!'], [960, 'LEVE 3 PAGUE 3'], [560, 'SÓ HOJE']] as const) {
+        ctx.save(); ctx.translate(x, 130); ctx.rotate(-0.06);
+        box(ctx, -70, -26, 140, 44, 4, '#f2c14e');
+        ctx.fillStyle = '#c2273d'; ctx.font = '900 20px Nunito'; ctx.textAlign = 'center'; ctx.fillText(t, 0, 4);
+        ctx.restore();
+      }
+      floor(ctx, 'piso', '#e8ecef');
+      // caixa registradora (balcão à direita)
+      box(ctx, 900, 470, 380, 120, 6, '#5a6470');
+      box(ctx, 890, 458, 400, 20, 4, '#3b3d44');
+      ctx.fillStyle = '#23242b'; ctx.fillRect(930, 462, 320, 10);
+      box(ctx, 1160, 390, 90, 70, 5, '#23242b');
+      ctx.fillStyle = '#3cf07a'; ctx.fillRect(1172, 402, 66, 22);
+      ctx.fillStyle = '#23242b'; ctx.font = '700 12px monospace'; ctx.fillText('R$ 0,00', 1205, 418);
+      box(ctx, 1100, 360, 10, 100, 2, '#8a8f98');
+      box(ctx, 1080, 330, 50, 34, 6, '#f2c14e');
+      ctx.fillStyle = '#23242b'; ctx.font = '900 22px Nunito'; ctx.fillText('4', 1105, 356);
+    },
+    anim: (ctx, t) => {
+      for (let i = 0; i < 4; i++) {
+        const x = 40 + i * 340;
+        box(ctx, x, 104, 180, 12, 4, '#f4f4f0', { top: false });
+        glow(ctx, x + 90, 120, 180, '#f4fbff', 0.12 + (i === 2 && Math.sin(t * 17) > 0.7 ? -0.1 : 0));
+      }
+    },
+  }],
+};
+
+const boteco: Env = {
+  id: 'boteco', name: 'Boteco do Zé', mood: 'happy',
+  layers: [{
+    depth: 1,
+    static: (ctx) => {
+      wall(ctx, '#f2e2b8', 'liso');
+      // azulejos até meia parede
+      ctx.save(); ctx.beginPath(); ctx.rect(X0, 300, WW, 260); ctx.clip();
+      for (let y = 300; y < 560; y += 30) for (let x = X0; x < X0 + WW; x += 30) {
+        ctx.fillStyle = ((x + y) / 30) % 2 ? '#2f8f6f' : '#f4f1ea';
+        ctx.fillRect(x + 1, y + 1, 28, 28);
+      }
+      ctx.restore();
+      ctx.fillStyle = '#1f6f55'; ctx.fillRect(X0, 294, WW, 8);
+      // placa
+      box(ctx, 380, 50, 520, 70, 8, '#c2273d');
+      ctx.fillStyle = '#fff3b0'; ctx.font = '900 42px Nunito'; ctx.textAlign = 'center'; ctx.fillText('BOTECO DO ZÉ', 640, 100);
+      // cartazes de humor
+      box(ctx, 90, 150, 200, 90, 3, '#fbfaf6');
+      ctx.fillStyle = '#23242b'; ctx.font = '800 20px "Patrick Hand", cursive'; ctx.fillText('FIADO SÓ', 190, 188); ctx.fillText('AMANHÃ', 190, 218);
+      box(ctx, 1000, 150, 220, 90, 3, '#fbfaf6');
+      ctx.fillStyle = '#c2273d'; ctx.font = '800 19px "Patrick Hand", cursive'; ctx.fillText('PROIBIDO FALAR', 1110, 186); ctx.fillText('DE POLÍTICA', 1110, 214);
+      // prateleira de garrafas
+      box(ctx, 360, 150, 560, 12, 3, '#7a5236');
+      box(ctx, 360, 230, 560, 12, 3, '#7a5236');
+      const r = new RNG(5);
+      for (const sy of [150, 230]) for (let x = 372; x < 900; x += 26) {
+        const c = r.pick(['#3f7a4a', '#7a5236', '#c99a2a', '#e8dcc6', '#5b3c88']);
+        box(ctx, x, sy - 58, 16, 58, 6, c, { top: false, lw: 0.6 });
+        box(ctx, x + 5, sy - 72, 6, 16, 2, shade(c, -0.2), { top: false, lw: 0.5 });
+      }
+      floor(ctx, 'xadrez', '#c9b99a');
+      // balcão com estufa de salgados
+      box(ctx, 300, 430, 680, 140, 6, '#8a5a3a');
+      box(ctx, 290, 418, 700, 18, 4, '#5a3a24');
+      ctx.fillStyle = 'rgba(200,230,255,0.35)'; ctx.fillRect(700, 340, 250, 80);
+      ctx.strokeStyle = '#8a8f98'; ctx.lineWidth = 3; ctx.strokeRect(700, 340, 250, 80);
+      for (let i = 0; i < 6; i++) { ctx.fillStyle = i % 2 ? '#e8a060' : '#d0892e'; ctx.beginPath(); ctx.ellipse(730 + i * 38, 400, 16, 11, 0, 0, 7); ctx.fill(); }
+      // mesa e cadeiras de plástico
+      for (const x of [80, 1180]) {
+        box(ctx, x - 70, 555, 140, 12, 4, '#f2c14e');
+        box(ctx, x - 6, 565, 12, 70, 2, '#f2c14e');
+        box(ctx, x - 50, 625, 100, 8, 3, '#f2c14e');
+      }
+    },
+    anim: (ctx, t) => {
+      // TV com futebol
+      box(ctx, 1010, 262, 180, 110, 6, '#1b1c22');
+      ctx.fillStyle = '#3fa56a'; ctx.fillRect(1018, 270, 164, 94);
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1.5; ctx.strokeRect(1030, 280, 140, 74);
+      ctx.beginPath(); ctx.moveTo(1100, 280); ctx.lineTo(1100, 354); ctx.stroke();
+      const bx = 1100 + Math.sin(t * 1.3) * 60, by = 317 + Math.cos(t * 1.9) * 25;
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(bx, by, 3.5, 0, 7); ctx.fill();
+      for (let i = 0; i < 4; i++) { ctx.fillStyle = i % 2 ? '#e4572e' : '#3d7bd9'; ctx.fillRect(1040 + ((t * 30 * (i + 1) + i * 40) % 120), 290 + i * 16, 5, 8); }
+      glow(ctx, 640, 250, 380, '#ffd98e', 0.1);
+    },
+  }],
+  tint: { col: '#ffb060', a: 0.05 },
+};
+
+const cafeteria: Env = {
+  id: 'cafeteria', name: 'Cafeteria', mood: 'calm',
+  layers: [{
+    depth: 1,
+    static: (ctx) => {
+      wall(ctx, '#b0694a', 'tijolos');
+      // quadro-menu
+      box(ctx, 380, 60, 520, 210, 8, '#5a3a24');
+      ctx.fillStyle = '#23302a'; ctx.fillRect(394, 74, 492, 182);
+      ctx.fillStyle = 'rgba(255,255,255,0.88)'; ctx.font = '26px "Patrick Hand", cursive'; ctx.textAlign = 'left';
+      const menu = ['Espresso .......... R$ 9', 'Latte vegano ..... R$ 24', 'Café "do dia" ..... R$ 31', 'Pão de queijo ... R$ 12'];
+      menu.forEach((m, i) => ctx.fillText(m, 420, 112 + i * 38));
+      ctx.textAlign = 'center';
+      // prateleira com xícaras e plantas
+      shelf(ctx, 60, 250, 220, 3);
+      shelf(ctx, 1020, 250, 220, 9);
+      floor(ctx, 'madeira', '#8a5a3a');
+      // balcão com máquina de espresso
+      box(ctx, 320, 430, 640, 140, 8, '#e8dcc6');
+      box(ctx, 310, 416, 660, 18, 4, '#5a3a24');
+      box(ctx, 420, 330, 150, 88, 8, '#8a8f98');
+      box(ctx, 440, 350, 110, 30, 4, '#c9c9cc');
+      ctx.fillStyle = '#23242b'; ctx.fillRect(470, 382, 10, 20); ctx.fillRect(510, 382, 10, 20);
+      for (let i = 0; i < 4; i++) box(ctx, 700 + i * 50, 396, 34, 22, 6, '#fbfaf6', { lw: 0.8 });
+      P('planta', ctx, 1180, 640, 0, {}, 1.1);
+    },
+    anim: (ctx, t) => {
+      lampPendant(ctx, 460, 20, '#23242b');
+      lampPendant(ctx, 820, 20, '#23242b');
+      for (let i = 0; i < 3; i++) {
+        const k = (t * 0.6 + i / 3) % 1;
+        ctx.fillStyle = `rgba(255,255,255,${0.35 * (1 - k)})`;
+        ctx.beginPath(); ctx.arc(495 + Math.sin(t * 2 + i) * 6, 330 - k * 70, 6 + k * 10, 0, 7); ctx.fill();
+      }
+    },
+  }],
+  tint: { col: '#ffb060', a: 0.06 },
+};
+
+const delegaciaInterna: Env = {
+  id: 'delegaciaInterna', name: 'Delegacia', mood: 'tense',
+  layers: [{
+    depth: 1,
+    static: (ctx) => {
+      wall(ctx, '#aebccc', 'liso');
+      ctx.fillStyle = '#8fa0b3'; ctx.fillRect(X0, 360, WW, 200);
+      // procurados
+      for (let i = 0; i < 4; i++) {
+        const x = 120 + i * 110;
+        box(ctx, x, 110, 90, 120, 2, '#fbf3e4');
+        ctx.fillStyle = '#23242b'; ctx.font = '800 12px Nunito'; ctx.textAlign = 'center'; ctx.fillText('PROCURA-SE', x + 45, 128);
+        ctx.fillStyle = '#9aa0a8'; ctx.beginPath(); ctx.arc(x + 45, 168, 22, 0, 7); ctx.fill();
+        ctx.fillStyle = '#23242b'; ctx.fillText('R$ 500', x + 45, 218);
+      }
+      // brasão / bandeira
+      box(ctx, 900, 100, 120, 150, 4, '#1d2a44');
+      const b = new Path2D(); starPath(b, 960, 175, 40, 18, 6);
+      part(ctx, b, '#f2c14e', null, '#8a6a1a', 1.2, null);
+      // arquivos
+      for (let i = 0; i < 2; i++) { box(ctx, 1120 + i * 90, 380, 80, 190, 4, '#6d737b'); for (let k = 0; k < 3; k++) box(ctx, 1128 + i * 90, 396 + k * 58, 64, 46, 3, '#8a8f98'); }
+      floor(ctx, 'piso', '#c9ced6');
+      // mesa com computador antigo
+      box(ctx, 340, 470, 380, 16, 3, '#7a5236');
+      box(ctx, 350, 486, 14, 146, 2, '#5a3a24'); box(ctx, 694, 486, 14, 146, 2, '#5a3a24');
+      box(ctx, 470, 380, 120, 90, 8, '#e8e0cc');
+      ctx.fillStyle = '#2b4a3a'; ctx.fillRect(482, 392, 96, 64);
+      ctx.fillStyle = '#3cf07a'; ctx.font = '700 11px monospace'; ctx.textAlign = 'left'; ctx.fillText('B.O. nº 4027', 488, 410); ctx.fillText('> _', 488, 426);
+      ctx.textAlign = 'center';
+      box(ctx, 400, 450, 60, 20, 3, '#fbfaf6', { lw: 0.6 });
+    },
+    anim: (ctx, t) => {
+      box(ctx, 400, 30, 480, 14, 4, '#f4f4f0', { top: false });
+      glow(ctx, 640, 40, 420, '#e8f4ff', 0.18 + (Math.sin(t * 23) > 0.93 ? -0.12 : 0));
+    },
+  }],
+  tint: { col: '#203040', a: 0.08 },
+};
+
+const diretoria: Env = {
+  id: 'diretoria', name: 'Diretoria', mood: 'tense',
+  layers: [{
+    depth: 1,
+    static: (ctx) => {
+      wall(ctx, '#d8c8aa', 'painel', '#a8764c');
+      box(ctx, 470, 60, 340, 64, 6, '#5a3a24');
+      ctx.fillStyle = '#f2c14e'; ctx.font = '900 34px serif'; ctx.textAlign = 'center'; ctx.fillText('DIRETORIA', 640, 104);
+      windowFrame(ctx, 110, 130, 190, 170, 'dia', 0, { curtains: '#2f8f6f' });
+      P('estante', ctx, 1150, 560, 0, {}, 1.0);
+      // quadro de avisos
+      box(ctx, 880, 150, 170, 130, 4, '#b8864c');
+      const r = new RNG(3);
+      for (let i = 0; i < 5; i++) { ctx.save(); ctx.translate(900 + r.next() * 110, 165 + r.next() * 80); ctx.rotate(r.range(-0.2, 0.2)); box(ctx, 0, 0, 40, 32, 1, r.pick(['#fbfaf6', '#fff3b0', '#f4b6c8']), { top: false, lw: 0.5 }); ctx.restore(); }
+      floor(ctx, 'carpete', '#6d4b2e');
+      // mesa da diretora
+      box(ctx, 470, 420, 340, 18, 4, '#6d4b2e');
+      box(ctx, 480, 438, 320, 150, 4, '#5a3a24');
+      box(ctx, 590, 392, 100, 28, 3, '#f2c14e');
+      ctx.fillStyle = '#5a3a24'; ctx.font = '800 13px Nunito'; ctx.fillText('SRA. DIRETORA', 640, 411);
+      P('livrosPilha', ctx, 520, 420, 0, {}, 0.8);
+    },
+  }],
+};
+
 const delegacia: Env = {
   ...ruaNoite,
   id: 'delegacia', name: 'Abordagem policial', mood: 'tense',
@@ -1031,7 +1257,7 @@ const delegacia: Env = {
 export const ENVS: Record<string, Env> = {
   quartoBebe, quarto, sala, cozinha, maternidade, hospital, escola, biblioteca, escritorio, academia, restaurante, balada, tribunal, prisao, cassino,
   aeroporto, parque, patio, praia, ruaNoite, ruaChuva, ruaDia, casamento, acampamento, cemiterio, palco, zen, ceu, suburbio, cinema, universidade,
-  concessionaria, delegacia, estudio,
+  concessionaria, delegacia, estudio, mercado, boteco, cafeteria, delegaciaInterna, diretoria,
 };
 
 export { X0, WW, FLOOR, roundRect, circle };

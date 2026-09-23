@@ -116,13 +116,77 @@ export async function physical(d: Director, a: Actor, b: Actor, action: string) 
       d.loop(b, 'lutar');
       d.focus((a.x + b.x) / 2, 360, 1.2);
       await d.act(a, 'soco');
-      d.act(b, 'cair');
+      d.act(b, 'cair').then(() => d.loop(b, 'caidoChao'));
       d.expr(b, 'tonto', 3);
       await d.wait(1.2);
       d.emote(b, 'estrela');
-      d.loop(a, 'vitoria');
+      d.loop(a, 'ofegante');
+      d.expr(a, 'serio');
       await d.wait(1);
       d.resetCam();
+      break;
+    }
+    case 'piada': {
+      await close(170);
+      d.loop(a, 'contarPiada');
+      await d.say(a, d.sc.meta?.piada ?? 'Sabe o que o zero disse pro oito?', 2.4);
+      if (d.sc.meta?.ok !== false) { d.loop(b, 'rir'); d.sfx('laugh'); d.loop(a, 'rir'); }
+      else { d.loop(b, 'bracosCruzados'); d.expr(b, 'cansado'); d.emote(b, 'reticencias'); d.loop(a, 'nervoso'); d.expr(a, 'envergonhado'); }
+      await d.wait(1.8);
+      break;
+    }
+    case 'fofocar': {
+      await close(95);
+      d.loop(a, 'cochichar'); d.loop(b, 'cochichar');
+      d.look(a, b); d.look(b, a);
+      await d.say(a, 'Você não sabe da maior...', 1.6, 'pensa');
+      d.expr(b, 'chocado', 1.5);
+      d.emote(b, 'exclamacao');
+      await d.wait(1.4);
+      d.loop(b, 'rir');
+      await d.wait(1);
+      break;
+    }
+    case 'consolar': {
+      d.loop(b, 'chorar');
+      await close(95);
+      d.loop(a, 'consolar');
+      await d.say(a, 'Vai ficar tudo bem. Tô aqui.', 2);
+      await d.wait(1);
+      d.loop(b, 'triste');
+      break;
+    }
+    case 'desculpas': {
+      await close(150);
+      d.loop(b, 'bracosCruzados');
+      d.loop(a, 'desculpas');
+      await d.say(a, 'Me desculpa. De verdade.', 2);
+      if (d.sc.meta?.ok !== false) { d.loop(b, 'parado'); d.expr(b, 'triste', 1.5); await d.wait(0.6); await physical(d, a, b, 'abracar'); }
+      else { d.loop(b, 'apontarBronca'); await d.say(b, 'Desculpa não conserta nada.', 1.8, 'grito'); b.lookAt = null; await d.walk(b, b.x + b.facing * -500); d.loop(a, 'triste'); }
+      break;
+    }
+    case 'massagem': {
+      const chair = d.prop('cadeira', b.x, GROUND, { z: b.z - 0.3, opts: { color: '#7a5236', flip: b.facing < 0 } });
+      void chair;
+      d.loop(b, 'sentarFeliz');
+      d.expr(b, 'dormindo');
+      a.x = b.x - b.facing * 70;
+      a.facing = b.facing;
+      a.z = b.z + 1;
+      d.loop(a, 'massagem');
+      await d.wait(2.4);
+      d.expr(b, 'apaixonado', 2);
+      d.hearts(b.x, b.headWorld().y - 30, 5);
+      await d.wait(1.2);
+      break;
+    }
+    case 'serenata': {
+      a.propF = undefined;
+      d.loop(a, 'tocarViolao');
+      for (let i = 0; i < 5; i++) { d.fx('musica', a.x, a.topWorld(), 1); await d.wait(0.5); }
+      if (d.sc.meta?.ok !== false) { d.loop(b, 'feliz'); d.expr(b, 'apaixonado', 3); d.hearts(b.x, b.headWorld().y - 20, 8); d.sfx('heart'); }
+      else { d.loop(b, 'facepalm'); d.fx('poeira', a.x, a.topWorld() - 60, 1); d.sfx('thud'); d.expr(a, 'envergonhado', 3); }
+      await d.wait(1.6);
       break;
     }
     case 'tapa': {
@@ -232,10 +296,16 @@ const S: Situation[] = [
       }
       if (age < 1) { p.elev = 0; d.loop(p, 'sentarChao'); d.expr(p, 'feliz'); }
       else if (age < 3) d.loop(p, 'engatinhar');
-      else d.loop(p, c.data?.mood === 'triste' ? 'triste' : c.data?.mood === 'feliz' ? 'feliz' : 'parado');
+      const mood = c.data?.mood as string | undefined;
+      const moodIdle = mood === 'triste' ? 'triste' : mood === 'feliz' ? 'feliz' : mood === 'tenso' ? 'bracosCruzados' : mood === 'ferido' ? 'olhoRoxo' : 'parado';
+      const moodFam = mood === 'tenso' || mood === 'ferido' ? ['bracosCruzados', 'pensando', 'mexerCelular', 'apontarBronca'] : null;
+      if (age >= 3) d.loop(p, moodIdle);
+      if (mood === 'ferido' && age >= 3) d.expr(p, 'dor');
+      if (mood === 'tenso' && age >= 3) d.expr(p, 'serio');
       // vida ambiente (não bloqueia o roteiro)
       const sc = d.sc;
-      const IDLE = ['acenar', 'rir', 'mexerCelular', 'cafe', 'ler', 'darOmbros', 'pensando', 'dancar3', 'feliz', 'bracosCruzados'];
+      const IDLE = moodFam ?? ['acenar', 'rir', 'mexerCelular', 'cafe', 'ler', 'darOmbros', 'pensando', 'dancar3', 'feliz', 'bracosCruzados'];
+      const PIDLE = mood === 'ferido' ? ['olhoRoxo', 'dor', 'sentarCabisbaixo'] : mood === 'tenso' ? ['bracosCruzados', 'pensando', 'mexerCelular', 'furia'] : mood === 'triste' ? ['triste', 'mexerCelular', 'pensando'] : ['feliz', 'mexerCelular', 'cafe', 'pensando', 'rir'];
       (async () => {
         await d.wait(2.5);
         while (sc.alive) {
@@ -247,12 +317,12 @@ const S: Situation[] = [
             if (who !== p || rng.chance(0.5)) who.facing = p.x > who.x ? 1 : -1;
           }
           if (who) {
-            const m = rng.pick(who === p ? ['feliz', 'mexerCelular', 'cafe', 'pensando', 'rir'] : IDLE);
+            const m = rng.pick(who === p ? PIDLE : IDLE);
             d.loop(who, m);
             if (m === 'rir') d.fx('musica', who.headWorld().x, who.topWorld(), 1);
             await d.wait(rng.range(2.5, 4.5));
             if (!sc.alive) break;
-            d.loop(who, who === p ? (c.data?.mood === 'triste' ? 'triste' : 'parado') : 'parado');
+            d.loop(who, who === p ? moodIdle : 'parado');
           }
           for (const pp of petProps) {
             if (rng.chance(0.4)) {
@@ -1097,11 +1167,376 @@ const S: Situation[] = [
     id: 'interacao',
     env: (c) => c.data?.env ?? 'sala',
     run: async (d, c) => {
+      d.sc.meta = c.data;
       const p = P(d, c, 460, { facing: 1 });
       const o = O(d, other(c, 0, 90), 820, { facing: -1 });
       faceEach(p, o);
       await d.wait(0.3);
       await physical(d, p, o, c.data?.action ?? 'conversar');
+      await d.wait(0.6);
+    },
+  },
+  // ================================================================ agressões e consequências
+  {
+    id: 'agressao',
+    env: (c) => c.data?.env ?? 'sala',
+    run: async (d, c) => {
+      const k = c.data?.kind as string;
+      const p = P(d, c, 460, { facing: 1, z: 1 });
+      const v = O(d, other(c, 0, 93), 820, { facing: -1, z: 0.5 });
+      faceEach(p, v);
+      d.expr(p, 'bravo');
+      d.expr(v, 'serio');
+      const close = async (gap: number) => {
+        const mid = (p.x + v.x) / 2;
+        await Promise.all([d.walk(p, mid - gap / 2), d.walk(v, mid + gap / 2)]);
+        faceEach(p, v);
+      };
+      let onGround = false;
+      if (c.data?.ctx === 'escola' || k === 'humilhar') {
+        const kids = crowd(d, 3, 180, 1100, 404, 'rirDe', { age: c.player.age, scale: 0.85, z: -1 });
+        kids.forEach((kk) => { kk.facing = kk.x < 640 ? 1 : -1; if (k !== 'humilhar') { kk.play('susto'); } });
+      }
+      switch (k) {
+        case 'xingar': {
+          await close(180);
+          d.loop(p, 'apontarBronca');
+          await d.say(p, rng.pick(['Seu verme!', 'Vai catar coquinho!', 'Mala sem alça!', 'Pé de pano!', 'Sua anta!']), 1.8, 'grito');
+          d.expr(v, 'chocado', 1.4);
+          break;
+        }
+        case 'pegadinha': {
+          const chair = d.prop('cadeira', v.x + 12, GROUND, { z: 0.2, opts: { color: '#3d7bd9', flip: true } });
+          d.loop(v, 'sentar');
+          await d.wait(0.6);
+          await d.walk(p, v.x + 70);
+          p.facing = -1;
+          d.loop(p, 'roubar');
+          await d.wait(0.6);
+          d.moveProp(chair, chair.x + 90, GROUND, 0.3, Ease.outQuad);
+          await d.act(v, 'cair');
+          d.sfx('thud');
+          d.loop(v, 'caidoChao');
+          onGround = true;
+          d.loop(p, 'rirDe');
+          p.facing = -1;
+          await d.wait(1.6);
+          break;
+        }
+        case 'empurrar': {
+          await close(110);
+          await d.act(p, 'empurrar');
+          d.moveActor(v, v.x + 70, v.y, 0.35, Ease.outQuad);
+          await d.act(v, 'estremecer');
+          break;
+        }
+        case 'jogarBebida': {
+          await close(125);
+          await d.act(p, 'jogarBebida');
+          const h = v.headWorld();
+          d.fx('bolha', h.x, h.y, 16, { speed: 220, size: 10, life: 0.8, color: 'rgba(160,210,255,0.9)' });
+          d.fx('suor', h.x, h.y, 10, { speed: 160, size: 9, life: 0.9 });
+          d.sfx('splash');
+          d.loop(v, 'molhado');
+          await d.wait(1.6);
+          break;
+        }
+        case 'humilhar': {
+          await close(200);
+          d.loop(p, 'rirDe');
+          await d.say(p, 'Olha só pra isso, gente! HAHAHA', 2, 'grito');
+          d.loop(v, 'humilhado');
+          d.sfx('laugh');
+          await d.wait(1.4);
+          break;
+        }
+        case 'tapa': {
+          await close(110);
+          await d.act(p, 'tapa');
+          await d.act(v, 'estremecer');
+          d.expr(v, 'chocado', 1.5);
+          break;
+        }
+        case 'roubar': {
+          v.facing = 1;
+          v.lookAt = null;
+          d.loop(v, 'mexerCelular');
+          p.x = 260;
+          d.loop(p, 'roubar');
+          await d.moveActor(p, v.x - 70, GROUND, 1.8, Ease.inOutSine);
+          d.emote(p, 'dinheiro');
+          await d.wait(0.6);
+          if (c.data?.caught) {
+            v.facing = -1;
+            d.emote(v, 'exclamacao');
+            d.loop(v, 'apontarBronca');
+            await d.say(v, 'LADRÃO! PEGA LADRÃO!', 1.8, 'grito');
+            d.loop(p, 'susto');
+          } else {
+            p.propN = 'dinheiro';
+            await d.walk(p, -200, true);
+          }
+          break;
+        }
+        default: {
+          // soco / chute / cabeçada
+          await close(k === 'cabecada' ? 92 : 125);
+          d.loop(v, 'lutar');
+          d.focus((p.x + v.x) / 2, 360, 1.2);
+          if (c.data?.dodged) {
+            const hit = d.act(p, k === 'chute' ? 'chute' : k === 'cabecada' ? 'cabecada' : 'socoForte');
+            await d.wait(0.28);
+            d.moveActor(v, v.x + 60, v.y, 0.2, Ease.outQuad);
+            await hit;
+            await d.act(p, 'cair');
+            d.loop(p, 'caidoChao');
+            d.expr(p, 'envergonhado');
+            d.loop(v, 'rirDe');
+            d.sfx('laugh');
+            await d.wait(1.4);
+            await d.act(p, 'levantarChao');
+            d.loop(p, 'humilhado');
+          } else {
+            await d.act(p, k === 'chute' ? 'chute' : k === 'cabecada' ? 'cabecada' : 'socoForte');
+            if (c.data?.injured || !c.data?.retaliate) {
+              await d.act(v, 'cair');
+              d.loop(v, 'caidoChao');
+              onGround = true;
+              d.emote(v, 'estrela');
+            } else {
+              await d.act(v, 'estremecer');
+            }
+          }
+          d.resetCam();
+        }
+      }
+      // ------------------------ desfecho
+      if (c.data?.retaliate) {
+        if (onGround) await d.act(v, 'levantarChao');
+        d.loop(v, 'lutar');
+        d.expr(v, 'furioso');
+        faceEach(p, v);
+        const gap = Math.abs(v.x - p.x);
+        if (gap > 140) await d.walk(v, p.x + (v.x > p.x ? 125 : -125));
+        faceEach(p, v);
+        d.focus((p.x + v.x) / 2, 360, 1.2);
+        await d.act(v, 'socoForte');
+        await d.act(p, 'cair');
+        d.loop(p, 'caidoChao');
+        d.emote(p, 'estrela');
+        d.loop(v, 'ofegante');
+        d.expr(v, 'bravo');
+        await d.wait(1.6);
+        await d.act(p, 'levantarChao');
+        d.loop(p, 'olhoRoxo');
+        d.resetCam();
+      } else if (c.data?.injured) {
+        d.expr(v, 'dor');
+        d.loop(p, 'ofegante');
+        d.expr(p, 'chocado');
+        await d.say(p, 'Eita... acho que exagerei.', 1.8, 'pensa');
+      } else if (k !== 'roubar' && k !== 'pegadinha' && !c.data?.dodged) {
+        d.loop(p, 'bracosCruzados');
+        d.expr(p, 'serio');
+        if (k === 'humilhar') { d.loop(p, 'rirDe'); d.expr(v, 'humilhado'); }
+        else if (c.player.age < 12 || v.age < 12) { d.loop(v, 'chorar'); }
+        else { d.loop(v, 'furia'); d.emote(v, 'raiva'); await d.say(v, rng.pick(['Você vai se arrepender disso!', 'Isso não vai ficar assim!', 'Tá maluco(a)?!']), 1.8, 'grito'); }
+      } else if (onGround) {
+        await d.wait(0.8);
+        await d.act(v, 'levantarChao');
+        d.loop(v, 'furia');
+        d.emote(v, 'raiva');
+      }
+      await d.wait(1.2);
+    },
+  },
+  {
+    id: 'detencao',
+    env: 'escola',
+    run: async (d, c) => {
+      d.sc.night = 0.12;
+      const prof = O(d, other(c, 1, 505, undefined, 48), 1000, { facing: -1, motion: 'bracosCruzados' });
+      const p = P(d, c, 560, { facing: -1, motion: 'escreverQuadro', outfit: c.player.age < 18 ? { top: 'uniforme', topColor: '#3d7bd9', topColor2: '#f4f1ea' } : undefined });
+      p.facing = 1;
+      p.x = 520;
+      p.turn = 0.85;
+      d.caption('Detenção', 'Escreva 100 vezes', 2.8);
+      const frase = (c.data?.frase as string) ?? 'Não devo agredir colegas';
+      const board = d.prop('fraseQuadro', 640, 330, { z: -0.5, opts: { state: 0 } });
+      (board.opts as any).text = frase;
+      await d.sc.tween(3.2, (k) => (board.opts.state = k));
+      d.expr(prof, 'serio');
+      await d.say(prof, 'Mais 97 vezes. Com letra bonita.', 2);
+      d.loop(p, 'sentarCabisbaixo');
+      await d.wait(0.8);
+    },
+  },
+  {
+    id: 'diretoria',
+    env: 'diretoria',
+    run: async (d, c) => {
+      const expulso = c.data?.tipo === 'expulsao';
+      const dir = d.add(npc(707, 'f', 56).ap, 56, { x: 640, y: GROUND - 60, z: -2, scale: 0.92, turn: 0.2, motion: 'apontarBronca', outfit: { top: 'blazer', topColor: '#5b3c88', glasses: 'gatinho' } });
+      const p = P(d, c, 430, { facing: 1, motion: 'sentarCabisbaixo', z: 1 });
+      d.prop('cadeira', 418, GROUND, { z: 0.5, opts: { color: '#5a3a24' } });
+      const par = c.others[0] ? O(d, c.others[0], 900, { facing: -1, motion: 'bracosCruzados', z: 1 }) : null;
+      d.caption(expulso ? 'EXPULSÃO' : 'Suspensão', expulso ? 'Pode esvaziar o armário' : 'Pais chamados na escola', 3);
+      d.expr(dir, 'bravo');
+      await d.say(dir, expulso ? 'Chega. Você está EXPULSO(A) desta escola.' : 'Suspensão. E da próxima vez, é expulsão.', 2.4, 'grito');
+      if (par) {
+        d.expr(par, 'furioso');
+        par.lookAt = p;
+        await d.say(par, 'A gente conversa em casa, mocinho(a).', 2.2);
+        d.loop(par, 'apontarBronca');
+      }
+      d.expr(p, 'humilhado');
+      d.emote(p, 'suor');
+      await d.wait(1.4);
+    },
+  },
+  {
+    id: 'demissaoSeguranca',
+    env: (c) => c.data?.env ?? 'escritorio',
+    run: async (d, c) => {
+      const p = P(d, c, 640, { facing: -1, motion: 'escoltado' });
+      p.propN = 'caixaPertences';
+      const seg = d.add(npc(808, 'm', 40).ap, 40, { x: 780, facing: -1, scale: 1.08, motion: 'seguranca', outfit: { top: 'camiseta', topColor: '#23242b', glasses: 'escuro' } });
+      d.caption('Justa causa', 'Acompanhe o segurança, por favor', 2.8);
+      await d.wait(0.6);
+      await d.say(seg, 'Por aqui. Sem gracinha.', 1.6);
+      p.speed = 90;
+      seg.speed = 90;
+      d.walk(seg, -120);
+      await d.walk(p, -260);
+    },
+  },
+  {
+    id: 'boletim',
+    env: 'delegaciaInterna',
+    run: async (d, c) => {
+      const cop = d.add(npc(909, undefined, 45).ap, 45, { x: 640, y: GROUND - 60, z: -1, facing: -1, motion: 'digitar', outfit: { top: 'policial', hat: 'quepe' } });
+      d.prop('cadeira', 628, GROUND - 60, { z: -1.5, opts: { color: '#3b3d44', flip: true } });
+      const p = P(d, c, 330, { facing: 1, motion: 'sentarCabisbaixo', z: 1 });
+      d.prop('cadeira', 318, GROUND, { z: 0.5, opts: { color: '#3b3d44' } });
+      const v = c.others[0] ? O(d, c.others[0], 980, { facing: -1, motion: c.data?.injured ? 'olhoRoxo' : 'bracosCruzados', z: 1 }) : null;
+      d.caption('Delegacia', 'Registro de ocorrência', 2.6);
+      await d.say(cop, 'Nome completo, RG e... por que você fez isso?', 2.2);
+      d.loop(p, 'darOmbros');
+      await d.say(p, 'Foi mal...?', 1.2);
+      if (v) { d.expr(v, 'bravo'); await d.say(v, 'Quero processar também!', 1.6, 'grito'); }
+      d.loop(p, 'sentarCabisbaixo');
+      await d.wait(0.8);
+    },
+  },
+  {
+    id: 'entrevista2',
+    env: (c) => c.data?.env ?? 'escritorio',
+    run: async (d, c) => {
+      const stand = !!c.data?.standing;
+      const outfit = c.data?.outfit ?? undefined;
+      const quem = other(c, 0, 1212, undefined, 42);
+      if (stand) {
+        const p = P(d, c, 470, { facing: 1, outfit, motion: 'nervoso', z: 1 });
+        const o = O(d, quem, 790, { facing: -1, outfit: c.data?.npcOutfit, motion: 'bracosCruzados' });
+        faceEach(p, o);
+        p.name = c.player.name;
+      } else {
+        d.prop('mesa', 640, GROUND + 8, { z: 1, opts: { color: '#e8e6e0' } });
+        d.prop('cadeira', 488, GROUND, { z: -0.6, opts: { color: '#3b3d44' } });
+        d.prop('cadeira', 792, GROUND, { z: -0.6, opts: { color: '#3b3d44', flip: true } });
+        const p = P(d, c, 505, { facing: 1, outfit, motion: 'entrevistado', z: 0 });
+        const o = O(d, quem, 775, { facing: -1, outfit: c.data?.npcOutfit, motion: 'entrevistador', z: 0 });
+        faceEach(p, o);
+      }
+      d.caption(`Entrevista: ${c.data?.cargo ?? ''}`, c.data?.quem, 2.6);
+      d.sfx('pop');
+      await d.wait(1.2);
+    },
+  },
+  {
+    id: 'churrasco',
+    env: 'suburbio',
+    run: async (d, c) => {
+      d.prop('churrasqueira', 980, GROUND, { z: -1 });
+      d.prop('mesa', 330, GROUND + 6, { z: 1, opts: { color: '#e4572e' } });
+      const tio = d.add(npc(3131, 'm', 55).ap, 55, { x: 870, facing: -1, motion: 'contarPiada', outfit: { top: 'camiseta', topColor: '#f2c14e', topColor2: '#2f8f6f', topPattern: 'listras', bottom: 'bermuda', shoes: 'sandalia', hat: 'bone', hatColor: '#2f8f6f' } });
+      tio.propF = 'bebida';
+      const fam = c.others.slice(0, 2).map((m, i) => O(d, m, i ? 1080 : 220, { facing: i ? -1 : 1, motion: i ? 'cafe' : 'feliz' }));
+      const p = P(d, c, 560, { facing: 1 });
+      faceEach(p, tio);
+      d.caption('Churrasco de domingo', 'A família reunida (infelizmente)', 2.8);
+      await d.say(tio, 'É pavê ou pa comê? HAHAHA', 2.2, 'grito');
+      d.loop(tio, 'rir');
+      d.sfx('laugh');
+      fam.forEach((f) => d.expr(f, 'cansado'));
+      d.expr(p, 'cansado');
+      d.loop(p, 'facepalm');
+      await d.wait(1);
+    },
+  },
+  {
+    id: 'transito',
+    env: 'ruaDia',
+    run: async (d, c) => {
+      d.prop('carro', 330, GROUND - 6, { z: -1, scale: 1.3, opts: { color: '#3d7bd9' } });
+      d.prop('carro', 950, GROUND - 6, { z: -1, scale: 1.3, opts: { color: '#c2273d', flip: true } });
+      const o = O(d, other(c, 0, 4141, 'm', 40), 830, { facing: -1, motion: 'furia', z: 1 });
+      const p = P(d, c, 470, { facing: 1, motion: 'susto', z: 1 });
+      faceEach(p, o);
+      d.caption('Trânsito', 'Hora do rush, humor zero', 2.6);
+      d.sfx('siren');
+      await d.say(o, 'TÁ OLHANDO O QUÊ, Ô BARBEIRO?!', 2, 'grito');
+      d.emote(o, 'raiva');
+      d.loop(p, 'bracosCruzados');
+      d.expr(p, 'bravo');
+      await d.wait(0.6);
+    },
+  },
+  {
+    id: 'filaHospital',
+    env: 'hospital',
+    run: async (d, c) => {
+      const fila = crowd(d, 4, 700, 1200, 5151, 'sentarCabisbaixo', { scale: 0.9, y: GROUND - 10, z: -0.5 });
+      fila.forEach((f, i) => {
+        f.facing = -1;
+        f.play(i % 2 ? 'dormirEmPe' : 'sentarCabisbaixo');
+        if (!(i % 2)) d.prop('cadeira', f.x, GROUND, { z: f.z - 0.3, opts: { color: '#3d6f8f', flip: true } });
+      });
+      const p = P(d, c, 330, { facing: 1, motion: 'dor', z: 1 });
+      d.caption('Pronto-socorro', 'Senha 187 — chamando a 23', 3);
+      d.fx('texto', 800, 180, 1, { text: 'SENHA 23', color: '#ff5c7a', size: 16, life: 3 });
+      await d.wait(1.2);
+      d.emote(p, 'caveira', 2.2);
+      await d.wait(1);
+    },
+  },
+  {
+    id: 'festaFirma',
+    env: 'escritorio',
+    run: async (d, c) => {
+      d.sc.night = 0.25;
+      d.prop('bandeirinhas', 640, 60, { z: -2, opts: { scale: 1400 } });
+      d.prop('mesa', 640, GROUND + 8, { z: 1, opts: { color: '#c2273d' } });
+      const ppl = c.others.slice(0, 3).map((m, i) => O(d, m, [300, 860, 1060][i] ?? 900, { facing: i ? -1 : 1, motion: ['dancar3', 'beber', 'dancar'][i] }));
+      const p = P(d, c, 500, { facing: 1, motion: 'dancar2' });
+      d.caption('Confraternização', 'Open bar e decisões ruins', 2.8);
+      for (let i = 0; i < 5; i++) { d.fx('musica', 640 + rng.range(-300, 300), 260, 1); await d.wait(0.45); }
+      void ppl; void p;
+    },
+  },
+  {
+    id: 'reuniao',
+    env: 'escritorio',
+    run: async (d, c) => {
+      d.prop('mesa', 640, GROUND + 8, { z: 1, opts: { color: '#e8e6e0' } });
+      const chefe = O(d, other(c, 0, 6161, undefined, 50), 860, { facing: -1, motion: 'apontarBronca', outfit: { top: 'blazer' } });
+      const cols = c.others.slice(1, 3).map((m, i) => O(d, m, i ? 1100 : 280, { facing: i ? -1 : 1, motion: 'rirDe', z: -0.5 }));
+      const p = P(d, c, 520, { facing: 1, motion: 'humilhado', z: 1 });
+      faceEach(p, chefe);
+      d.caption('Reunião de alinhamento', 'Ninguém sai alinhado', 2.8);
+      await d.say(chefe, 'Esse relatório parece feito por um estagiário sonolento!', 2.6, 'grito');
+      cols.forEach((k) => d.expr(k, 'rindo'));
+      d.expr(p, 'humilhado');
       await d.wait(0.6);
     },
   },
