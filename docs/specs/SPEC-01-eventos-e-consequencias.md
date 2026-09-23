@@ -91,6 +91,18 @@ Valores: number, boolean ou string (JSON). Nomes camelCase. Guarde a **idade** q
 | `contaLuzPendente` | idade do protocolo/conta de luz pendente | events; apagaoNaEntrega; cobrancaInesperada |
 | `nomeSujo` | idade em que a pendência de crédito ficou aberta | events; cobrancaInesperada |
 | `cursoCoachComprado` | idade da compra/afiliado do curso | events; cobrancaInesperada |
+| `feedbackTrabalho` | idade em que uma contestação de feedback gerou advertência | events; justaCausaFeedback |
+| `feedbackTrabalhoJob` | id do emprego onde a advertência foi registrada | events; justaCausaFeedback |
+| `estagiarioPessoaId` | id da pessoa estagiária que virou líder depois | events; estagiarioVirouChefe |
+| `estagiarioIdade` | idade do evento com a pessoa estagiária | events; estagiarioVirouChefe |
+| `estagiarioEscolha` | tipo de relação criada com a pessoa estagiária | events; estagiarioVirouChefe |
+| `estagiarioEmprego` | id do emprego no evento com a pessoa estagiária | events; estagiarioVirouChefe |
+| `videoFirmaIdade` | idade em que um vídeo constrangedor surgiu no happy hour | events |
+| `videoFirmaJob` | id do emprego no happy hour | events |
+| `assedioMoralIdade` | idade da denúncia de assédio moral acolhida pelo RH | events; indenizacaoTrabalhista |
+| `assedioMoralValor` | base salarial registrada para acordo trabalhista futuro | events; indenizacaoTrabalhista |
+| `greveAderiuIdade` | idade em que o jogador aderiu à paralisação | events |
+| `greveEmpregoId` | id do emprego na paralisação | events |
 | `ev_<id>` | evento `once` já ocorreu | life.pickEvents |
 
 **Ao criar uma flag nova, acrescente uma linha nesta tabela** (e rode `npm run catalog`).

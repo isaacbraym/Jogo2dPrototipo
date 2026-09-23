@@ -3,7 +3,7 @@
 > **Não edite à mão.** Gerado por `npm run catalog` a partir dos registros do código.
 > Use para conferir nomes existentes antes de criar algo novo.
 
-## Eventos anuais — 59
+## Eventos anuais — 72
 
 | id | idades | título | tipo |
 |---|---|---|---|
@@ -66,6 +66,19 @@
 | `cursoMilionario` | 20–75 | 📈 Aula para ficar rico | 3 escolhas, única |
 | `vizinhoLembra` | 20–100 | 📣 (dinâmico) | 3 escolhas |
 | `cobrancaInesperada` | 20–100 | 📬 (dinâmico) | 3 escolhas |
+| `feedbackSanduiche` | 20–65 | 🥪 Feedback sanduíche | 3 escolhas |
+| `justaCausaFeedback` | 21–70 | 📦 Reunião com o RH | 3 escolhas, única |
+| `estagiarioBrilhante` | 20–65 | 🧑‍💻 O estagiário sabe demais | 4 escolhas |
+| `estagiarioVirouChefe` | 22–90 | 📈 Seu estagiário virou chefe | 3 escolhas, única |
+| `colegaRoubaCredito` | 20–65 | 📑 A ideia ganhou outro nome | 3 escolhas |
+| `happyHourObrigatorio` | 20–65 | 🥂 Happy hour obrigatório | 3 escolhas |
+| `reuniaoQueEmailResolvia` | 20–65 | 💻 Isso podia ser um e-mail | 3 escolhas |
+| `assedioMoralChefe` | 20–65 | 📣 A cobrança passou do limite | 3 escolhas |
+| `indenizacaoTrabalhista` | 22–75 | ⚖️ A apuração teve resposta | 3 escolhas, única |
+| `layoffSomosFamilia` | 20–65 | 📦 Mudança de estrutura | 3 escolhas |
+| `greveParalisacao` | 20–65 | ✊ A equipe parou | 3 escolhas |
+| `homeOfficeComFamilia` | 20–65 | 🏠 A reunião invadiu a sala | 3 escolhas |
+| `amigoOcultoFirma` | 20–65 | 🎁 Amigo oculto do trabalho | 3 escolhas |
 
 ## Ações (aba Atividades) — 27
 
@@ -282,12 +295,22 @@ Além destas, `ev_<id>` marca eventos `once` já ocorridos.
 | `anosFacul` | game/events.ts, game/life.ts |
 | `aposentadoria` | game/events.ts, game/life.ts, ui/game.ts |
 | `arte` | game/events.ts |
+| `assedioMoralIdade` | game/events.ts |
+| `assedioMoralValor` | game/events.ts |
 | `avisoDivida` | game/life.ts |
 | `contaLuzPendente` | game/events.ts |
 | `cursoCoachComprado` | game/events.ts |
+| `estagiarioEmprego` | game/events.ts |
+| `estagiarioEscolha` | game/events.ts |
+| `estagiarioIdade` | game/events.ts |
+| `estagiarioPessoaId` | game/events.ts |
 | `expulsoes` | game/aggression.ts |
+| `feedbackTrabalho` | game/events.ts |
+| `feedbackTrabalhoJob` | game/events.ts |
 | `furadeiraRevidada` | game/events.ts |
 | `furadeiraVizinhoId` | game/events.ts |
+| `greveAderiuIdade` | game/events.ts |
+| `greveEmpregoId` | game/events.ts |
 | `infracoes` | game/events.ts, game/aggression.ts, game/life.ts |
 | `medalha` | game/events.ts |
 | `moodNext` | ui/game.ts |
@@ -296,6 +319,8 @@ Além destas, `ev_<id>` marca eventos `once` já ocorridos.
 | `nomeSujo` | game/events.ts |
 | `pixExposto` | game/events.ts |
 | `pixVizinhoId` | game/events.ts |
+| `videoFirmaIdade` | game/events.ts |
+| `videoFirmaJob` | game/events.ts |
 
 ## Conquistas — 18
 

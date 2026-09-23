@@ -23,16 +23,16 @@ Itens marcados **[ENGINE]** precisam de mudança no motor → não implemente; c
 - [ ] Ser chamado de "senhor(a)" pela primeira vez (crise dos 30/40 → academia, carro esportivo, tatuagem)
 
 ## B. Trabalho (P1)
-- [ ] Feedback sanduíche do chefe (flag de desempenho → promoção/demissão futura)
-- [ ] Estagiário mais competente que você (ensinar / sabotar → ele vira seu chefe anos depois)
-- [ ] Colega leva crédito pelo seu trabalho (confrontar / denunciar ao RH / se vingar → agressão verbal com consequência)
-- [ ] Happy hour obrigatório (beber demais → vídeo constrangedor → RH)
-- [ ] Reunião que podia ser e-mail (cena `reuniaoZoom`: dormir, mudo, câmera ligada sem querer)
-- [ ] Assédio moral do chefe (denunciar → risco / processo trabalhista anos depois → indenização)
-- [ ] Layoff "somos uma família" (demissão em massa; indenização; cena com caixa de pertences)
-- [ ] Greve / paralisação (aderir / furar → colegas te odeiam)
-- [ ] Home office com família em casa (cachorro late, filho invade a call gritando que o almoço tá pronto, microfone aberto no pior momento)
-- [ ] Amigo oculto da firma (presente ruim → vínculo)
+- [x] Feedback sanduíche do chefe (flag de desempenho → promoção/demissão futura) → `feedbackSanduiche`, `justaCausaFeedback`
+- [x] Estagiário mais competente que você (ensinar / sabotar → ele vira seu chefe anos depois) → `estagiarioBrilhante`, `estagiarioVirouChefe`
+- [x] Colega leva crédito pelo seu trabalho (confrontar / denunciar ao RH com consequências) → `colegaRoubaCredito`
+- [x] Happy hour obrigatório (convívio opcional só no convite) → `happyHourObrigatorio`
+- [ ] Reunião que podia ser e-mail (evento criado; cena dedicada `reuniaoZoom` pendente no lote G) → `reuniaoQueEmailResolvia`
+- [x] Assédio moral do chefe (denunciar → risco / processo trabalhista anos depois → indenização) → `assedioMoralChefe`, `indenizacaoTrabalhista`
+- [x] Layoff "somos uma família" (demissão em massa; acerto; caixa de pertences) → `layoffSomosFamilia`
+- [x] Greve / paralisação (aderir ou continuar trabalhando → efeitos sobre equipe e desempenho) → `greveParalisacao`
+- [x] Home office com família em casa (cachorro, filho, microfone aberto) → `homeOfficeComFamilia`
+- [x] Amigo oculto da firma (presente e vínculo) → `amigoOcultoFirma`
 
 ## C. Infância e escola (P1)
 - [ ] Festa junina (quadrilha, casamento caipira forçado, pescaria roubada)

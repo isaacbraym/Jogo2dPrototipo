@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-23 — Lote 02: trabalho e relações da firma (Codex)
+
+**Eventos (13: 10 situações e 3 retornos):** `feedbackSanduiche`, `justaCausaFeedback`, `estagiarioBrilhante`, `estagiarioVirouChefe`, `colegaRoubaCredito`, `happyHourObrigatorio`, `reuniaoQueEmailResolvia`, `assedioMoralChefe`, `indenizacaoTrabalhista`, `layoffSomosFamilia`, `greveParalisacao`, `homeOfficeComFamilia`, `amigoOcultoFirma`.
+**Escolhas (40):** três por evento; `estagiarioBrilhante` tem uma quarta escolha de sabotagem, com risco de advertência e consequência no retorno.
+**Cenas, movimentos, expressões, ambientes, objetos e interações novos:** 0; o lote reutiliza `reuniao`, `diretoria`, `demissao`, `trabalho`, `festaFirma` e `interacao`.
+**Flags novas (12):** `feedbackTrabalho`, `feedbackTrabalhoJob`, `estagiarioPessoaId`, `estagiarioIdade`, `estagiarioEscolha`, `estagiarioEmprego`, `videoFirmaIdade`, `videoFirmaJob`, `assedioMoralIdade`, `assedioMoralValor`, `greveAderiuIdade`, `greveEmpregoId`. `advertencias` reaproveita o contador do motor.
+**Cadeias:** advertência do feedback mais uma advertência pode abrir a reunião de justa causa; a mentoria ou disputa com o estagiário retorna quando ele assume liderança; denúncia acolhida pelo RH volta como acordo trabalhista após dois anos.
+**Backlog:** nove de dez itens da seção B concluídos. `reuniaoQueEmailResolvia` usa `reuniao` até a cena dedicada `reuniaoZoom` do lote G.
+**Verificação:** `npm run check:quick` ✅ · `npm run check` ✅ · `npm run build` ✅ · `npm run catalog` ✅. Os avisos de cobertura são esperados: `justaCausaFeedback` exige advertências acumuladas; `estagiarioVirouChefe` e `indenizacaoTrabalhista` exigem escolhas passadas e dois anos de espera. Os retornos do Lote 01 também dependem de escolhas prévias.
+**Verificação visual:** sem itens visuais novos; cenas e movimentos existentes reaproveitados.
+**Pendências/pedidos de engine:** nenhum pedido novo. A cena `reuniaoZoom` ficou para o lote G.
+
 ## 2026-09-23 — Lote 01: vida adulta e boletos (Codex)
 
 **Eventos (10: 8 situações e 2 retornos):** `pixNumeroErrado`, `golpeFalsoParente`, `contaLuzVerão`, `enchenteNaRua`, `apagaoNaEntrega`, `nomeSujo`, `furadeiraDomingo`, `cursoMilionario`, `vizinhoLembra`, `cobrancaInesperada`.

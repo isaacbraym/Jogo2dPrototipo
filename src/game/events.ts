@@ -737,6 +737,304 @@ export const EVENTS: LifeEvent[] = [
       } },
     ],
   },
+  {
+    id: 'feedbackSanduiche', min: 20, max: 65, weight: (L) => (L.job && !L.retired ? 7 : 0), icon: '🥪', title: 'Feedback sanduíche',
+    setup: (L) => ({ person: L.people.find((p) => p.alive && p.rel === 'chefe') }),
+    text: (_L, c) => `${c.person?.first ?? 'A chefia'} elogiou seu potencial, apontou três falhas e encerrou dizendo que você é essencial. O recheio era cobrança.`,
+    scene: (_L, c) => ({ id: 'reuniao', others: c.person ? [c.person] : [] }),
+    choices: [
+      { label: 'Pedir metas por escrito', icon: '📝', run: (L, c) => {
+        if (L.job) L.job.perf += 5; stat(L, 'inteligencia', 1); if (c.person) bond(c.person, 2);
+        return O('As metas chegaram por e-mail. Agora a cobrança tem anexo e prazo.', 'bom', { react: { player: { expr: 'serio' }, npc: { expr: 'serio', say: 'Vamos acompanhar de perto.' } } });
+      } },
+      { label: 'Contestar com resultados', icon: '📊', run: (L, c) => {
+        const sucesso = rng.chance(0.35 + L.stats.inteligencia / 250);
+        if (sucesso) { if (L.job) L.job.perf += 8; if (c.person) bond(c.person, -3); stat(L, 'felicidade', 3); return O('Os números fecharam a conversa. O chefe chamou de alinhamento; você chamou de terça-feira.', 'bom', { react: { npc: { expr: 'chocado' }, player: { expr: 'determinado' } } }); }
+        if (L.job) L.job.perf -= 8; L.flags.advertencias = ((L.flags.advertencias as number) ?? 0) + 1; L.flags.feedbackTrabalho = L.player.age; L.flags.feedbackTrabalhoJob = L.job?.id ?? '';
+        stat(L, 'felicidade', -6); if (c.person) bond(c.person, -5);
+        return O('O relatório virou “falta de colaboração”. RH registrou a advertência; a planilha não foi convidada.', 'ruim', { mood: 'tenso', react: { npc: { expr: 'serio', say: 'Fica registrada a advertência.' }, player: { expr: 'envergonhado' } } });
+      } },
+      { label: 'Engolir o sanduíche', icon: '😶', run: (L) => {
+        if (L.job) L.job.perf += 2; stat(L, 'felicidade', -3);
+        return O('Você agradeceu pelo feedback. O gestor anotou “boa atitude” e esqueceu o aumento.', 'neutro', { mood: 'triste', react: { player: { expr: 'serio' } } });
+      } },
+    ],
+  },
+  {
+    id: 'justaCausaFeedback', min: 21, max: 70, weight: (L) => (L.job ? ((L.flags.advertencias as number) ?? 0) >= 2 ? 12 : 4 : 0), once: true,
+    cond: (L) => !!L.job && typeof L.flags.feedbackTrabalho === 'number' && L.player.age - (L.flags.feedbackTrabalho as number) >= 1 && L.flags.feedbackTrabalhoJob === L.job.id && ((L.flags.advertencias as number) ?? 0) >= 2,
+    setup: (L) => ({ person: L.people.find((p) => p.alive && p.rel === 'chefe'), testemunha: L.people.find((p) => p.alive && p.rel === 'colegaTrab') }),
+    icon: '📦', title: 'Reunião com o RH', text: (_L, c) => `${c.person?.first ?? 'A chefia'} chamou você ao RH. A advertência anterior agora tem uma apresentação de 24 slides.`,
+    scene: (_L, c) => ({ id: 'demissao', others: c.person ? [c.person] : [] }),
+    choices: [
+      { label: 'Contestar com documentos', icon: '🗂️', run: (L, c) => {
+        const sucesso = rng.chance(0.25 + L.stats.inteligencia / 300 + (L.job?.perf ?? 0) / 500);
+        if (sucesso) { L.flags.advertencias = 0; delete L.flags.feedbackTrabalho; delete L.flags.feedbackTrabalhoJob; if (L.job) L.job.perf += 12; stat(L, 'felicidade', 4); return O('Os registros provaram que a meta mudou três vezes. A justa causa virou “conversa de alinhamento”.', 'bom', { react: { npc: { expr: 'chocado', say: 'Vamos rever o caso.' }, player: { expr: 'feliz' } } }); }
+        const antiga = L.job!; L.money += Math.round(antiga.salary * 0.2); L.job = null; leaveJobPeople(L); delete L.flags.feedbackTrabalho; delete L.flags.feedbackTrabalhoJob; stat(L, 'felicidade', -10);
+        return O(`O RH manteve a justa causa e pagou ${money(Math.round(antiga.salary * 0.2))} de acerto. Seu crachá perdeu acesso antes da reunião acabar.`, 'ruim', { mood: 'triste', react: { npc: { expr: 'serio', say: 'A decisão está mantida.' }, player: { expr: 'triste' } } });
+      } },
+      { label: 'Pedir apoio da testemunha', icon: '🗣️', cond: (_L, c) => !!c.testemunha, run: (L, c) => {
+        const pessoa = c.testemunha!; const sucesso = rng.chance(0.25 + pessoa.bond / 250 + L.stats.inteligencia / 400);
+        if (sucesso) { bond(pessoa, 8); L.flags.advertencias = 0; delete L.flags.feedbackTrabalho; delete L.flags.feedbackTrabalhoJob; if (L.job) L.job.perf += 8; stat(L, 'felicidade', 3); return O(`${pessoa.first} confirmou sua versão. A chefia arquivou o caso e chamou isso de “escuta ativa”.`, 'bom', { react: { npc: { expr: 'chocado' }, player: { expr: 'feliz' } } }); }
+        bond(pessoa, -4); const antiga = L.job!; L.money += Math.round(antiga.salary * 0.2); L.job = null; leaveJobPeople(L); delete L.flags.feedbackTrabalho; delete L.flags.feedbackTrabalhoJob; stat(L, 'felicidade', -12);
+        return O(`${pessoa.first} ficou em silêncio. A empresa manteve a justa causa; o silêncio não entrou na folha de pagamento.`, 'ruim', { mood: 'triste', react: { npc: { expr: 'serio', say: 'Encerramos por aqui.' }, player: { expr: 'triste' } } });
+      } },
+      { label: 'Assinar o acordo e sair', icon: '✍️', run: (L) => {
+        const antiga = L.job!; L.money += Math.round(antiga.salary * 0.35); L.job = null; leaveJobPeople(L); delete L.flags.feedbackTrabalho; delete L.flags.feedbackTrabalhoJob; stat(L, 'felicidade', -5);
+        return O(`Você saiu com ${money(Math.round(antiga.salary * 0.35))} e uma carta de referência que diz “trabalhou aqui”.`, 'neutro', { mood: 'triste', react: { player: { expr: 'serio' } } });
+      } },
+    ],
+  },
+  {
+    id: 'estagiarioBrilhante', min: 20, max: 65, weight: (L) => (L.job && !L.retired ? 5 : 0), icon: '🧑‍💻', title: 'O estagiário sabe demais',
+    setup: (L) => ({ person: makePerson(rng, { age: rng.int(18, 26), rel: 'colegaTrab', bond: 42 }) }),
+    text: (_L, c) => `${c.person!.first}, recém-chegado(a) como estagiário(a), resolveu em uma manhã o problema que sua equipe discute desde março.`,
+    scene: (_L, c) => ({ id: 'trabalho', others: [c.person!], data: { titulo: 'Primeira semana', sub: 'A planilha ganhou respeito.' } }),
+    choices: [
+      { label: 'Ensinar o caminho da equipe', icon: '🧭', run: (L, c) => {
+        const p = c.person!; L.people.push(p); bond(p, 12); if (L.job) L.job.perf -= 2; L.flags.estagiarioPessoaId = p.id; L.flags.estagiarioIdade = L.player.age; L.flags.estagiarioEscolha = 'mentoria'; L.flags.estagiarioEmprego = L.job?.id ?? '';
+        L.karma += 3; stat(L, 'felicidade', 2); return O(`${p.first} aprendeu o fluxo e ainda documentou tudo. Você perdeu duas horas e ganhou um manual que ninguém pediu.`, 'bom', { react: { npc: { expr: 'feliz', say: 'Valeu por explicar!' }, player: { expr: 'serio' } } });
+      } },
+      { label: 'Disputar a apresentação', icon: '📊', run: (L, c) => {
+        const p = c.person!; L.people.push(p); const venceu = rng.chance(0.35 + L.stats.inteligencia / 300);
+        L.flags.estagiarioPessoaId = p.id; L.flags.estagiarioIdade = L.player.age; L.flags.estagiarioEscolha = 'disputa'; L.flags.estagiarioEmprego = L.job?.id ?? '';
+        if (venceu) { if (L.job) L.job.perf += 5; bond(p, -3); stat(L, 'felicidade', 3); return O('Sua apresentação ficou com o crédito oficial. O estagiário ficou com a solução e uma memória excelente.', 'neutro', { react: { npc: { expr: 'serio' }, player: { expr: 'convencido' } } }); }
+        if (L.job) L.job.perf -= 6; bond(p, -8); stat(L, 'felicidade', -4); return O(`${p.first} mostrou o histórico do projeto e seu nome sumiu do slide. Até a fonte parecia testemunha.`, 'ruim', { mood: 'tenso', react: { npc: { expr: 'serio', say: 'O arquivo tem data.' }, player: { expr: 'envergonhado' } } });
+      } },
+      { label: 'Sabotar a apresentação', icon: '🫥', run: (L, c) => {
+        const p = c.person!; L.people.push(p); bond(p, -12); L.karma -= 5; L.flags.estagiarioPessoaId = p.id; L.flags.estagiarioIdade = L.player.age; L.flags.estagiarioEscolha = 'sabotou'; L.flags.estagiarioEmprego = L.job?.id ?? '';
+        if (rng.chance(0.35 + (L.job?.perf ?? 0) / 350)) { if (L.job) L.job.perf -= 8; L.flags.advertencias = ((L.flags.advertencias as number) ?? 0) + 1; stat(L, 'felicidade', -5); return O('A equipe percebeu que faltavam dados no material e rastreou quem tinha acesso. RH chamou isso de “conversa rápida”.', 'ruim', { mood: 'tenso', react: { npc: { expr: 'serio', say: 'Isso precisa ser esclarecido.' }, player: { expr: 'envergonhado' } } }); }
+        if (L.job) L.job.perf += 3; stat(L, 'felicidade', -2); return O('A apresentação saiu confusa e seu projeto ganhou espaço. O estagiário guardou a dúvida para depois.', 'neutro', { react: { npc: { expr: 'serio' }, player: { expr: 'serio' } } });
+      } },
+      { label: 'Deixar a pessoa brilhar', icon: '✨', run: (L, c) => {
+        const p = c.person!; L.people.push(p); bond(p, 8); if (L.job) L.job.perf += 2; L.flags.estagiarioPessoaId = p.id; L.flags.estagiarioIdade = L.player.age; L.flags.estagiarioEscolha = 'apoiou'; L.flags.estagiarioEmprego = L.job?.id ?? '';
+        L.karma += 2; return O(`${p.first} recebeu o elogio e citou sua equipe. A chefia anotou “colaboração” como se fosse verba.`, 'bom', { react: { npc: { expr: 'feliz', say: 'A equipe me ajudou muito.' } } });
+      } },
+    ],
+  },
+  {
+    id: 'estagiarioVirouChefe', min: 22, max: 90, weight: 7, once: true,
+    cond: (L) => typeof L.flags.estagiarioIdade === 'number' && L.player.age - (L.flags.estagiarioIdade as number) >= 2 && !!L.people.find((p) => p.id === L.flags.estagiarioPessoaId && p.alive),
+    setup: (L) => {
+      const person = L.people.find((p) => p.id === L.flags.estagiarioPessoaId && p.alive);
+      return person ? { person, tipo: L.flags.estagiarioEscolha, mesmoEmprego: L.job?.id === L.flags.estagiarioEmprego } : null;
+    },
+    icon: '📈', title: 'Seu estagiário virou chefe',
+    text: (_L, c) => `${c.person!.first}, aquele(a) estagiário(a), agora lidera uma equipe. A rede profissional avisou; o algoritmo não conhece o conceito de constrangimento.`,
+    scene: (_L, c) => ({ id: 'trabalho', others: [c.person!], data: { titulo: 'Nova liderança', sub: 'O estágio tinha plano de carreira.' } }),
+    choices: [
+      { label: 'Reconhecer o mérito', icon: '🤝', run: (L, c) => {
+        bond(c.person!, 8); L.karma += 2; stat(L, 'felicidade', 2);
+        if (c.tipo === 'mentoria' || c.tipo === 'apoiou') { if (L.job && c.mesmoEmprego) L.job.perf += 4; return O(`${c.person!.first} lembrou que você ajudou no começo e indicou seu nome para um projeto. Uma boa lembrança rendeu mais que um curso motivacional.`, 'bom', { react: { npc: { expr: 'feliz', say: 'Eu não esqueci sua ajuda.' } } }); }
+        if (c.tipo === 'sabotou') { L.karma += 2; bond(c.person!, 10); return O(`Você reconheceu que sabotou ${c.person!.first} no começo. A pessoa aceitou o pedido de desculpas; confiança leva mais que um crachá.`, 'neutro', { react: { npc: { expr: 'serio', say: 'Vamos deixar isso para trás.' }, player: { expr: 'serio' } } }); }
+        return O(`${c.person!.first} aceitou sua mensagem com educação. O passado não foi apagado, só ganhou cargo novo.`, 'neutro', { react: { npc: { expr: 'serio' } } });
+      } },
+      { label: 'Pedir uma indicação', icon: '📨', run: (L, c) => {
+        const chance = (c.tipo === 'mentoria' || c.tipo === 'apoiou' ? 0.45 : 0.15) + c.person!.bond / 400;
+        if (rng.chance(chance)) { bond(c.person!, 4); if (L.job && c.mesmoEmprego) L.job.perf += 5; stat(L, 'felicidade', 4); return O(`${c.person!.first} recomendou você para uma vaga. A antiga equipe virou referência; desta vez, no currículo.`, 'bom', { react: { npc: { expr: 'feliz', say: 'Vou falar bem de você.' } } }); }
+        bond(c.person!, -5); stat(L, 'felicidade', -3); return O(`${c.person!.first} agradeceu a mensagem e não respondeu sobre a vaga. Networking também tem botão de arquivar.`, 'ruim', { react: { npc: { expr: 'serio' }, player: { expr: 'triste' } } });
+      } },
+      { label: 'Silenciar a atualização', icon: '🔕', run: (L) => { stat(L, 'felicidade', 1); return O('Você fechou a notificação. A vida seguiu, sem pedir para ver seu perfil.', 'neutro'); } },
+    ],
+  },
+  {
+    id: 'colegaRoubaCredito', min: 20, max: 65, weight: (L) => (L.job && L.people.some((p) => p.alive && p.rel === 'colegaTrab') ? 6 : 0), icon: '📑', title: 'A ideia ganhou outro nome',
+    setup: (L) => ({ person: pickRandom(L.people.filter((p) => p.alive && p.rel === 'colegaTrab')), chefe: L.people.find((p) => p.alive && p.rel === 'chefe') }),
+    text: (_L, c) => `${c.person!.first} apresentou sua proposta na reunião e recebeu os parabéns. O arquivo original ainda tem seu nome, em letras pequenas.`,
+    scene: (_L, c) => ({ id: 'reuniao', others: [c.person!, ...(c.chefe ? [c.chefe] : [])] }),
+    choices: [
+      { label: 'Mostrar o histórico do arquivo', icon: '🧾', run: (L, c) => {
+        const p = c.person!; const sucesso = rng.chance(0.4 + L.stats.inteligencia / 300);
+        if (sucesso) { bond(p, -8); if (L.job) L.job.perf += 5; L.karma += 2; stat(L, 'felicidade', 3); return O('O histórico confirmou a autoria. O colega devolveu o crédito; a reunião não devolveu os 40 minutos.', 'bom', { react: { npc: { expr: 'envergonhado', say: 'O arquivo ficou comigo.' }, player: { expr: 'determinado' } } }); }
+        bond(p, -4); if (L.job) L.job.perf -= 3; stat(L, 'felicidade', -5); return O('O arquivo estava numa pasta antiga sem data clara. O crédito ficou com quem compartilhou a tela.', 'ruim', { mood: 'triste', react: { npc: { expr: 'serio' }, player: { expr: 'envergonhado' } } });
+      } },
+      { label: 'Conversar em particular', icon: '💬', run: (L, c) => {
+        const p = c.person!; const resolveu = rng.chance(0.45 + p.bond / 300);
+        if (resolveu) { bond(p, 5); if (L.job) L.job.perf += 2; return O(`${p.first} reconheceu que passou do ponto e corrigiu a ata. A conversa durou 4 minutos, um recorde da firma.`, 'bom', { scene: { id: 'interacao', others: [p], data: { action: 'conversar', env: 'escritorio' } }, react: { npc: { expr: 'serio', say: 'Vou corrigir a ata.' } } }); }
+        bond(p, -8); stat(L, 'felicidade', -4); return O(`${p.first} chamou a conversa de “mal-entendido”. O mal-entendido continua usando seu trabalho.`, 'ruim', { scene: { id: 'interacao', others: [p], data: { action: 'discutir', env: 'escritorio' } }, mood: 'tenso', react: { npc: { expr: 'serio' }, player: { expr: 'serio' } } });
+      } },
+      { label: 'Registrar no RH', icon: '📬', run: (L, c) => {
+        const p = c.person!; const apurou = rng.chance(0.3 + L.stats.inteligencia / 350);
+        if (apurou) { bond(p, -10); if (L.job) L.job.perf += 3; stat(L, 'felicidade', 2); return O('O RH corrigiu o registro e abriu uma apuração. A planilha agora tem mais testemunhas que a reunião.', 'neutro', { react: { npc: { expr: 'serio', say: 'Vamos conversar depois.' }, player: { expr: 'determinado' } } }); }
+        bond(p, -6); if (L.job) L.job.perf -= 5; stat(L, 'felicidade', -6); return O('O RH arquivou por falta de evidência. Seu colega guardou a apresentação; você, o protocolo.', 'ruim', { mood: 'tenso', react: { player: { expr: 'triste' } } });
+      } },
+    ],
+  },
+  {
+    id: 'happyHourObrigatorio', min: 20, max: 65, weight: (L) => (L.job ? 5 : 0), icon: '🥂', title: 'Happy hour obrigatório',
+    setup: (L) => ({ equipe: L.people.filter((p) => p.alive && ['chefe', 'colegaTrab'].includes(p.rel)).slice(0, 3) }),
+    text: () => 'A chefia chamou a saída de “opcional”, depois perguntou no grupo quem não vai. O happy hour começa às 19h; sua bateria social, às 2%.',
+    scene: (L, c) => ({ id: 'festaFirma', others: c.equipe }),
+    choices: [
+      { label: 'Ficar e conversar', icon: '🗨️', run: (L, c) => {
+        c.equipe.forEach((p: Person) => bond(p, 4)); stat(L, 'felicidade', 3); if (L.job) L.job.perf += 2;
+        return O('Você ficou até a sobremesa e ouviu três histórias de trânsito. A equipe chamou isso de integração.', 'bom', { react: { player: { expr: 'feliz' }, npc: { expr: 'feliz', say: 'A gente devia repetir!' } } });
+      } },
+      { label: 'Ficar na água e observar', icon: '🥤', run: (L, c) => {
+        c.equipe.forEach((p: Person) => bond(p, 2)); stat(L, 'felicidade', -1);
+        return O('Você pediu água com gás e participou da conversa. O limão foi o único ali sem meta trimestral.', 'neutro', { react: { player: { expr: 'serio' } } });
+      } },
+      { label: 'Ir embora depois da foto', icon: '📸', run: (L, c) => {
+        const chefe = c.equipe.find((p: Person) => p.rel === 'chefe'); const constrangeu = rng.chance(0.25 + L.stats.felicidade / 300);
+        if (chefe) bond(chefe, -2); if (L.job) L.job.perf -= 2;
+        if (constrangeu) { L.flags.videoFirmaIdade = L.player.age; L.flags.videoFirmaJob = L.job?.id ?? ''; stat(L, 'felicidade', -5); return O('A foto ficou boa; o vídeo dos bastidores, não. Alguém já mandou no grupo do trabalho.', 'ruim', { mood: 'triste', react: { player: { expr: 'envergonhado' } } }); }
+        stat(L, 'felicidade', 2); return O('Você escapou sem virar assunto. A foto oficial provou que compareceu; o resto é privacidade.', 'bom', { react: { player: { expr: 'feliz' } } });
+      } },
+    ],
+  },
+  {
+    id: 'reuniaoQueEmailResolvia', min: 20, max: 65, weight: (L) => (L.job ? 7 : 0), icon: '💻', title: 'Isso podia ser um e-mail',
+    setup: (L) => ({ equipe: L.people.filter((p) => p.alive && ['chefe', 'colegaTrab'].includes(p.rel)).slice(0, 3) }),
+    text: () => 'A reunião começou com “vou compartilhar a tela” e 11 minutos de silêncio. O assunto cabia em duas linhas e um anexo.',
+    scene: (L, c) => ({ id: 'reuniao', others: c.equipe, data: { titulo: 'Alinhamento rápido', sub: 'Duração prevista: 15 min. Real: 2 h' } }),
+    choices: [
+      { label: 'Mandar resumo por e-mail', icon: '✉️', run: (L, c) => {
+        c.equipe.forEach((p: Person) => bond(p, 1)); if (L.job) L.job.perf += 3; stat(L, 'felicidade', 2);
+        return O('Você resumiu as decisões em quatro tópicos. A reunião continuou para decidir o assunto do próximo e-mail.', 'bom', { react: { player: { expr: 'feliz' }, npc: { expr: 'serio', say: 'Podemos revisar ao vivo?' } } });
+      } },
+      { label: 'Apresentar uma pauta objetiva', icon: '📋', run: (L, c) => {
+        const acertou = rng.chance(0.4 + L.stats.inteligencia / 300);
+        if (acertou) { if (L.job) L.job.perf += 5; c.equipe.forEach((p: Person) => bond(p, 2)); stat(L, 'felicidade', 3); return O('A pauta resolveu o tema em 12 minutos. A chefia chamou de “ritual de eficiência” e marcou outro.', 'bom', { react: { player: { expr: 'determinado' }, npc: { expr: 'feliz', say: 'Boa, fechamos por hoje.' } } }); }
+        if (L.job) L.job.perf -= 4; stat(L, 'felicidade', -3); return O('Seu tópico abriu uma discussão paralela sobre o formato da pauta. A pauta ganhou uma pauta.', 'ruim', { mood: 'tenso', react: { player: { expr: 'serio' }, npc: { expr: 'serio' } } });
+      } },
+      { label: 'Deixar a câmera ligada sem querer', icon: '📷', run: (L, c) => {
+        const escapou = rng.chance(0.25 + L.stats.felicidade / 300); const pessoa = c.equipe.find((p: Person) => p.rel === 'chefe');
+        if (escapou) { if (L.job) L.job.perf += 1; stat(L, 'felicidade', 2); return O('Você apareceu bocejando, mas a tela congelou bem na hora. A tecnologia, enfim, trabalhou a seu favor.', 'neutro', { react: { player: { motion: 'dormirEmPe', expr: 'envergonhado' } } }); }
+        if (L.job) L.job.perf -= 6; if (pessoa) bond(pessoa, -3); stat(L, 'felicidade', -5); return O('Seu bocejo apareceu em alta definição. A chefia perguntou se você estava acompanhando; o microfone respondeu por você.', 'ruim', { mood: 'triste', react: { player: { motion: 'dormirEmPe', expr: 'envergonhado' }, npc: { expr: 'serio', say: 'Está tudo bem por aí?' } } });
+      } },
+    ],
+  },
+  {
+    id: 'assedioMoralChefe', min: 20, max: 65, weight: (L) => (L.job && L.people.some((p) => p.alive && p.rel === 'chefe') ? 4 : 0), icon: '📣', title: 'A cobrança passou do limite',
+    setup: (L) => ({ person: L.people.find((p) => p.alive && p.rel === 'chefe') }),
+    text: (_L, c) => `${c.person!.first} critica seu trabalho em público, muda prazos sem aviso e chama a pressão de “cultura de excelência”.`,
+    scene: (L, c) => ({ id: 'diretoria', others: [c.person!, ...L.people.filter((p) => p.alive && p.rel === 'colegaTrab')].slice(0, 3) }),
+    choices: [
+      { label: 'Registrar e denunciar ao RH', icon: '🗂️', run: (L, c) => {
+        const resultado = rng.chance(0.3 + L.stats.inteligencia / 300);
+        if (resultado) { L.flags.assedioMoralIdade = L.player.age; L.flags.assedioMoralValor = L.job?.salary ?? 10000; bond(c.person!, -10); L.karma += 4; stat(L, 'felicidade', 2); return O('O RH abriu uma apuração e preservou os registros. A empresa descobriu que “somos uma família” também deixa documentos.', 'neutro', { react: { npc: { expr: 'serio', say: 'A apuração é confidencial.' }, player: { expr: 'determinado' } } }); }
+        if (L.job) L.job.perf -= 7; L.flags.advertencias = ((L.flags.advertencias as number) ?? 0) + 1; bond(c.person!, -8); stat(L, 'felicidade', -7);
+        return O('O RH pediu mais provas e a chefia marcou uma avaliação de desempenho. A confidencialidade durou até o elevador.', 'ruim', { mood: 'tenso', react: { npc: { expr: 'serio', say: 'Precisamos conversar sobre sua postura.' }, player: { expr: 'triste' } } });
+      } },
+      { label: 'Confrontar em particular', icon: '💬', run: (L, c) => {
+        const limite = rng.chance(0.35 + L.stats.inteligencia / 300);
+        if (limite) { bond(c.person!, -4); if (L.job) L.job.perf += 2; stat(L, 'felicidade', 3); return O('Você pediu prazos claros e respeito nas reuniões. A chefia recuou um passo; o organograma, nenhum.', 'bom', { scene: { id: 'interacao', others: [c.person!], data: { action: 'conversar', env: 'escritorio' } }, react: { npc: { expr: 'serio', say: 'Vamos ajustar o tom.' } } }); }
+        bond(c.person!, -8); if (L.job) L.job.perf -= 5; stat(L, 'felicidade', -6); L.flags.advertencias = ((L.flags.advertencias as number) ?? 0) + 1;
+        return O(`${c.person!.first} encerrou a conversa chamando sua reação de “falta de alinhamento”. O dicionário corporativo tem páginas demais.`, 'ruim', { mood: 'triste', react: { npc: { expr: 'bravo', say: 'Isso é falta de alinhamento.' }, player: { expr: 'serio' } } });
+      } },
+      { label: 'Sair da empresa', icon: '🚪', run: (L) => {
+        if (L.job) { L.money += Math.round(L.job.salary * 0.15); L.job = null; leaveJobPeople(L); } stat(L, 'felicidade', -3); stat(L, 'saude', 3);
+        return O('Você pediu demissão e saiu com o acerto disponível. O silêncio do celular durou dois dias; já foi um benefício.', 'neutro', { mood: 'triste', react: { player: { expr: 'serio' } } });
+      } },
+    ],
+  },
+  {
+    id: 'indenizacaoTrabalhista', min: 22, max: 75, weight: 6, once: true,
+    cond: (L) => typeof L.flags.assedioMoralIdade === 'number' && L.player.age - (L.flags.assedioMoralIdade as number) >= 2,
+    setup: (L) => ({ n: Math.max(1000, Math.round((L.flags.assedioMoralValor as number) * 0.25)) }),
+    icon: '⚖️', title: 'A apuração teve resposta',
+    text: (_L, c) => `Depois de dois anos de documentos e audiências, chegou uma proposta de acordo de ${money(c.n!)}. A pasta ficou mais velha que o protocolo.`,
+    choices: [
+      { label: 'Aceitar o acordo', icon: '🤝', run: (L, c) => { L.money += c.n!; L.karma += 2; stat(L, 'felicidade', 7); delete L.flags.assedioMoralIdade; delete L.flags.assedioMoralValor; return O(`Você recebeu ${money(c.n!)} e encerrou o caso. O sistema demorou, mas pelo menos calculou os juros emocionais.`, 'bom', { react: { player: { expr: 'feliz' } } }); } },
+      { label: 'Contestar e seguir', icon: '📂', run: (L, c) => {
+        if (rng.chance(0.35 + L.stats.inteligencia / 300)) { const valor = Math.round(c.n! * 1.5); L.money += valor; stat(L, 'felicidade', 10); delete L.flags.assedioMoralIdade; delete L.flags.assedioMoralValor; return O(`A decisão final pagou ${money(valor)}. Seu arquivo de documentos ganhou uma estante própria.`, 'especial', { react: { player: { expr: 'feliz' } } }); }
+        L.money -= Math.min(L.money, 800); stat(L, 'felicidade', -5); delete L.flags.assedioMoralIdade; delete L.flags.assedioMoralValor; return O('A contestação não mudou o acordo e gerou mais custos. A pasta ganhou uma última folha: “encerrado”.', 'ruim', { mood: 'triste', react: { player: { expr: 'triste' } } });
+      } },
+      { label: 'Encerrar sem acordo', icon: '🧹', run: (L) => { delete L.flags.assedioMoralIdade; delete L.flags.assedioMoralValor; stat(L, 'felicidade', 2); return O('Você fechou o caso e recuperou espaço na gaveta. A empresa enviou uma pesquisa de satisfação.', 'neutro'); } },
+    ],
+  },
+  {
+    id: 'layoffSomosFamilia', min: 20, max: 65, weight: (L) => (L.job && !L.retired ? 3 : 0), icon: '📦', title: 'Mudança de estrutura',
+    setup: (L) => ({ equipe: L.people.filter((p) => p.alive && ['chefe', 'colegaTrab'].includes(p.rel)).slice(0, 3) }),
+    text: () => 'A empresa anunciou um “ajuste estratégico” e disse que todos são uma família. A família recebeu uma caixa para guardar os pertences.',
+    scene: (L, c) => ({ id: 'demissao', others: c.equipe, data: { titulo: 'Nova estrutura', sub: 'Sua mesa cabe numa caixa.' } }),
+    choices: [
+      { label: 'Aceitar o acordo de saída', icon: '📄', run: (L) => {
+        const valor = Math.round((L.job?.salary ?? 0) * 0.45); L.money += valor; L.job = null; leaveJobPeople(L); stat(L, 'felicidade', -7); stat(L, 'saude', 2);
+        return O(`Você saiu com ${money(valor)} e uma caixa com dois porta-retratos. A empresa manteve a família no grupo de mensagens.`, 'ruim', { mood: 'triste', scene: { id: 'demissao' }, react: { player: { motion: 'sentarCabisbaixo', expr: 'triste' } } });
+      } },
+      { label: 'Pedir revisão dos critérios', icon: '🔎', run: (L, c) => {
+        const ficou = rng.chance(0.25 + (L.job?.perf ?? 0) / 250 + L.stats.inteligencia / 400);
+        if (ficou) { if (L.job) L.job.perf += 3; c.equipe.forEach((p: Person) => bond(p, 2)); stat(L, 'felicidade', 2); return O('A lista foi revista e seu cargo ficou. A caixa voltou vazia; a confiança, em análise.', 'neutro', { react: { npc: { expr: 'serio', say: 'Por enquanto, sua vaga fica.' }, player: { expr: 'feliz' } } }); }
+        const valor = Math.round((L.job?.salary ?? 0) * 0.25); L.money += valor; L.job = null; leaveJobPeople(L); stat(L, 'felicidade', -10);
+        return O(`A decisão foi mantida e o acerto ficou em ${money(valor)}. A caixa já estava montada; eficiência é eficiência.`, 'ruim', { mood: 'triste', react: { npc: { expr: 'serio', say: 'A decisão é definitiva.' }, player: { expr: 'triste' } } });
+      } },
+      { label: 'Ajudar a equipe a se organizar', icon: '🤝', run: (L, c) => {
+        c.equipe.forEach((p: Person) => bond(p, 5)); L.karma += 3; stat(L, 'felicidade', -3); const valor = Math.round((L.job?.salary ?? 0) * 0.3); L.money += valor; L.job = null; leaveJobPeople(L);
+        return O(`Você ajudou a equipe a guardar as coisas e recebeu ${money(valor)} no acerto. A empresa chamou de despedida colaborativa.`, 'neutro', { mood: 'triste', react: { npc: { expr: 'triste', say: 'A gente se fala por aqui.' }, player: { expr: 'triste' } } });
+      } },
+    ],
+  },
+  {
+    id: 'greveParalisacao', min: 20, max: 65, weight: (L) => (L.job ? 4 : 0), icon: '✊', title: 'A equipe parou',
+    setup: (L) => ({ equipe: L.people.filter((p) => p.alive && p.rel === 'colegaTrab').slice(0, 3), chefe: L.people.find((p) => p.alive && p.rel === 'chefe') }),
+    text: () => 'A equipe convocou uma paralisação por salários e prazos. A chefia enviou um convite para uma reunião sobre o convite.',
+    scene: (L, c) => ({ id: 'diretoria', others: [...c.equipe, ...(c.chefe ? [c.chefe] : [])].slice(0, 3) }),
+    choices: [
+      { label: 'Aderir à paralisação', icon: '🪧', run: (L, c) => {
+        const negociou = rng.chance(0.3 + L.stats.inteligencia / 350 + c.equipe.length * 0.06);
+        L.flags.greveAderiuIdade = L.player.age; L.flags.greveEmpregoId = L.job?.id ?? '';
+        if (negociou) { c.equipe.forEach((p: Person) => bond(p, 8)); if (L.job) L.job.perf += 2; L.karma += 3; stat(L, 'felicidade', 4); return O('A paralisação conseguiu abrir negociação sobre salários e carga. A ata chamou isso de “primeira conversa”.', 'bom', { react: { npc: { expr: 'feliz', say: 'A equipe conseguiu ser ouvida.' } } }); }
+        c.equipe.forEach((p: Person) => bond(p, 5)); if (L.job) L.job.perf -= 5; stat(L, 'felicidade', -4); return O('A chefia não cedeu e descontou o dia. A equipe ficou unida; o holerite, menos.', 'ruim', { mood: 'tenso', react: { npc: { expr: 'serio', say: 'Vamos retomar amanhã.' }, player: { expr: 'serio' } } });
+      } },
+      { label: 'Continuar trabalhando', icon: '⌨️', run: (L, c) => {
+        if (L.job) L.job.perf += 3; c.equipe.forEach((p: Person) => bond(p, -5)); if (c.chefe) bond(c.chefe, 3); stat(L, 'felicidade', -2);
+        return O('Você entregou sua parte enquanto a equipe parava. A chefia agradeceu; seus colegas também perceberam.', 'neutro', { react: { npc: { expr: 'serio' }, player: { expr: 'envergonhado' } } });
+      } },
+      { label: 'Propor mediação formal', icon: '📋', run: (L, c) => {
+        const acordo = rng.chance(0.35 + L.stats.inteligencia / 350);
+        if (acordo) { c.equipe.forEach((p: Person) => bond(p, 4)); if (c.chefe) bond(c.chefe, 2); stat(L, 'felicidade', 3); if (L.job) L.job.perf += 2; return O('A mediação marcou uma negociação com representantes. A pauta ficou maior que a mesa, mas coube.', 'bom', { react: { npc: { expr: 'feliz', say: 'Vamos levar as propostas.' } } }); }
+        c.equipe.forEach((p: Person) => bond(p, -2)); if (L.job) L.job.perf -= 2; stat(L, 'felicidade', -3); return O('A mediação virou outra reunião sem decisão. A equipe esperava uma ponte; recebeu um formulário.', 'ruim', { mood: 'tenso', react: { player: { expr: 'serio' } } });
+      } },
+    ],
+  },
+  {
+    id: 'homeOfficeComFamilia', min: 20, max: 65, weight: (L) => (L.job && (children(L).length > 0 || !!partner(L) || L.pets.some((p) => p.alive)) ? 6 : 0), icon: '🏠', title: 'A reunião invadiu a sala',
+    setup: (L) => ({ crianca: children(L).find((p) => p.age <= 17), parceiro: partner(L), pet: L.pets.find((p) => p.alive) }),
+    text: (_L, c) => c.crianca
+      ? `${c.crianca.first} entrou na chamada para avisar que o almoço está pronto. O microfone estava aberto e a pauta, indefesa.`
+      : c.pet
+        ? `${c.pet.name} latiu durante sua apresentação. O microfone estava aberto; o cachorro, eloquente.`
+        : `${c.parceiro?.first ?? 'Alguém da casa'} passou atrás da câmera com uma panela. A equipe descobriu o almoço antes de você.`,
+    scene: (_L, c) => ({ id: 'trabalho', others: c.crianca ? [c.crianca] : c.parceiro ? [c.parceiro] : [], data: { titulo: 'Home office', sub: 'O microfone estava aberto.' } }),
+    choices: [
+      { label: 'Mutar e reorganizar a sala', icon: '🔇', run: (L, c) => {
+        if (L.job) L.job.perf += 4; stat(L, 'felicidade', -2); if (c.crianca) bond(c.crianca, -1); if (c.pet) c.pet.bond = Math.max(0, c.pet.bond - 1);
+        return O('Você mutou a chamada e voltou ao relatório. A casa ficou quieta por 90 segundos, novo recorde.', 'neutro', { react: { player: { expr: 'serio' } } });
+      } },
+      { label: 'Apresentar a família à equipe', icon: '👋', run: (L, c) => {
+        const deuCerto = rng.chance(0.45 + L.stats.felicidade / 350);
+        if (deuCerto) { if (L.job) L.job.perf += 2; if (c.crianca) bond(c.crianca, 4); if (c.parceiro) bond(c.parceiro, 2); if (c.pet) c.pet.bond = Math.min(100, c.pet.bond + 3); stat(L, 'felicidade', 4); return O('A equipe riu, a pauta terminou e alguém perguntou se sua família aceita vaga. Clima organizacional resolvido.', 'bom', { react: { player: { expr: 'feliz' }, npc: { expr: 'feliz', say: 'Pode aparecer mais vezes!' } } }); }
+        if (L.job) L.job.perf -= 5; if (c.crianca) bond(c.crianca, -2); if (c.parceiro) bond(c.parceiro, -2); if (c.pet) c.pet.bond = Math.max(0, c.pet.bond - 2); stat(L, 'felicidade', -4);
+        return O('A chefia pediu para manter o foco. A família saiu da chamada; o climão ficou até o almoço.', 'ruim', { mood: 'tenso', react: { npc: { expr: 'serio', say: 'Vamos voltar à pauta.' }, player: { expr: 'envergonhado' } } });
+      } },
+      { label: 'Encerrar e cuidar da casa', icon: '🍲', run: (L, c) => {
+        if (L.job) L.job.perf -= 3; if (c.crianca) bond(c.crianca, 6); if (c.parceiro) bond(c.parceiro, 4); stat(L, 'felicidade', 3); stat(L, 'saude', 1);
+        return O('Você encerrou a chamada e foi almoçar com a família. O prazo ficou para depois; a comida, não.', 'bom', { mood: 'feliz', react: { player: { expr: 'feliz' } } });
+      } },
+    ],
+  },
+  {
+    id: 'amigoOcultoFirma', min: 20, max: 65, weight: (L) => (L.job && L.people.some((p) => p.alive && p.rel === 'colegaTrab') ? 4 : 0), icon: '🎁', title: 'Amigo oculto do trabalho',
+    setup: (L) => ({ person: pickRandom(L.people.filter((p) => p.alive && p.rel === 'colegaTrab')), n: rng.pick([80, 120, 160]) }),
+    text: (_L, c) => `No sorteio da firma, você tirou ${c.person!.first}. O limite é ${money(c.n!)} e a lista de sugestões diz “qualquer coisa”.`,
+    scene: (L, c) => ({ id: 'festaFirma', others: [c.person!, ...L.people.filter((p) => p.alive && p.rel === 'colegaTrab' && p !== c.person).slice(0, 2)] }),
+    choices: [
+      { label: 'Comprar algo da lista', icon: '🛍️', cond: (L, c) => L.money >= c.n!, run: (L, c) => {
+        L.money -= c.n!; bond(c.person!, 7); stat(L, 'felicidade', 3);
+        return O(`${c.person!.first} gostou do presente de ${money(c.n!)}. A lista dizia “qualquer coisa”, mas havia avaliação por estrelas.`, 'bom', { react: { npc: { expr: 'feliz', say: 'Era exatamente o que eu queria!' } } });
+      } },
+      { label: 'Presentear com um livro usado', icon: '📚', run: (L, c) => {
+        const agradou = rng.chance(0.35 + c.person!.bond / 300);
+        if (agradou) { bond(c.person!, 4); stat(L, 'felicidade', 2); return O(`${c.person!.first} gostou do livro. Você explicou que as anotações são “conteúdo extra”.`, 'bom', { react: { npc: { expr: 'feliz', say: 'Vou ler com calma!' } } }); }
+        bond(c.person!, -4); stat(L, 'felicidade', -2); return O(`${c.person!.first} agradeceu e perguntou se o recibo também era usado. O embrulho ficou ótimo.`, 'neutro', { react: { npc: { expr: 'serio' }, player: { expr: 'envergonhado' } } });
+      } },
+      { label: 'Levar lanche para a equipe', icon: '🍰', cond: (L) => L.money >= 60, run: (L, c) => {
+        L.money -= 60; L.people.filter((p) => p.alive && p.rel === 'colegaTrab').forEach((p) => bond(p, 2)); bond(c.person!, 3); stat(L, 'felicidade', 4);
+        return O('O bolo acabou antes do sorteio. O amigo oculto continua oculto; a fome, resolvida.', 'bom', { react: { npc: { expr: 'feliz', say: 'Quem trouxe bolo merece promoção.' } } });
+      } },
+    ],
+  },
 ];
 
 export function eventTitle(ev: LifeEvent, L: Life, c: EvCtx) {
