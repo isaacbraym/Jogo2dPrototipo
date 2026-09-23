@@ -84,6 +84,7 @@ Valores: number, boolean ou string (JSON). Nomes camelCase. Guarde a **idade** q
 | `avisoDivida` | idade do último aviso de dívida | life |
 | `moodNext` | humor da próxima cena em casa | ui/game |
 | `neto` | já teve neto | events |
+| `netoPessoaId` | id do neto criado no evento de nascimento; atualmente salvo como conhecido | events; netoSoLigaNoPix; aprenderCelularComNeto |
 | `pixExposto` | idade em que o caso do Pix foi exposto no grupo do bairro | events; vizinhoLembra |
 | `pixVizinhoId` | id da pessoa que recebeu o Pix exposto | events; vizinhoLembra |
 | `furadeiraRevidada` | idade em que o jogador retaliou com som alto | events; vizinhoLembra |
@@ -104,6 +105,12 @@ Valores: number, boolean ou string (JSON). Nomes camelCase. Guarde a **idade** q
 | `greveAderiuIdade` | idade em que o jogador aderiu à paralisação | events |
 | `greveEmpregoId` | id do emprego na paralisação | events |
 | `boletimEscondidoIdade` | idade em que o boletim escolar foi escondido | events; paisAchamBoletim |
+| `irmaoEmprestimoPessoaId` | id do irmão que recebeu o empréstimo pendente | events; irmaoNaoDevolve |
+| `irmaoEmprestimoIdade` | idade em que o empréstimo ao irmão foi feito | events; irmaoNaoDevolve |
+| `irmaoEmprestimoValor` | valor do empréstimo ao irmão | events; irmaoNaoDevolve |
+| `testamentoGatoIdade` | idade em que parte dos bens foi reservada ao gato | events; familiaContestaTestamento |
+| `testamentoGatoValor` | valor reservado para os cuidados do gato | events; familiaContestaTestamento |
+| `testamentoGatoPetId` | id do gato citado no testamento | events; familiaContestaTestamento |
 | `ev_<id>` | evento `once` já ocorreu | life.pickEvents |
 
 **Ao criar uma flag nova, acrescente uma linha nesta tabela** (e rode `npm run catalog`).

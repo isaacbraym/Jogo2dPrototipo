@@ -3,7 +3,7 @@
 > **Não edite à mão.** Gerado por `npm run catalog` a partir dos registros do código.
 > Use para conferir nomes existentes antes de criar algo novo.
 
-## Eventos anuais — 80
+## Eventos anuais — 94
 
 | id | idades | título | tipo |
 |---|---|---|---|
@@ -24,7 +24,7 @@
 | `amorAdulto` | 20–55 | 💞 Alguém especial | 3 escolhas |
 | `pedidoParceiro` | 22–65 | 💍 Pedido de casamento! | 2 escolhas |
 | `bebe` | 22–44 | 🍼 Um bebê a caminho? | 3 escolhas |
-| `traicao` | 20–70 | 💔 Suspeita de traição | 2 escolhas |
+| `traicao` | 20–70 | 💔 Suspeita de traição | 4 escolhas |
 | `amigoPrecisa` | 16–90 | 🆘 Amigo em apuros | 2 escolhas |
 | `loteriaAchada` | 18–90 | 🎟️ Bilhete premiado? | 2 escolhas |
 | `acidenteRua` | 8–90 | 🍌 Distração na rua | automático |
@@ -33,7 +33,7 @@
 | `viagemPremio` | 18–80 | ✈️ Promoção de passagens | 2 escolhas |
 | `crise` | 35–55 | 🌀 Crise de meia-idade | 3 escolhas, única |
 | `netos` | 45–100 | 👵 Você vai ser avó/avô! | automático |
-| `reencontro` | 25–90 | 🔁 Reencontro inesperado | 2 escolhas |
+| `reencontro` | 25–90 | 🔁 Reencontro inesperado | 3 escolhas |
 | `heroi` | 16–80 | 🦸 Momento de coragem | 2 escolhas |
 | `propinaChefe` | 20–65 | 🕴️ Proposta suspeita | 3 escolhas |
 | `ofertaEmprego` | 18–62 | 📨 Oferta de emprego | 3 escolhas |
@@ -87,6 +87,20 @@
 | `trabalhoGrupoSozinho` | 9–17 | 📚 Trabalho em grupo | 3 escolhas |
 | `primeiroCelular` | 11–17 | 📱 Seu primeiro celular | 3 escolhas, única |
 | `cachorroComeuDever` | 7–15 | 🐶 O cachorro comeu o dever | 3 escolhas |
+| `ceiaNatal` | 18–100 | 🎄 Ceia de Natal | 3 escolhas |
+| `tiaPerguntaNamoro` | 25–85 | 💌 E o namoro? | 3 escolhas |
+| `sograMoraJunto` | 22–80 | 🧳 Visita sem data de volta | 3 escolhas, única |
+| `irmaoPedeEmprestado` | 18–90 | 💸 Empréstimo entre irmãos | 3 escolhas |
+| `irmaoNaoDevolve` | 19–100 | 📆 O mês que vem chegou | 3 escolhas, única |
+| `herancaBriga` | 18–100 | ⚖️ A herança virou pauta | 3 escolhas, única |
+| `velorioCoxinha` | 18–100 | 🕯️ Velório e coxinha | 3 escolhas, única |
+| `filhoAdolescenteRebelde` | 30–80 | 🎧 O silêncio do adolescente | 3 escolhas |
+| `netoSoLigaNoPix` | 45–100 | 📲 Vô, faz um Pix? | 3 escolhas |
+| `aprenderCelularComNeto` | 60–100 | 📱 Aula de celular com o neto | 3 escolhas, única |
+| `provaVidaInss` | 60–100 | 🗃️ Prova de vida | 3 escolhas, única |
+| `baileTerceiraIdade` | 60–100 | 🎶 Baile da terceira idade | 3 escolhas |
+| `testamentoGato` | 60–100 | 🐈 O testamento do gato | 3 escolhas, única |
+| `familiaContestaTestamento` | 61–100 | 📜 A família leu o testamento | 3 escolhas, única |
 
 ## Ações (aba Atividades) — 27
 
@@ -321,13 +335,20 @@ Além destas, `ev_<id>` marca eventos `once` já ocorridos.
 | `greveAderiuIdade` | game/events.ts |
 | `greveEmpregoId` | game/events.ts |
 | `infracoes` | game/events.ts, game/aggression.ts, game/life.ts |
+| `irmaoEmprestimoIdade` | game/events.ts |
+| `irmaoEmprestimoPessoaId` | game/events.ts |
+| `irmaoEmprestimoValor` | game/events.ts |
 | `medalha` | game/events.ts |
 | `moodNext` | ui/game.ts |
 | `musica` | game/events.ts, game/activities.ts, game/interviews.ts |
 | `neto` | game/events.ts |
+| `netoPessoaId` | game/events.ts |
 | `nomeSujo` | game/events.ts |
 | `pixExposto` | game/events.ts |
 | `pixVizinhoId` | game/events.ts |
+| `testamentoGatoIdade` | game/events.ts |
+| `testamentoGatoPetId` | game/events.ts |
+| `testamentoGatoValor` | game/events.ts |
 | `videoFirmaIdade` | game/events.ts |
 | `videoFirmaJob` | game/events.ts |
 

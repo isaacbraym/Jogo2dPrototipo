@@ -203,11 +203,14 @@ export const EVENTS: LifeEvent[] = [
   },
   {
     id: 'traicao', min: 20, max: 70, weight: (L) => (partner(L) ? 3 : 0), icon: '💔', title: 'Suspeita de traição',
-    setup: (L) => ({ person: partner(L) }),
+    cond: (L) => !!partner(L),
+    setup: (L) => { const person = partner(L); return person ? { person } : null; },
     text: (_L, c) => `Você viu mensagens estranhas no celular de ${c.person!.first}...`,
     choices: [
       { label: 'Confrontar', icon: '😡', run: (L, c) => { const p = c.person!; if (rng.chance(0.4)) { p.rel = 'ex'; bond(p, -50); stat(L, 'felicidade', -15); return O(`${p.first} confessou tudo. O relacionamento acabou.`, 'ruim', { scene: { id: 'termino', others: [p] } }); } bond(p, -8); return O(`Era só uma surpresa de aniversário! Que vergonha...`, 'neutro', { scene: { id: 'interacao', others: [p], data: { action: 'discutir' } } }); } },
       { label: 'Confiar e esquecer', icon: '🕊️', run: (L, c) => { bond(c.person!, 3); stat(L, 'felicidade', -2); return O('Você escolheu confiar.', 'neutro'); } },
+      { label: 'Fingir que não viu', icon: '🙈', run: (L, c) => { bond(c.person!, -3); stat(L, 'felicidade', -4); return O('Você guardou a suspeita e fechou o celular. A senha mudou; a dúvida, não.', 'neutro', { mood: 'tenso', react: { player: { expr: 'serio' } } }); } },
+      { label: 'Revidar com agressão verbal', icon: '🗯️', run: (L, c) => aggress(L, c.person!, 'xingar') },
     ],
   },
   {
@@ -276,17 +279,24 @@ export const EVENTS: LifeEvent[] = [
   },
   {
     id: 'netos', min: 45, max: 100, weight: (L) => (children(L).some((k) => k.age >= 24) && !L.flags.neto ? 8 : 0), icon: '👵', title: 'Você vai ser avó/avô!',
-    setup: (L) => ({ person: pickRandom(children(L).filter((k) => k.age >= 24)) }),
+    cond: (L) => children(L).some((k) => k.age >= 24) && !L.flags.neto,
+    setup: (L) => { const person = pickRandom(children(L).filter((k) => k.age >= 24)); return person ? { person } : null; },
     text: (_L, c) => `${c.person!.first} contou que está esperando um bebê!`,
-    auto: (L, c) => { L.flags.neto = 1; stat(L, 'felicidade', 14); bond(c.person!, 8); return O('A família vai crescer! Você está radiante.', 'especial', { scene: { id: 'interacao', others: [c.person!], data: { action: 'abracar' } } }); },
+    auto: (L, c) => { const neto = makePerson(rng, { sex: rng.chance(0.5) ? 'f' : 'm', age: 0, rel: 'conhecido', last: c.person!.last, bond: 95 }); L.people.push(neto); L.flags.neto = 1; L.flags.netoPessoaId = neto.id; stat(L, 'felicidade', 14); bond(c.person!, 8); return O(`${c.person!.first} contou que ${neto.first} está a caminho. A família vai crescer; a lista de nomes também.`, 'especial', { scene: { id: 'interacao', others: [c.person!, neto], data: { action: 'abracar' } } }); },
   },
   {
     id: 'reencontro', min: 25, max: 90, weight: (L) => (byRel(L, 'ex').length ? 3 : 0), icon: '🔁', title: 'Reencontro inesperado',
-    setup: (L) => ({ person: pickRandom(byRel(L, 'ex')) }),
+    cond: (L) => byRel(L, 'ex').length > 0,
+    setup: (L) => { const person = pickRandom(byRel(L, 'ex')); return person ? { person } : null; },
     text: (_L, c) => `Você esbarrou em ${c.person!.first}, seu/sua ex, no supermercado.`,
     choices: [
       { label: 'Conversar', icon: '💬', run: (L, c) => { bond(c.person!, 10); stat(L, 'felicidade', 3); return O('Foi bom colocar o papo em dia.', 'bom', { scene: { id: 'interacao', others: [c.person!], data: { action: 'conversar', env: 'ruaDia' } } }); } },
-      { label: 'Fingir que não viu', icon: '🫣', run: () => O('Você se escondeu atrás das bananas.', 'neutro') },
+      { label: 'Fingir que não viu', icon: '🫣', run: (L, c) => { bond(c.person!, -1); stat(L, 'felicidade', -1); return O('Você se escondeu atrás das bananas. O carrinho andou; o constrangimento ficou.', 'neutro', { react: { player: { expr: 'envergonhado' } } }); } },
+      { label: 'Convidar para tentar de novo', icon: '💞', cond: (L) => !partner(L), run: (L, c) => {
+        const p = c.person!; const voltou = rng.chance(0.3 + L.stats.aparencia / 350 + p.bond / 500);
+        if (voltou) { p.rel = p.sex === 'f' ? 'namorada' : 'namorado'; bond(p, 15); stat(L, 'felicidade', 10); return O(`${p.first} aceitou conversar sobre um recomeço. Vocês combinaram de não discutir na fila do caixa, ao menos hoje.`, 'especial', { scene: { id: 'encontro', others: [p], data: { first: false, good: true } }, react: { npc: { expr: 'feliz', say: 'Vamos com calma desta vez.' } } }); }
+        bond(p, -7); stat(L, 'felicidade', -8); return O(`${p.first} agradeceu e recusou. A fila avançou; seu coração pediu senha nova.`, 'ruim', { scene: { id: 'encontro', others: [p], data: { first: false, good: false } }, mood: 'triste', react: { npc: { expr: 'serio', say: 'Prefiro deixar como está.' }, player: { expr: 'triste' } } });
+      } },
     ],
   },
   {
@@ -1168,6 +1178,225 @@ export const EVENTS: LifeEvent[] = [
         L.edu.nota -= 2; parents(L).forEach((p) => bond(p, -2)); stat(L, 'felicidade', -3); return O('A professora pediu que seus pais acompanhassem a tarefa. A mochila virou projeto de transparência.', 'neutro', { scene: { id: 'brigaFamilia', others: parents(L).slice(0, 1) }, mood: 'tenso' });
       } },
       { label: 'Fazer o dever no recreio', icon: '✏️', run: (L) => { L.edu.nota += 3; stat(L, 'saude', -1); stat(L, 'felicidade', -2); return O('Você terminou no recreio e perdeu metade do lanche. A desculpa teria dado menos trabalho, mas não menos pergunta.', 'neutro'); } },
+    ],
+  },
+  {
+    id: 'ceiaNatal', min: 18, max: 100, weight: 5, icon: '🎄', title: 'Ceia de Natal',
+    setup: (L) => ({ familia: [...parents(L), ...byRel(L, 'irmao', 'irma', 'avo', 'avoM'), ...(partner(L) ? [partner(L)!] : []), ...children(L)].slice(0, 4) }),
+    text: () => 'A ceia estava tranquila até alguém perguntar sobre política. O assunto virou genérico, a voz subiu e o pavê pediu distância.',
+    scene: (L, c) => ({ id: 'churrasco', others: c.familia }),
+    choices: [
+      { label: 'Mudar o assunto para a sobremesa', icon: '🍰', run: (L, c) => { c.familia.forEach((p: Person) => bond(p, 3)); stat(L, 'felicidade', 4); return O('Você perguntou quem trouxe o pavê. A mesa voltou a discutir algo que ninguém quer dividir: a última fatia.', 'bom', { react: { npc: { expr: 'feliz', say: 'Eu trouxe, pode pegar.' } } }); } },
+      { label: 'Entrar na discussão', icon: '🗣️', run: (L, c) => {
+        const acalmou = rng.chance(0.3 + L.stats.inteligencia / 300);
+        if (acalmou) { c.familia.forEach((p: Person) => bond(p, 1)); stat(L, 'felicidade', 2); return O('Você conseguiu levar a conversa para outro tema. A família mudou para futebol e se sentiu em terreno seguro.', 'neutro', { react: { player: { expr: 'serio' } } }); }
+        c.familia.forEach((p: Person) => bond(p, -4)); stat(L, 'felicidade', -6); return O('A discussão durou até a sobremesa. O peru esfriou; as opiniões, não.', 'ruim', { mood: 'tenso', react: { npc: { expr: 'bravo' }, player: { expr: 'serio' } } });
+      } },
+      { label: 'Propor um jogo de cartas', icon: '🃏', run: (L, c) => { c.familia.forEach((p: Person) => bond(p, 2)); L.karma += 1; stat(L, 'felicidade', 3); return O('As cartas foram para a mesa e a discussão perdeu a vez. Agora a família briga por quem embaralhou errado.', 'bom'); } },
+    ],
+  },
+  {
+    id: 'tiaPerguntaNamoro', min: 25, max: 85, weight: 5, icon: '💌', title: 'E o namoro?',
+    cond: (L) => !partner(L),
+    setup: () => ({ person: makePerson(rng, { sex: 'f', age: rng.int(45, 75), rel: 'conhecido', bond: 45 }) }),
+    text: (_L, c) => `${c.person!.first}, sua tia por consideração, perguntou pela terceira vez se você está namorando. O prato de salada já respondeu por você.`,
+    scene: (_L, c) => ({ id: 'churrasco', others: [c.person!] }),
+    choices: [
+      { label: 'Responder com sinceridade', icon: '💬', run: (L, c) => { L.people.push(c.person!); bond(c.person!, 2); stat(L, 'felicidade', 2); return O('Você disse que está bem assim. Sua tia ouviu e serviu mais salada, prova de que entendeu metade.', 'bom', { react: { npc: { expr: 'feliz', say: 'O importante é você estar bem.' } } }); } },
+      { label: 'Dizer que está conhecendo alguém', icon: '🤫', run: (L, c) => {
+        L.people.push(c.person!); const acreditou = rng.chance(0.4 + L.stats.inteligencia / 350);
+        if (acreditou) { bond(c.person!, 1); stat(L, 'felicidade', 2); return O('Sua tia acreditou e pediu detalhes. Você ganhou tempo; a família abriu uma sindicância.', 'neutro', { react: { npc: { expr: 'feliz', say: 'Quando vamos conhecer?' } } }); }
+        bond(c.person!, -3); stat(L, 'felicidade', -3); return O('Ela percebeu a história e ofereceu ajuda para encontrar alguém. O plano ficou mais sério que a mentira.', 'ruim', { react: { npc: { expr: 'serio', say: 'Eu conheço uma pessoa.' }, player: { expr: 'envergonhado' } } });
+      } },
+      { label: 'Perguntar como ela está', icon: '☕', run: (L, c) => { L.people.push(c.person!); bond(c.person!, 5); stat(L, 'felicidade', 3); return O('Sua tia contou novidades por 20 minutos. Pela primeira vez, a pergunta veio com resposta dos dois lados.', 'bom', { react: { npc: { expr: 'feliz', say: 'Agora você quer saber de mim?' } } }); } },
+    ],
+  },
+  {
+    id: 'sograMoraJunto', min: 22, max: 80, weight: (L) => (spouse(L) ? 4 : 0), once: true, icon: '🧳', title: 'Visita sem data de volta',
+    cond: (L) => !!spouse(L),
+    setup: (L) => { const parceiro = spouse(L); if (!parceiro) return null; const sex = rng.chance(0.5) ? 'f' : 'm'; return { person: makePerson(rng, { sex, age: rng.int(50, 78), rel: 'conhecido', bond: 45 }), parceiro, tipo: sex === 'f' ? 'mãe' : 'pai' }; },
+    text: (_L, c) => `${c.tipo === 'mãe' ? 'A mãe' : 'O pai'} de ${c.parceiro!.first}, ${c.person!.first}, veio passar uns dias enquanto a casa passa por obra. A mala veio com endereço fixo.`,
+    scene: (_L, c) => ({ id: 'interacao', others: [c.parceiro!, c.person!], data: { action: 'conversar', env: 'sala' } }),
+    choices: [
+      { label: 'Deixar ficar até a obra acabar', icon: '🏠', run: (L, c) => { L.people.push(c.person!); bond(c.person!, 6); bond(c.parceiro!, 4); stat(L, 'felicidade', -3); return O('Você abriu espaço no armário. A obra não tinha previsão, mas a mala já tinha prateleira.', 'neutro', { react: { npc: { expr: 'feliz', say: 'Não vou atrapalhar.' }, player: { expr: 'serio' } } }); } },
+      { label: 'Combinar uma data para a mudança', icon: '📅', run: (L, c) => {
+        L.people.push(c.person!); const aceitou = rng.chance(0.4 + L.stats.inteligencia / 300);
+        if (aceitou) { bond(c.person!, 2); bond(c.parceiro!, 3); stat(L, 'felicidade', 3); return O('Vocês marcaram uma data e dividiram as tarefas. A reforma finalmente ganhou calendário e testemunhas.', 'bom', { react: { npc: { expr: 'serio', say: 'Combinado. Vou me organizar.' } } }); }
+        bond(c.person!, -4); bond(c.parceiro!, -3); stat(L, 'felicidade', -5); return O('A conversa virou discussão sobre quem escolheu o piso. A data da mudança não foi encontrada.', 'ruim', { mood: 'tenso', react: { npc: { expr: 'bravo', say: 'A obra ainda não terminou.' }, player: { expr: 'serio' } } });
+      } },
+      { label: 'Dividir as tarefas da casa', icon: '🧹', run: (L, c) => { L.people.push(c.person!); bond(c.person!, 3); bond(c.parceiro!, 2); stat(L, 'saude', -1); stat(L, 'felicidade', 2); return O('A visita ajudou com as tarefas. Você aprendeu que a louça também pode ser diplomacia.', 'bom', { react: { npc: { expr: 'feliz', say: 'Assim fica mais fácil.' } } }); } },
+    ],
+  },
+  {
+    id: 'irmaoPedeEmprestado', min: 18, max: 90, weight: (L) => (byRel(L, 'irmao', 'irma').length && !L.flags.irmaoEmprestimoPessoaId ? 5 : 0), icon: '💸', title: 'Empréstimo entre irmãos',
+    cond: (L) => byRel(L, 'irmao', 'irma').length > 0 && !L.flags.irmaoEmprestimoPessoaId,
+    setup: (L) => { const person = pickRandom(byRel(L, 'irmao', 'irma')); return person ? { person, n: rng.int(2, 8) * 500 } : null; },
+    text: (_L, c) => `${c.person!.first} pediu ${money(c.n!)} emprestado “só até o mês que vem”. O mês não especificou o ano.`,
+    choices: [
+      { label: 'Emprestar o dinheiro', icon: '🤝', cond: (L, c) => L.money >= c.n!, run: (L, c) => { L.money -= c.n!; bond(c.person!, 6); L.karma += 2; L.flags.irmaoEmprestimoPessoaId = c.person!.id; L.flags.irmaoEmprestimoIdade = L.player.age; L.flags.irmaoEmprestimoValor = c.n!; return O(`Você emprestou ${money(c.n!)}. Seu irmão agradeceu muito; o calendário ficou de fora da conversa.`, 'neutro', { react: { npc: { expr: 'feliz', say: 'No mês que vem eu devolvo.' } } }); } },
+      { label: 'Negar com carinho', icon: '🫶', run: (L, c) => { bond(c.person!, -3); stat(L, 'felicidade', -1); return O(`${c.person!.first} entendeu, mas ficou chateado(a). O limite do cartão agradeceu em silêncio.`, 'neutro', { react: { npc: { expr: 'triste', say: 'Tudo bem, eu dou um jeito.' } } }); } },
+      { label: 'Ajudar com uma parte', icon: '🪙', cond: (L) => L.money >= 500, run: (L, c) => { const v = Math.min(500, Math.round(c.n! / 2)); L.money -= v; bond(c.person!, 3); L.karma += 1; stat(L, 'felicidade', 2); return O(`Você ajudou com ${money(v)}. O resto ficou para o mês que ainda não tem nome.`, 'bom'); } },
+    ],
+  },
+  {
+    id: 'irmaoNaoDevolve', min: 19, max: 100, weight: 7, once: true,
+    cond: (L) => typeof L.flags.irmaoEmprestimoIdade === 'number' && L.player.age - (L.flags.irmaoEmprestimoIdade as number) >= 1 && !!L.people.find((p) => p.id === L.flags.irmaoEmprestimoPessoaId && p.alive),
+    setup: (L) => { const person = L.people.find((p) => p.id === L.flags.irmaoEmprestimoPessoaId && p.alive); return person ? { person, n: L.flags.irmaoEmprestimoValor as number } : null; },
+    icon: '📆', title: 'O mês que vem chegou',
+    text: (_L, c) => `${c.person!.first} ainda não devolveu ${money(c.n!)}. O mês que vem já completou aniversário.`,
+    choices: [
+      { label: 'Cobrar com calma', icon: '💬', run: (L, c) => {
+        const pagou = rng.chance(0.25 + c.person!.bond / 300); delete L.flags.irmaoEmprestimoPessoaId; delete L.flags.irmaoEmprestimoIdade; delete L.flags.irmaoEmprestimoValor;
+        if (pagou) { L.money += c.n!; bond(c.person!, 1); stat(L, 'felicidade', 3); return O(`${c.person!.first} devolveu ${money(c.n!)}. Você recebeu o dinheiro e um áudio de seis minutos explicando o atraso.`, 'bom', { react: { npc: { expr: 'serio', say: 'Demorei, mas paguei.' } } }); }
+        bond(c.person!, -6); stat(L, 'felicidade', -4); return O(`${c.person!.first} prometeu pagar depois. O empréstimo agora tem juros de ressentimento.`, 'ruim', { mood: 'tenso', react: { npc: { expr: 'serio', say: 'Assim que eu puder.' }, player: { expr: 'serio' } } });
+      } },
+      { label: 'Perdoar a dívida', icon: '🕊️', run: (L, c) => { delete L.flags.irmaoEmprestimoPessoaId; delete L.flags.irmaoEmprestimoIdade; delete L.flags.irmaoEmprestimoValor; bond(c.person!, 4); L.karma += 2; stat(L, 'felicidade', -2); return O('Você decidiu não cobrar. A relação ganhou paz; seu extrato, uma memória.', 'neutro'); } },
+      { label: 'Propor pagamento em partes', icon: '🧾', run: (L, c) => {
+        const aceitou = rng.chance(0.4 + L.stats.inteligencia / 350); delete L.flags.irmaoEmprestimoPessoaId; delete L.flags.irmaoEmprestimoIdade; delete L.flags.irmaoEmprestimoValor;
+        if (aceitou) { const valor = Math.round(c.n! / 2); L.money += valor; bond(c.person!, 2); stat(L, 'felicidade', 2); return O(`${c.person!.first} pagou ${money(valor)} e combinou o resto depois. O calendário recebeu um mês desta vez.`, 'bom'); }
+        bond(c.person!, -7); stat(L, 'felicidade', -4); return O(`${c.person!.first} recusou o acordo. O assunto virou tabu com comprovante.`, 'ruim', { mood: 'triste' });
+      } },
+    ],
+  },
+  {
+    id: 'herancaBriga', min: 18, max: 100, weight: 5, once: true,
+    cond: (L) => L.people.some((p) => !p.alive && (p.rel === 'mae' || p.rel === 'pai')) && byRel(L, 'irmao', 'irma').length > 0,
+    setup: (L) => { const falecido = L.people.find((p) => !p.alive && (p.rel === 'mae' || p.rel === 'pai')); const irmaos = byRel(L, 'irmao', 'irma'); return falecido && irmaos.length ? { falecido, irmaos, n: rng.int(10, 40) * 1000 } : null; },
+    icon: '⚖️', title: 'A herança virou pauta',
+    text: (_L, c) => `Após a morte de ${c.falecido!.first}, apareceram documentos de uma conta de ${money(c.n!)} que ficou fora da divisão inicial. Cada irmão tem uma versão.`,
+    scene: (L, c) => ({ id: 'brigaFamilia', others: c.irmaos.slice(0, 3), data: { titulo: 'Divisão da herança' } }),
+    choices: [
+      { label: 'Dividir entre todos', icon: '🤝', run: (L, c) => {
+        const parte = Math.round(c.n! / (c.irmaos.length + 1)); L.money += parte; c.irmaos.forEach((p: Person) => bond(p, 6)); L.karma += 3; stat(L, 'felicidade', -2);
+        return O(`Você recebeu ${money(parte)} e propôs encerrar a disputa. A família concordou por escrito, uma raridade maior que a herança.`, 'neutro', { react: { npc: { expr: 'serio', say: 'Vamos dividir igualmente.' } } });
+      } },
+      { label: 'Disputar a divisão na Justiça', icon: '📑', run: (L, c) => {
+        const venceu = rng.chance(0.3 + L.stats.inteligencia / 300);
+        if (venceu) { const parte = Math.round(c.n! * 0.6); L.money += parte; c.irmaos.forEach((p: Person) => bond(p, -7)); stat(L, 'felicidade', 2); return O(`A decisão destinou ${money(parte)} a você. O processo terminou; o grupo da família, não.`, 'neutro', { react: { npc: { expr: 'serio' }, player: { expr: 'serio' } } }); }
+        L.money -= Math.min(L.money, 2500); c.irmaos.forEach((p: Person) => bond(p, -10)); stat(L, 'felicidade', -8); return O('A divisão ficou como estava e vieram custos do processo. A família agora discute também quem guarda os recibos.', 'ruim', { mood: 'triste', react: { player: { expr: 'triste' } } });
+      } },
+      { label: 'Abrir mão para evitar a briga', icon: '🕊️', run: (L, c) => { c.irmaos.forEach((p: Person) => bond(p, 5)); L.karma += 4; stat(L, 'felicidade', -3); return O('Você abriu mão da parte e preservou algum espaço para conversar. O cartório não contabiliza paz, infelizmente.', 'neutro', { react: { player: { expr: 'serio' } } }); } },
+    ],
+  },
+  {
+    id: 'velorioCoxinha', min: 18, max: 100, weight: 3, once: true,
+    cond: (L) => L.people.some((p) => !p.alive && ['mae', 'pai', 'avo', 'avoM'].includes(p.rel)),
+    setup: (L) => { const falecido = L.people.find((p) => !p.alive && ['mae', 'pai', 'avo', 'avoM'].includes(p.rel)); return falecido ? { falecido, familia: [...children(L), ...byRel(L, 'irmao', 'irma'), ...(partner(L) ? [partner(L)!] : [])].slice(0, 3) } : null; },
+    icon: '🕯️', title: 'Velório e coxinha',
+    text: (_L, c) => `No velório de ${c.falecido!.first}, a mesa tem café e coxinha. Um parente que não aparecia há anos chegou perguntando onde fica o guardanapo.`,
+    scene: (L, c) => ({ id: 'funeral', others: c.familia, data: { nome: c.falecido!.first, sub: 'Despedida da família' } }),
+    choices: [
+      { label: 'Apoiar quem está de luto', icon: '🫂', run: (L, c) => { c.familia.forEach((p: Person) => bond(p, 6)); L.karma += 3; stat(L, 'felicidade', -5); return O('Você ficou ao lado da família e ajudou a receber quem chegou. A presença valeu mais que qualquer frase pronta.', 'neutro', { mood: 'triste', react: { player: { expr: 'triste' }, npc: { expr: 'triste' } } }); } },
+      { label: 'Conversar com o parente distante', icon: '☕', run: (L, c) => { c.familia.forEach((p: Person) => bond(p, 1)); stat(L, 'felicidade', -3); return O('O parente contou histórias antigas e prometeu visitar. A promessa ganhou endereço; só falta a data.', 'neutro', { mood: 'triste', react: { npc: { expr: 'serio', say: 'A gente precisa se ver mais.' } } }); } },
+      { label: 'Despedir-se e ir para casa', icon: '🚪', run: (L) => { stat(L, 'felicidade', -3); stat(L, 'saude', 1); L.karma += 1; return O('Você se despediu da família e voltou para descansar. O café do velório ficou na memória e na roupa.', 'neutro', { mood: 'triste', react: { player: { expr: 'triste' } } }); } },
+    ],
+  },
+  {
+    id: 'filhoAdolescenteRebelde', min: 30, max: 80, weight: (L) => (children(L).some((p) => p.age >= 13 && p.age <= 17) ? 6 : 0), icon: '🎧', title: 'O silêncio do adolescente',
+    cond: (L) => children(L).some((p) => p.age >= 13 && p.age <= 17),
+    setup: (L) => { const person = pickRandom(children(L).filter((p) => p.age >= 13 && p.age <= 17)); return person ? { person, n: rng.pick([1000, 2000, 3000]) } : null; },
+    text: (_L, c) => `${c.person!.first} voltou tarde, respondeu “tá tudo bem” e pediu um aparelho novo. O silêncio veio com lista de desejos.`,
+    scene: (L, c) => ({ id: 'brigaFamilia', others: [c.person!] }),
+    choices: [
+      { label: 'Proibir saídas por uma semana', icon: '🚫', run: (L, c) => { bond(c.person!, -8); stat(L, 'felicidade', -4); return O(`${c.person!.first} bateu a porta e respeitou o castigo pelo grupo da família.`, 'ruim', { mood: 'tenso', react: { npc: { expr: 'bravo', say: 'Ninguém me escuta.' }, player: { expr: 'serio' } } }); } },
+      { label: 'Perguntar o que está acontecendo', icon: '💬', run: (L, c) => {
+        const abriu = rng.chance(0.3 + c.person!.bond / 300 + L.stats.inteligencia / 500);
+        if (abriu) { bond(c.person!, 8); stat(L, 'felicidade', 4); L.karma += 2; return O(`${c.person!.first} contou o que estava pesando e aceitou combinar horários. A conversa não veio com manual, mas veio.`, 'bom', { react: { npc: { expr: 'triste', say: 'Valeu por perguntar.' }, player: { expr: 'serio' } } }); }
+        bond(c.person!, -2); stat(L, 'felicidade', -3); return O(`${c.person!.first} respondeu “depois”. Você combinou de tentar de novo sem transformar a sala em tribunal.`, 'neutro', { mood: 'tenso', react: { npc: { expr: 'serio' }, player: { expr: 'serio' } } });
+      } },
+      { label: 'Comprar o que pediu', icon: '🎁', cond: (L, c) => L.money >= c.n!, run: (L, c) => { L.money -= c.n!; bond(c.person!, 6); stat(L, 'felicidade', 3); return O(`Você pagou ${money(c.n!)} pelo aparelho. O clima melhorou até a próxima atualização.`, 'neutro', { react: { npc: { expr: 'feliz', say: 'Você é demais!' } } }); } },
+    ],
+  },
+  {
+    id: 'netoSoLigaNoPix', min: 45, max: 100, weight: (L) => (typeof L.flags.netoPessoaId === 'string' ? 6 : 0),
+    cond: (L) => typeof L.flags.netoPessoaId === 'string' && !!L.people.find((p) => p.id === L.flags.netoPessoaId && p.alive),
+    setup: (L) => { const neto = L.people.find((p) => p.id === L.flags.netoPessoaId && p.alive); return neto ? { neto, n: rng.pick([200, 500, 1200]) } : null; },
+    icon: '📲', title: 'Vô, faz um Pix?',
+    text: (_L, c) => `${c.neto!.first} mandou mensagem depois de meses: “você consegue me enviar ${money(c.n!)}?”. O afeto chegou em formato de chave.`,
+    choices: [
+      { label: 'Mandar o Pix', icon: '💸', cond: (L, c) => L.money >= c.n!, run: (L, c) => { L.money -= c.n!; bond(c.neto!, 6); stat(L, 'felicidade', 3); return O(`${c.neto!.first} agradeceu e prometeu ligar no fim de semana. O fim de semana também não especificou o ano.`, 'bom', { react: { npc: { expr: 'feliz', say: 'Valeu, vô!' } } }); } },
+      { label: 'Perguntar como está', icon: '💬', run: (L, c) => { bond(c.neto!, 4); stat(L, 'felicidade', 3); return O('Vocês conversaram por meia hora. O Pix ficou para depois; a história da escola, não.', 'bom', { scene: { id: 'interacao', others: [c.neto!], data: { action: 'conversar', env: 'sala' } }, react: { npc: { expr: 'feliz', say: 'Eu também queria conversar.' } } }); } },
+      { label: 'Oferecer metade e pedir notícias', icon: '🪙', cond: (L, c) => L.money >= Math.ceil(c.n! / 2), run: (L, c) => { const v = Math.ceil(c.n! / 2); L.money -= v; bond(c.neto!, 3); stat(L, 'felicidade', 2); return O(`Você enviou ${money(v)} e pediu notícias. O neto respondeu com uma foto e um coração, nessa ordem.`, 'neutro'); } },
+    ],
+  },
+  {
+    id: 'aprenderCelularComNeto', min: 60, max: 100, weight: (L) => (typeof L.flags.netoPessoaId === 'string' ? 5 : 0), once: true,
+    cond: (L) => typeof L.flags.netoPessoaId === 'string' && !!L.people.find((p) => p.id === L.flags.netoPessoaId && p.alive),
+    setup: (L) => { const neto = L.people.find((p) => p.id === L.flags.netoPessoaId && p.alive); return neto ? { neto, n: rng.int(3, 15) * 1000 } : null; },
+    icon: '📱', title: 'Aula de celular com o neto',
+    text: (_L, c) => `${c.neto!.first} está ensinando a usar o celular. Um link promete atualizar sua conta e pede confirmação.`,
+    scene: (_L, c) => ({ id: 'interacao', others: [c.neto!], data: { action: 'conversar', env: 'sala' } }),
+    choices: [
+      { label: 'Abrir o link', icon: '🔗', run: (L, c) => {
+        const identificou = rng.chance(0.25 + L.stats.inteligencia / 300);
+        if (identificou) { stat(L, 'inteligencia', 3); stat(L, 'felicidade', 2); bond(c.neto!, 3); return O('O endereço parecia estranho e você fechou a página. O neto aprovou; o telefone não pediu opinião.', 'bom', { react: { npc: { expr: 'feliz', say: 'Boa, esse link era suspeito.' } } }); }
+        const perda = Math.min(L.money, c.n!); L.money -= perda; bond(c.neto!, -2); stat(L, 'felicidade', -8); return O(`A página era falsa e levou ${money(perda)}. O celular aprendeu uma lição; você pagou a matrícula.`, 'ruim', { mood: 'triste', react: { npc: { expr: 'triste', say: 'Eu devia ter conferido antes.' }, player: { expr: 'triste' } } });
+      } },
+      { label: 'Pedir para conferir junto', icon: '🔎', run: (L, c) => { stat(L, 'inteligencia', 4); bond(c.neto!, 5); stat(L, 'felicidade', 3); return O('Seu neto mostrou como desconfiar de pedidos inesperados e vocês praticaram com uma mensagem falsa de exemplo.', 'bom', { react: { npc: { expr: 'feliz', say: 'A gente confere junto.' } } }); } },
+      { label: 'Ligar para confirmar por outro canal', icon: '📞', run: (L, c) => { L.karma += 2; stat(L, 'inteligencia', 2); stat(L, 'felicidade', 2); bond(c.neto!, 2); return O('Você confirmou por uma ligação conhecida e apagou a mensagem. A cautela não tem botão, mas funciona.', 'bom'); } },
+    ],
+  },
+  {
+    id: 'provaVidaInss', min: 60, max: 100, weight: (L) => (L.retired ? 6 : 0), once: true,
+    cond: (L) => L.retired,
+    icon: '🗃️', title: 'Prova de vida',
+    text: () => 'Chegou a época de confirmar que você está vivo(a). O sistema pede um documento; a fila pede uma cadeira.',
+    scene: () => ({ id: 'reflexao', data: { env: 'escritorio', titulo: 'Fila do INSS', sub: 'Senha 84. Chamando a 19.', motion: 'sentarCabisbaixo' } }),
+    choices: [
+      { label: 'Conferir os documentos antes', icon: '📂', run: (L) => {
+        const completo = rng.chance(0.45 + L.stats.inteligencia / 300);
+        if (completo) { stat(L, 'felicidade', 4); stat(L, 'inteligencia', 1); return O('Todos os documentos estavam certos. Você terminou antes do almoço e ainda desconfiou do sucesso.', 'bom', { react: { player: { expr: 'feliz' } } }); }
+        stat(L, 'felicidade', -4); stat(L, 'saude', -2); return O('Faltou uma cópia de um documento que já estava no sistema. A fila ganhou mais uma temporada.', 'ruim', { mood: 'tenso', react: { player: { expr: 'serio' } } });
+      } },
+      { label: 'Ir ao balcão logo cedo', icon: '🚌', run: (L) => {
+        L.money -= 80; const resolveu = rng.chance(0.55 + L.stats.inteligencia / 350);
+        if (resolveu) { stat(L, 'felicidade', 5); stat(L, 'saude', -1); return O('A prova de vida foi atualizada no balcão. Você saiu às 11h com o dia inteiro pela metade.', 'bom', { react: { player: { expr: 'feliz' } } }); }
+        stat(L, 'felicidade', -6); stat(L, 'saude', -3); return O('O sistema caiu quando chegou sua vez. Você perdeu R$ 80 e ganhou prática em esperar sentado(a).', 'ruim', { mood: 'triste', react: { player: { expr: 'triste' } } });
+      } },
+      { label: 'Deixar para a semana que vem', icon: '📆', run: (L) => { stat(L, 'felicidade', -3); stat(L, 'saude', 1); return O('Você adiou a ida e descansou hoje. O prazo continuou no calendário, sem aceitar contraproposta.', 'neutro', { mood: 'tenso' }); } },
+    ],
+  },
+  {
+    id: 'baileTerceiraIdade', min: 60, max: 100, weight: 5, icon: '🎶', title: 'Baile da terceira idade',
+    setup: (L) => ({ person: makePerson(rng, { age: rng.int(60, 90), sex: rng.chance(0.5) ? 'f' : 'm', rel: 'conhecido', bond: 50 }), temParceiro: !!partner(L) }),
+    text: (_L, c) => `No baile e na hidroginástica, você conheceu ${c.person!.first}. A banda toca um clássico; a turma lembra cada passo melhor que o joelho.`,
+    scene: (_L, c) => ({ id: 'balada', others: [c.person!] }),
+    choices: [
+      { label: 'Fazer hidroginástica', icon: '🏊', run: (L, c) => { L.people.push(c.person!); bond(c.person!, 4); stat(L, 'saude', 5); stat(L, 'felicidade', 3); return O('A aula terminou com alongamento e conversa. O corpo agradeceu; a piscina ficou com a fofoca.', 'bom', { react: { player: { expr: 'feliz' }, npc: { expr: 'feliz', say: 'Até a próxima aula!' } } }); } },
+      { label: 'Convidar para dançar', icon: '💃', run: (L, c) => {
+        const p = c.person!; L.people.push(p); const aproximou = rng.chance(0.3 + L.stats.felicidade / 350 + p.bond / 400);
+        if (aproximou) { if (!c.temParceiro) { p.rel = p.sex === 'f' ? 'namorada' : 'namorado'; bond(p, 12); stat(L, 'felicidade', 8); return O(`${p.first} aceitou outro convite para dançar. A noite rendeu um romance e dois pedidos de música.`, 'especial', { react: { npc: { expr: 'feliz', say: 'A próxima é nossa.' }, player: { motion: 'dancar2', expr: 'feliz' } } }); } bond(p, 6); stat(L, 'felicidade', 5); return O(`${p.first} dançou com você e a turma toda entrou no refrão. A pista ficou pequena; a alegria, não.`, 'bom', { react: { npc: { expr: 'feliz' }, player: { motion: 'dancar2', expr: 'feliz' } } }); }
+        bond(p, -2); stat(L, 'felicidade', -2); return O(`${p.first} preferiu descansar. Vocês ficaram conversando; a banda seguiu sem precisar de justificativa.`, 'neutro', { react: { npc: { expr: 'serio', say: 'Hoje vou só assistir.' } } });
+      } },
+      { label: 'Ficar para conversar', icon: '☕', run: (L, c) => { L.people.push(c.person!); bond(c.person!, 5); stat(L, 'felicidade', 4); return O('Vocês conversaram até a banda guardar os instrumentos. Ninguém perguntou a idade; perguntaram a próxima data.', 'bom', { react: { npc: { expr: 'feliz', say: 'A gente se vê semana que vem.' } } }); } },
+    ],
+  },
+  {
+    id: 'testamentoGato', min: 60, max: 100, weight: (L) => (L.pets.some((p) => p.alive && p.kind === 'gato') && (children(L).length > 0 || byRel(L, 'irmao', 'irma').length > 0 || !!partner(L)) ? 3 : 0), once: true,
+    cond: (L) => L.pets.some((p) => p.alive && p.kind === 'gato') && (children(L).length > 0 || byRel(L, 'irmao', 'irma').length > 0 || !!partner(L)),
+    setup: (L) => { const pet = L.pets.find((p) => p.alive && p.kind === 'gato'); const familia = [...children(L), ...byRel(L, 'irmao', 'irma'), ...(partner(L) ? [partner(L)!] : [])].slice(0, 3); return pet && familia.length ? { pet, familia, valor: Math.max(0, Math.round(L.money * 0.5)) } : null; },
+    icon: '🐈', title: 'O testamento do gato',
+    text: (_L, c) => `Você está escrevendo o testamento e pensa em deixar ${money(c.valor!)} para os cuidados de ${c.pet!.name}. A família já pediu uma reunião.`,
+    scene: (_L, c) => ({ id: 'brigaFamilia', others: c.familia }),
+    choices: [
+      { label: 'Deixar a parte do gato', icon: '🐾', run: (L, c) => {
+        L.flags.testamentoGatoIdade = L.player.age; L.flags.testamentoGatoValor = c.valor!; L.flags.testamentoGatoPetId = c.pet!.id; c.familia.forEach((p: Person) => bond(p, -6)); stat(L, 'felicidade', 4); return O(`Você reservou ${money(c.valor!)} para ${c.pet!.name}. A família pediu para ver o documento; o gato já escolheu a poltrona.`, 'neutro', { react: { player: { expr: 'serio' } } });
+      } },
+      { label: 'Dividir entre a família', icon: '👨‍👩‍👧', run: (L) => { children(L).forEach((p) => bond(p, 5)); L.karma += 2; stat(L, 'felicidade', 3); return O('Você deixou instruções para dividir os bens com a família. O gato ganhou um parágrafo e uma caixa nova.', 'bom'); } },
+      { label: 'Doar parte para os animais', icon: '🏥', run: (L, c) => { const valor = Math.min(2000, L.money); L.money -= valor; c.pet!.bond = Math.min(100, c.pet!.bond + 8); L.karma += 4; stat(L, 'felicidade', 4); return O(`Você doou ${money(valor)} para cuidar de animais. ${c.pet!.name} acompanhou a decisão do sofá.`, 'bom'); } },
+    ],
+  },
+  {
+    id: 'familiaContestaTestamento', min: 61, max: 100, weight: 6, once: true,
+    cond: (L) => typeof L.flags.testamentoGatoIdade === 'number' && L.player.age - (L.flags.testamentoGatoIdade as number) >= 1 && (children(L).length > 0 || byRel(L, 'irmao', 'irma').length > 0 || !!partner(L)),
+    setup: (L) => ({ pet: L.pets.find((p) => p.id === L.flags.testamentoGatoPetId), familia: [...children(L), ...byRel(L, 'irmao', 'irma'), ...(partner(L) ? [partner(L)!] : [])].slice(0, 3), valor: L.flags.testamentoGatoValor as number }),
+    icon: '📜', title: 'A família leu o testamento',
+    text: (_L, c) => `Sua família viu a reserva de ${money(c.valor!)} para ${c.pet?.name ?? 'o gato'}. O assunto chegou à mesa antes do café.`,
+    scene: (L, c) => ({ id: 'brigaFamilia', others: c.familia }),
+    choices: [
+      { label: 'Manter a decisão', icon: '🐈', run: (L, c) => { delete L.flags.testamentoGatoIdade; delete L.flags.testamentoGatoValor; delete L.flags.testamentoGatoPetId; c.familia.forEach((p: Person) => bond(p, -4)); L.karma += 1; stat(L, 'felicidade', 2); return O('Você manteve a reserva para o gato. A família discordou; o gato dormiu em cima da cópia assinada.', 'neutro', { react: { npc: { expr: 'serio' } } }); } },
+      { label: 'Rever a divisão dos bens', icon: '✍️', run: (L, c) => { delete L.flags.testamentoGatoIdade; delete L.flags.testamentoGatoValor; delete L.flags.testamentoGatoPetId; c.familia.forEach((p: Person) => bond(p, 6)); stat(L, 'felicidade', 4); return O('Você ajustou o testamento para incluir a família e manter os cuidados do gato. A reunião terminou sem votação.', 'bom', { react: { npc: { expr: 'feliz' }, player: { expr: 'feliz' } } }); } },
+      { label: 'Reservar apenas para os cuidados', icon: '🧾', run: (L, c) => { delete L.flags.testamentoGatoIdade; delete L.flags.testamentoGatoValor; delete L.flags.testamentoGatoPetId; const valor = Math.min(2000, c.valor!); L.money -= Math.min(L.money, valor); c.familia.forEach((p: Person) => bond(p, 2)); stat(L, 'felicidade', 1); return O(`Você reservou ${money(valor)} para os cuidados do gato e liberou o restante para a família. O gato aprovou sem assinar.`, 'neutro'); } },
     ],
   },
 ];

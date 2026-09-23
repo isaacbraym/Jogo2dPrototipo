@@ -45,22 +45,22 @@ Itens marcados **[ENGINE]** precisam de mudança no motor → não implemente; c
 - [x] Mentira de que o cachorro comeu o dever (professor pede foto do cachorro) → `cachorroComeuDever`
 
 ## D. Família e relacionamentos (P1/P2)
-- [ ] Ceia de Natal com briga genérica de política (cena no `sala`, parentes gritando; vínculos mudam)
-- [ ] Tia perguntando "e o namoro?" em todo evento (aos 25+ solteiro)
-- [ ] Sogra/sogro morando junto (após casamento)
-- [ ] Irmão pede dinheiro emprestado (e nunca devolve → flag → cobrança em evento futuro)
-- [ ] Herança: briga pelo espólio após morte dos pais (dividir / brigar na justiça / abrir mão)
-- [ ] Velório com coxinha e parente que só aparece no enterro
-- [ ] Traição descoberta pelo celular (confrontar / fingir / vingança → agressão com consequências)
-- [ ] Filho adolescente rebelde (castigo / conversar / comprar o que ele quer)
-- [ ] Netos que só ligam no Pix
-- [ ] Reencontro com ex no mercado (voltar / fugir / fingir que não viu)
+- [x] Ceia de Natal com briga genérica de política (parentes e vínculos mudam) → `ceiaNatal`
+- [x] Tia perguntando "e o namoro?" (25+ e solteiro) → `tiaPerguntaNamoro`
+- [x] Sogra/sogro morando junto (após casamento) → `sograMoraJunto`
+- [x] Irmão pede dinheiro emprestado (e não devolve → flag → cobrança futura) → `irmaoPedeEmprestado`, `irmaoNaoDevolve`
+- [x] Herança: briga pelo espólio após morte dos pais → `herancaBriga`
+- [x] Velório com coxinha e parente que só aparece no enterro → `velorioCoxinha`
+- [x] Traição descoberta pelo celular (confrontar / fingir / agressão verbal com consequências) → `traicao` (ampliado)
+- [x] Filho adolescente rebelde (castigo / conversar / comprar o que pediu) → `filhoAdolescenteRebelde`
+- [x] Netos que só ligam no Pix → `netoSoLigaNoPix`
+- [x] Reencontro com ex no mercado (voltar / fugir / fingir que não viu) → `reencontro` (ampliado)
 
 ## E. Velhice (P2)
-- [ ] Aprender a usar o celular com o neto (golpe do link → perde dinheiro)
-- [ ] Fila do INSS / prova de vida
-- [ ] Hidroginástica / baile da terceira idade (romance na terceira idade)
-- [ ] Escrever o testamento (deixar tudo pro gato → família revoltada)
+- [x] Aprender a usar o celular com o neto (golpe do link → perde dinheiro) → `aprenderCelularComNeto`
+- [x] Fila do INSS / prova de vida → `provaVidaInss`
+- [x] Hidroginástica / baile da terceira idade (romance na terceira idade) → `baileTerceiraIdade`
+- [x] Escrever o testamento (deixar parte pro gato → família reage) → `testamentoGato`, `familiaContestaTestamento`
 
 ## F. Variações de consequência em eventos existentes (P1 — ajuste seguro)
 - [ ] Para cada evento com 1 só desfecho por escolha, criar 2–3 desfechos sorteados (`rng.chance`/`rng.pick`) influenciados por stats.

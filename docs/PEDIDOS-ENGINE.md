@@ -26,3 +26,9 @@ Quando atendido: troque `[ABERTO]` por `[FEITO 2026-xx-xx]` e cite o commit.
 
 ### [ABERTO] Vícios persistentes
 - **Proposta:** `L.addictions: { tipo, nivel, desde }[]` + efeitos anuais em `ageUp` + eventos de recaída.
+
+### [ABERTO] Tipos de relação para família ampliada
+- **Quem pediu / quando:** Codex, 2026-09-23
+- **Problema:** `Rel` não inclui tia, sogro/sogra nem neto/neta. Os novos eventos identificam algumas pessoas por flags, mas a lista de relações as mostra como conhecidas e não pode consultá-las como parentes.
+- **Proposta:** adicionar `tia`, `sogro`, `sogra`, `neto` e `neta` a `Rel` e `REL_LABEL`, com persistência e migração de saves.
+- **Conteúdo que depende disso:** `tiaPerguntaNamoro`, `sograMoraJunto`, `netoSoLigaNoPix`, `aprenderCelularComNeto`, e o registro persistente do evento `netos`.

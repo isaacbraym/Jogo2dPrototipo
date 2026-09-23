@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-23 — Lote 04: família, relações e velhice (Codex)
+
+**Eventos (14: 12 situações e 2 retornos):** `ceiaNatal`, `tiaPerguntaNamoro`, `sograMoraJunto`, `irmaoPedeEmprestado`, `irmaoNaoDevolve`, `herancaBriga`, `velorioCoxinha`, `filhoAdolescenteRebelde`, `netoSoLigaNoPix`, `aprenderCelularComNeto`, `provaVidaInss`, `baileTerceiraIdade`, `testamentoGato`, `familiaContestaTestamento`.
+**Eventos existentes ampliados (3):** `netos` cria e registra a pessoa neta; `traicao` agora inclui fingir que não viu e agressão verbal com as consequências de `aggress`; `reencontro` agora permite tentar reatar, com chance e resultado real.
+**Escolhas:** 42 em eventos novos; `traicao` passou a quatro escolhas e `reencontro` a três.
+**Cenas, movimentos, expressões, ambientes, objetos e interações novos:** 0; o lote usa `churrasco`, `funeral`, `interacao`, `brigaFamilia`, `encontro`, `reflexao` e `balada`.
+**Flags novas (7):** `netoPessoaId`, `irmaoEmprestimoPessoaId`, `irmaoEmprestimoIdade`, `irmaoEmprestimoValor`, `testamentoGatoIdade`, `testamentoGatoValor`, `testamentoGatoPetId`.
+**Cadeias:** empréstimo ao irmão volta para cobrança no ano seguinte; reservar bens ao gato volta em uma conversa com a família; o neto criado em `netos` serve às histórias de Pix e golpe de link.
+**Backlog:** todas as seções D e E concluídas. O romance com ex e as reações à traição foram acrescentados a eventos que já existiam.
+**Limitação registrada:** o motor não tem tipos de relação para tia, sogro/sogra e neto/neta. O conteúdo usa conhecidos/flags; a proposta para ampliar `Rel` foi registrada em `docs/PEDIDOS-ENGINE.md`.
+**Verificação:** `npm run check:quick` ✅ · `npm run check` ✅ · `npm run build` ✅ · `npm run catalog` ✅. Avisos de cobertura: `vizinhoLembra`/`cobrancaInesperada` dependem de escolhas anteriores; `justaCausaFeedback` exige advertências; `estagiarioVirouChefe` e `indenizacaoTrabalhista` aguardam dois anos; `paisAchamBoletim` e `irmaoNaoDevolve` dependem das escolhas que gravam as flags; `filhoAdolescenteRebelde` exige filho adolescente; os eventos de neto dependem do nascimento registrado; o testamento exige gato e família.
+**Verificação visual:** sem itens visuais novos; cenas existentes reaproveitadas.
+**Pendências/pedidos de engine:** nova solicitação aberta para tipos de relação familiar.
+
 ## 2026-09-23 — Lote 03: infância e escola (Codex)
 
 **Eventos (8: 7 situações e 1 retorno):** `festaJuninaEscola`, `boletimEscondido`, `paisAchamBoletim`, `feiraCienciasEscolar`, `excursaoEscolar`, `trabalhoGrupoSozinho`, `primeiroCelular`, `cachorroComeuDever`.
