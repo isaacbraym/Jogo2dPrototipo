@@ -103,6 +103,7 @@ Valores: number, boolean ou string (JSON). Nomes camelCase. Guarde a **idade** q
 | `assedioMoralValor` | base salarial registrada para acordo trabalhista futuro | events; indenizacaoTrabalhista |
 | `greveAderiuIdade` | idade em que o jogador aderiu à paralisação | events |
 | `greveEmpregoId` | id do emprego na paralisação | events |
+| `boletimEscondidoIdade` | idade em que o boletim escolar foi escondido | events; paisAchamBoletim |
 | `ev_<id>` | evento `once` já ocorreu | life.pickEvents |
 
 **Ao criar uma flag nova, acrescente uma linha nesta tabela** (e rode `npm run catalog`).

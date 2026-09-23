@@ -3,7 +3,7 @@
 > **Não edite à mão.** Gerado por `npm run catalog` a partir dos registros do código.
 > Use para conferir nomes existentes antes de criar algo novo.
 
-## Eventos anuais — 72
+## Eventos anuais — 80
 
 | id | idades | título | tipo |
 |---|---|---|---|
@@ -79,6 +79,14 @@
 | `greveParalisacao` | 20–65 | ✊ A equipe parou | 3 escolhas |
 | `homeOfficeComFamilia` | 20–65 | 🏠 A reunião invadiu a sala | 3 escolhas |
 | `amigoOcultoFirma` | 20–65 | 🎁 Amigo oculto do trabalho | 3 escolhas |
+| `festaJuninaEscola` | 7–16 | 🎏 Festa junina da escola | 3 escolhas |
+| `boletimEscondido` | 10–17 | 📬 O boletim sumiu | 3 escolhas, única |
+| `paisAchamBoletim` | 11–18 | 🔍 A mochila foi organizada | 3 escolhas, única |
+| `feiraCienciasEscolar` | 9–16 | 🌋 Feira de ciências | 3 escolhas |
+| `excursaoEscolar` | 8–16 | 🚌 Excursão da escola | 3 escolhas |
+| `trabalhoGrupoSozinho` | 9–17 | 📚 Trabalho em grupo | 3 escolhas |
+| `primeiroCelular` | 11–17 | 📱 Seu primeiro celular | 3 escolhas, única |
+| `cachorroComeuDever` | 7–15 | 🐶 O cachorro comeu o dever | 3 escolhas |
 
 ## Ações (aba Atividades) — 27
 
@@ -298,6 +306,7 @@ Além destas, `ev_<id>` marca eventos `once` já ocorridos.
 | `assedioMoralIdade` | game/events.ts |
 | `assedioMoralValor` | game/events.ts |
 | `avisoDivida` | game/life.ts |
+| `boletimEscondidoIdade` | game/events.ts |
 | `contaLuzPendente` | game/events.ts |
 | `cursoCoachComprado` | game/events.ts |
 | `estagiarioEmprego` | game/events.ts |

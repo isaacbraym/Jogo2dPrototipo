@@ -1035,6 +1035,141 @@ export const EVENTS: LifeEvent[] = [
       } },
     ],
   },
+  {
+    id: 'festaJuninaEscola', min: 7, max: 16, weight: 7, icon: '🎏', title: 'Festa junina da escola',
+    text: () => 'A escola montou barracas, pescaria e uma quadrilha. O microfone anunciou que o casamento caipira tem roteiro; ninguém viu o roteiro.',
+    scene: () => ({ id: 'aula', data: { good: true } }),
+    choices: [
+      { label: 'Dançar na quadrilha', icon: '💃', run: (L) => {
+        const acertou = rng.chance(0.45 + L.stats.felicidade / 300);
+        if (acertou) { stat(L, 'felicidade', 8); parents(L).forEach((p) => bond(p, 2)); return O('Você acertou a troca de pares e ganhou aplausos. A professora chamou de tradição; seus pés chamaram de surpresa.', 'bom', { scene: { id: 'aula', data: { good: true } }, react: { player: { motion: 'dancar', expr: 'feliz' } } }); }
+        stat(L, 'felicidade', 3); return O('Você errou a formação, mas inventou um passo novo. A coreografia oficial fingiu que era parte do plano.', 'neutro', { react: { player: { expr: 'envergonhado' } } });
+      } },
+      { label: 'Tentar a pescaria', icon: '🎣', run: (L) => {
+        const ganhou = rng.chance(0.5); stat(L, 'felicidade', ganhou ? 5 : 2);
+        return ganhou ? O('Você pescou um prêmio. A vara era curta, o prêmio também, mas a vitória foi sua.', 'bom') : O('A pescaria não rendeu. Você ganhou um barbante molhado e uma história para o caminho de casa.', 'neutro');
+      } },
+      { label: 'Ajudar na barraca', icon: '🧁', run: (L) => { stat(L, 'inteligencia', 2); stat(L, 'felicidade', 4); L.karma += 2; return O('Você ajudou a organizar a barraca e ganhou um doce. Trabalho voluntário: pagamento em açúcar.', 'bom'); } },
+    ],
+  },
+  {
+    id: 'boletimEscondido', min: 10, max: 17, weight: (L) => (L.edu.nota < 55 && parents(L).length > 0 ? 6 : 0), once: true,
+    cond: (L) => L.edu.nota < 55 && parents(L).length > 0,
+    setup: (L) => ({ person: pickRandom(parents(L)) }), icon: '📬', title: 'O boletim sumiu',
+    text: (_L, c) => `O boletim chegou com duas notas baixas. ${c.person!.first} ainda não viu; sua mochila ganhou um compartimento secreto.`,
+    scene: () => ({ id: 'aula', data: { good: false } }),
+    choices: [
+      { label: 'Contar antes que descubram', icon: '🗣️', run: (L, c) => { bond(c.person!, 4); L.karma += 3; stat(L, 'felicidade', -2); return O(`${c.person!.first} ficou preocupado(a), mas ouviu você. A conversa foi difícil; o boletim continuou sendo papel.`, 'neutro', { scene: { id: 'brigaFamilia', others: [c.person!] }, react: { npc: { expr: 'serio', say: 'Vamos montar um plano.' }, player: { expr: 'serio' } } }); } },
+      { label: 'Esconder e estudar para recuperar', icon: '📚', run: (L) => { L.flags.boletimEscondidoIdade = L.player.age; stat(L, 'felicidade', 1); stat(L, 'saude', -1); return O('Você guardou o boletim e abriu o caderno. A ansiedade ficou estudando junto.', 'neutro', { react: { player: { expr: 'serio' } } }); } },
+      { label: 'Pedir ajuda para estudar', icon: '✏️', run: (L, c) => {
+        const passou = rng.chance(0.4 + L.stats.inteligencia / 300); L.edu.nota += passou ? 8 : 3; stat(L, 'saude', -2);
+        if (passou) { bond(c.person!, 3); L.karma += 1; return O(`${c.person!.first} ajudou a revisar e sua nota subiu. O caderno recebeu mais atenção que o grupo da turma.`, 'bom', { react: { npc: { expr: 'feliz', say: 'Você conseguiu melhorar.' } } }); }
+        bond(c.person!, -2); return O('Vocês estudaram, mas a prova veio com assunto de outro planeta. Ao menos a família já sabe.', 'neutro', { mood: 'tenso', react: { npc: { expr: 'serio' }, player: { expr: 'triste' } } });
+      } },
+    ],
+  },
+  {
+    id: 'paisAchamBoletim', min: 11, max: 18, weight: 7, once: true,
+    cond: (L) => typeof L.flags.boletimEscondidoIdade === 'number' && L.player.age - (L.flags.boletimEscondidoIdade as number) >= 1 && parents(L).length > 0,
+    setup: (L) => ({ person: pickRandom(parents(L)) }), icon: '🔍', title: 'A mochila foi organizada',
+    text: (_L, c) => `${c.person!.first} encontrou o boletim escondido. A mochila foi organizada; a conversa também vai ser.`,
+    scene: (L, c) => ({ id: 'brigaFamilia', others: [c.person!] }),
+    choices: [
+      { label: 'Explicar o que aconteceu', icon: '💬', run: (L, c) => { delete L.flags.boletimEscondidoIdade; bond(c.person!, 2); L.karma += 2; stat(L, 'felicidade', -3); return O('Você contou a verdade e combinou de pedir ajuda antes da próxima prova. O castigo virou calendário de estudos.', 'neutro', { react: { npc: { expr: 'serio', say: 'Vamos resolver juntos.' }, player: { expr: 'serio' } } }); } },
+      { label: 'Mostrar que a nota melhorou', icon: '📈', run: (L, c) => {
+        const melhorou = rng.chance(0.35 + L.stats.inteligencia / 300); delete L.flags.boletimEscondidoIdade;
+        if (melhorou) { L.edu.nota += 5; bond(c.person!, 3); stat(L, 'felicidade', 4); return O(`${c.person!.first} viu a melhora e suspendeu o castigo. O boletim ganhou uma continuação menos dramática.`, 'bom', { react: { npc: { expr: 'feliz', say: 'Você está se esforçando.' }, player: { expr: 'feliz' } } }); }
+        bond(c.person!, -8); L.flags.infracoes = ((L.flags.infracoes as number) ?? 0) + 1; stat(L, 'felicidade', -7); return O('A nota ainda estava baixa. Seus pais chamaram a escola e a mochila perdeu o direito à privacidade.', 'ruim', { scene: { id: 'detencao', data: { frase: 'Não esconder o boletim' } }, mood: 'triste', react: { npc: { expr: 'bravo', say: 'A gente precisava saber.' }, player: { expr: 'triste' } } });
+      } },
+      { label: 'Aceitar o castigo', icon: '⏳', run: (L, c) => { delete L.flags.boletimEscondidoIdade; bond(c.person!, -2); stat(L, 'felicidade', -4); return O('Você entregou o videogame por uma semana. O boletim ficou na mesa, sob vigilância.', 'ruim', { mood: 'triste', react: { player: { expr: 'triste' } } }); } },
+    ],
+  },
+  {
+    id: 'feiraCienciasEscolar', min: 9, max: 16, weight: 5, icon: '🌋', title: 'Feira de ciências',
+    text: () => 'Seu modelo de vulcão está pronto para a demonstração. A diretora sentou na primeira fila e a toalha da mesa pediu transferência.',
+    scene: () => ({ id: 'aula', data: { good: true } }),
+    choices: [
+      { label: 'Apresentar a demonstração', icon: '🧪', run: (L) => {
+        const deuCerto = rng.chance(0.4 + L.stats.inteligencia / 300);
+        if (deuCerto) { L.edu.nota += 5; stat(L, 'inteligencia', 4); stat(L, 'felicidade', 8); L.karma += 1; return O('O vulcão transbordou na bandeja e os jurados adoraram. Você ganhou um certificado e uma toalha da escola.', 'bom', { scene: { id: 'aula', data: { good: true } }, react: { player: { expr: 'feliz' } } }); }
+        L.edu.nota -= 3; L.flags.infracoes = ((L.flags.infracoes as number) ?? 0) + 1; parents(L).forEach((p) => bond(p, -2)); stat(L, 'felicidade', -5);
+        return O('O modelo transbordou antes da explicação. Você ficou na detenção para limpar a mesa; a diretora levou o certificado.', 'ruim', { scene: { id: 'detencao', data: { frase: 'Vou testar o projeto antes da feira' } }, mood: 'triste', react: { player: { expr: 'envergonhado' } } });
+      } },
+      { label: 'Explicar o projeto sem demonstração', icon: '🗣️', run: (L) => { L.edu.nota += 3; stat(L, 'inteligencia', 3); stat(L, 'felicidade', 2); return O('Você explicou o modelo com calma e respondeu às perguntas. Nenhuma toalha precisou depor.', 'bom', { react: { player: { expr: 'determinado' } } }); } },
+      { label: 'Ajudar outra equipe a arrumar', icon: '🧹', run: (L) => { L.karma += 3; stat(L, 'felicidade', 4); stat(L, 'inteligencia', 1); return O('Você ajudou a outra equipe a montar a mesa. O projeto deles ganhou menção honrosa; você ganhou um doce.', 'bom'); } },
+    ],
+  },
+  {
+    id: 'excursaoEscolar', min: 8, max: 16, weight: 5, icon: '🚌', title: 'Excursão da escola',
+    setup: () => ({ destino: rng.pick(['museu de ciências', 'zoológico municipal', 'aquário da cidade']) }),
+    text: (_L, c) => `A turma vai visitar o ${c.destino}. A professora pediu para ninguém se afastar; o mapa da turma já tem cara de desafio.`,
+    scene: (_L, c) => ({ id: 'viagem', data: { titulo: 'Excursão escolar', destino: c.destino } }),
+    choices: [
+      { label: 'Ficar junto da turma', icon: '👫', run: (L) => { stat(L, 'felicidade', 4); stat(L, 'inteligencia', 1); parents(L).forEach((p) => bond(p, 1)); return O('Você viu todas as exposições com a turma e voltou no ônibus certo. A professora conferiu a lista três vezes.', 'bom', { react: { player: { expr: 'feliz' } } }); } },
+      { label: 'Ver mais uma exposição', icon: '🔎', run: (L, c) => {
+        const achou = rng.chance(0.35 + L.stats.inteligencia / 350);
+        if (achou) { stat(L, 'inteligencia', 4); stat(L, 'felicidade', 3); return O(`Você voltou a tempo e contou à turma o que viu no ${c.destino}. A professora fingiu que não contou os minutos.`, 'bom', { react: { player: { expr: 'feliz' } } }); }
+        stat(L, 'felicidade', -6); parents(L).forEach((p) => bond(p, -2)); return O('Você se afastou e perdeu o grupo por alguns minutos. A professora achou você; sua paz, ainda não.', 'ruim', { scene: { id: 'telefonema', data: { fala: 'Já encontramos. Estamos voltando ao ônibus.', good: true } }, mood: 'tenso', react: { player: { expr: 'envergonhado' } } });
+      } },
+      { label: 'Sentar na frente do ônibus', icon: '💺', run: (L) => {
+        const bem = rng.chance(0.45 + L.stats.saude / 300);
+        if (bem) { stat(L, 'saude', 1); stat(L, 'felicidade', 3); return O('A viagem foi tranquila e você não enjoou. O assento da frente ganhou status de patrimônio histórico.', 'bom'); }
+        stat(L, 'saude', -3); stat(L, 'felicidade', -4); return O('O ônibus fez 11 curvas e seu estômago abriu um protocolo. A paisagem foi bonita quando você olhou.', 'ruim', { mood: 'triste', react: { player: { expr: 'triste' } } });
+      } },
+    ],
+  },
+  {
+    id: 'trabalhoGrupoSozinho', min: 9, max: 17, weight: 6, icon: '📚', title: 'Trabalho em grupo',
+    setup: (L) => ({ colegas: [makePerson(rng, { age: L.player.age, rel: 'colega', bond: rng.int(30, 55) }), makePerson(rng, { age: L.player.age, rel: 'colega', bond: rng.int(30, 55) })] }),
+    text: (_L, c) => `O grupo tem três integrantes e você fez quase tudo. ${c.colegas[0].first} perguntou se a capa já estava pronta.`,
+    scene: (_L, c) => ({ id: 'aula', others: c.colegas }),
+    choices: [
+      { label: 'Fazer o resto do trabalho', icon: '🖊️', run: (L, c) => {
+        c.colegas.forEach((p: Person) => { if (!L.people.some((x) => x.id === p.id)) L.people.push(p); bond(p, -6); }); L.edu.nota += 10; stat(L, 'inteligencia', 4); stat(L, 'saude', -3); stat(L, 'felicidade', -3);
+        return O('Você terminou o cartaz, a pesquisa e as conclusões. O grupo apareceu para a foto segurando sua nota.', 'neutro', { react: { player: { motion: 'escreverQuadro', expr: 'serio' }, npc: { expr: 'feliz', say: 'Ficou muito bom!' } } });
+      } },
+      { label: 'Dividir as tarefas de verdade', icon: '🗂️', run: (L, c) => {
+        c.colegas.forEach((p: Person) => { if (!L.people.some((x) => x.id === p.id)) L.people.push(p); }); const deuCerto = rng.chance(0.35 + L.stats.inteligencia / 250);
+        if (deuCerto) { L.edu.nota += 8; c.colegas.forEach((p: Person) => bond(p, 6)); stat(L, 'felicidade', 5); return O('Cada pessoa entregou sua parte a tempo. O trabalho em grupo funcionou; a professora pediu para registrar a data.', 'bom', { react: { npc: { expr: 'feliz', say: 'A gente conseguiu!' } } }); }
+        L.edu.nota -= 3; c.colegas.forEach((p: Person) => bond(p, -5)); stat(L, 'felicidade', -4); return O('Duas partes chegaram em branco e uma tinha outro tema. O grupo ficou unido na culpa.', 'ruim', { mood: 'tenso', react: { player: { expr: 'envergonhado' }, npc: { expr: 'serio' } } });
+      } },
+      { label: 'Pedir ajuda à professora', icon: '🧑‍🏫', run: (L, c) => {
+        c.colegas.forEach((p: Person) => { if (!L.people.some((x) => x.id === p.id)) L.people.push(p); bond(p, -2); }); const mediou = rng.chance(0.55);
+        if (mediou) { L.edu.nota += 5; stat(L, 'felicidade', 2); L.karma += 2; return O('A professora redistribuiu as tarefas e deixou claro quem entregaria cada parte. A capa também ganhou dois autores.', 'bom', { react: { npc: { expr: 'serio', say: 'Cada um assume uma parte.' } } }); }
+        L.edu.nota -= 2; stat(L, 'felicidade', -3); return O('A professora pediu para tentarem resolver entre vocês. O grupo marcou outra conversa para não resolver.', 'neutro', { mood: 'tenso' });
+      } },
+    ],
+  },
+  {
+    id: 'primeiroCelular', min: 11, max: 17, weight: 4, once: true, icon: '📱', title: 'Seu primeiro celular',
+    text: () => 'Você ganhou um celular. A família combinou regras de uso; a tela já ofereceu 38 maneiras de ignorá-las.',
+    scene: () => ({ id: 'aula', data: { good: true } }),
+    choices: [
+      { label: 'Combinar horários com a família', icon: '⏰', run: (L) => { parents(L).forEach((p) => bond(p, 4)); stat(L, 'inteligencia', 2); stat(L, 'felicidade', 5); return O('Vocês combinaram horários e pausas. O celular aceitou em silêncio, como todo aparelho sem opinião.', 'bom', { react: { player: { expr: 'feliz' } } }); } },
+      { label: 'Instalar jogos e virar a noite', icon: '🎮', run: (L) => { L.edu.nota -= 6; stat(L, 'felicidade', 8); stat(L, 'saude', -4); parents(L).forEach((p) => bond(p, -5)); return O('Você jogou até tarde e faltou energia na primeira aula. O celular estava em 100%; você, nem perto.', 'ruim', { scene: { id: 'aula', data: { good: false } }, mood: 'triste', react: { player: { expr: 'cansado' } } }); } },
+      { label: 'Deixar o aparelho guardado', icon: '🔕', run: (L) => { L.edu.nota += 3; stat(L, 'felicidade', -2); stat(L, 'saude', 2); return O('Você guardou o celular durante a semana. As notificações acumularam; a prova, não.', 'neutro', { react: { player: { expr: 'serio' } } }); } },
+    ],
+  },
+  {
+    id: 'cachorroComeuDever', min: 7, max: 15, weight: 5, icon: '🐶', title: 'O cachorro comeu o dever',
+    setup: (L) => ({ pet: L.pets.find((p) => p.alive && p.kind === 'cachorro') }),
+    text: (_L, c) => `Seu dever sumiu. Você pensa em dizer que o cachorro comeu, mas a professora pediu uma foto do suspeito.` ,
+    scene: () => ({ id: 'aula', data: { good: false } }),
+    choices: [
+      { label: 'Culpar o cachorro', icon: '🐾', run: (L, c) => {
+        const desculpa = c.pet ? rng.chance(0.55) : false;
+        if (desculpa) { stat(L, 'felicidade', 3); L.karma -= 2; return O(`${c.pet!.name} apareceu numa foto dormindo ao lado do caderno. A professora aceitou; o cachorro não comentou.`, 'neutro', { react: { player: { expr: 'convencido' } } }); }
+        L.edu.nota -= 3; L.flags.infracoes = ((L.flags.infracoes as number) ?? 0) + 1; parents(L).forEach((p) => bond(p, -3)); stat(L, 'felicidade', -5);
+        return O(`${c.pet ? 'A foto não provou nada' : 'A professora perguntou o nome do cachorro e você não tinha um'}; veio detenção e seus pais foram chamados.`, 'ruim', { scene: { id: 'detencao', data: { frase: 'Não inventar desculpas para o dever' } }, mood: 'triste', react: { player: { expr: 'envergonhado' } } });
+      } },
+      { label: 'Contar a verdade e pedir prazo', icon: '🗣️', run: (L) => {
+        const aceitou = rng.chance(0.45 + L.stats.inteligencia / 300);
+        if (aceitou) { L.edu.nota += 2; L.karma += 3; stat(L, 'felicidade', 2); return O('A professora deu mais um dia para entregar. Honestidade ganhou prazo; o dever continua existindo.', 'bom', { react: { npc: { expr: 'serio', say: 'Entregue amanhã, sem falta.' } } }); }
+        L.edu.nota -= 2; parents(L).forEach((p) => bond(p, -2)); stat(L, 'felicidade', -3); return O('A professora pediu que seus pais acompanhassem a tarefa. A mochila virou projeto de transparência.', 'neutro', { scene: { id: 'brigaFamilia', others: parents(L).slice(0, 1) }, mood: 'tenso' });
+      } },
+      { label: 'Fazer o dever no recreio', icon: '✏️', run: (L) => { L.edu.nota += 3; stat(L, 'saude', -1); stat(L, 'felicidade', -2); return O('Você terminou no recreio e perdeu metade do lanche. A desculpa teria dado menos trabalho, mas não menos pergunta.', 'neutro'); } },
+    ],
+  },
 ];
 
 export function eventTitle(ev: LifeEvent, L: Life, c: EvCtx) {

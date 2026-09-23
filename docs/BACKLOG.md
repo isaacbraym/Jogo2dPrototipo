@@ -35,14 +35,14 @@ Itens marcados **[ENGINE]** precisam de mudança no motor → não implemente; c
 - [x] Amigo oculto da firma (presente e vínculo) → `amigoOcultoFirma`
 
 ## C. Infância e escola (P1)
-- [ ] Festa junina (quadrilha, casamento caipira forçado, pescaria roubada)
-- [ ] Recuperação em várias matérias; boletim escondido dos pais (descobrem → castigo)
-- [ ] Feira de ciências (vulcão explode no diretor → detenção ou prêmio)
-- [ ] Excursão escolar (se perder no museu / vomitar no ônibus)
-- [ ] Bullying: ser a vítima (contar / aguentar / revidar → sistema de agressão)
-- [ ] Trabalho em grupo em que só você faz tudo (nota boa, vínculo com colegas cai)
-- [ ] Primeiro celular (vício em joguinho → nota cai)
-- [ ] Mentira de que o cachorro comeu o dever (professor pede foto do cachorro)
+- [x] Festa junina (quadrilha, pescaria e barraca) → `festaJuninaEscola`
+- [x] Recuperação em várias matérias; boletim escondido dos pais (descobrem → castigo) → `boletimEscondido`, `paisAchamBoletim`
+- [x] Feira de ciências (vulcão transborda → detenção ou prêmio) → `feiraCienciasEscolar`
+- [x] Excursão escolar (se perder no museu / enjoo no ônibus) → `excursaoEscolar`
+- [x] Bullying: ser a vítima (contar / aguentar / revidar → sistema de agressão) → `provocacaoEscola`, `valentao` (já existentes)
+- [x] Trabalho em grupo em que só você faz tudo (nota boa, vínculo com colegas cai) → `trabalhoGrupoSozinho`
+- [x] Primeiro celular (jogo até tarde → nota cai) → `primeiroCelular`
+- [x] Mentira de que o cachorro comeu o dever (professor pede foto do cachorro) → `cachorroComeuDever`
 
 ## D. Família e relacionamentos (P1/P2)
 - [ ] Ceia de Natal com briga genérica de política (cena no `sala`, parentes gritando; vínculos mudam)

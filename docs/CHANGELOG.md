@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-23 — Lote 03: infância e escola (Codex)
+
+**Eventos (8: 7 situações e 1 retorno):** `festaJuninaEscola`, `boletimEscondido`, `paisAchamBoletim`, `feiraCienciasEscolar`, `excursaoEscolar`, `trabalhoGrupoSozinho`, `primeiroCelular`, `cachorroComeuDever`.
+**Escolhas (24):** três por evento; o trabalho de grupo e as avaliações escolares variam com inteligência e sorte.
+**Cenas, movimentos, expressões, ambientes, objetos e interações novos:** 0; reutiliza `aula`, `viagem`, `brigaFamilia`, `detencao` e `telefonema`.
+**Flags novas (1):** `boletimEscondidoIdade`, consumida quando os pais encontram o boletim no ano seguinte. `infracoes` reaproveita o contador escolar existente.
+**Cadeias:** esconder o boletim pode voltar como descoberta e castigo; feira de ciências e mentira sobre o dever podem gerar detenção e contato com os pais.
+**Backlog:** oito itens da seção C concluídos. O bullying já tinha cobertura em `provocacaoEscola` e `valentao`; o lote os registra sem duplicar eventos.
+**Verificação:** `npm run check:quick` ✅ · `npm run check` ✅ · `npm run build` ✅ · `npm run catalog` ✅. Avisos de cobertura já documentados no Lote 02 permanecem; o aviso novo, `paisAchamBoletim`, depende da escolha de esconder o boletim, de um ano e da existência de pais vivos.
+**Verificação visual:** sem itens visuais novos; cenas existentes reaproveitadas.
+**Pendências/pedidos de engine:** nenhum pedido de engine.
+
 ## 2026-09-23 — Lote 02: trabalho e relações da firma (Codex)
 
 **Eventos (13: 10 situações e 3 retornos):** `feedbackSanduiche`, `justaCausaFeedback`, `estagiarioBrilhante`, `estagiarioVirouChefe`, `colegaRoubaCredito`, `happyHourObrigatorio`, `reuniaoQueEmailResolvia`, `assedioMoralChefe`, `indenizacaoTrabalhista`, `layoffSomosFamilia`, `greveParalisacao`, `homeOfficeComFamilia`, `amigoOcultoFirma`.
