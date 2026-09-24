@@ -50,6 +50,7 @@ Harness visual (com `npm run dev` rodando):
 | `docs/BACKLOG.md` | Ideias priorizadas de conteúdo esperando alguém implementar. |
 | `docs/PEDIDOS-ENGINE.md` | Fila de pedidos de mudanças no motor (zona vermelha) para o agente de lógica. |
 | `docs/DELEGACAO-LUNA.md` | Divisão de trabalho entre agentes e o prompt de delegação. |
+| `docs/RELACIONAMENTOS.md` | Mapa do sistema de relacionamentos (memória, namoro, casamento, divórcio): feito × falta × analisar, e regras para conteúdo. |
 | `docs/PAINEL-QA.md` | Painel de QA: uso, formatos de cenário/proposta/calibração, limites de edição, procedimento "localizar pelo ID". |
 
 ## 4. Zonas de edição
@@ -76,7 +77,7 @@ Harness visual (com `npm run dev` rodando):
 **🔴 Vermelha — NÃO editar. Se precisar, registre em `docs/PEDIDOS-ENGINE.md`:**
 - `src/character/{rig,character,body,head,hair,actor,appearance,rc,palette}.ts` (esqueleto, desenho, IK)
 - `src/scenes/{scene,stage}.ts`, `src/render/{draw,bg,particles}.ts` (motor de cena/câmera/render)
-- `src/game/{state,types,life,storage}.ts` (formato do save, motor anual, tipos)
+- `src/game/{state,types,life,storage,relacoes}.ts` (formato do save, motor anual, tipos, memória de relacionamento)
 - `src/ui/**`, `src/main.ts`, `src/test.ts`, `index.html`
 - `package.json`, `tsconfig.json`, `vite.config.ts`, `.github/**`, `scripts/**`
 - Painel de QA: `painel.html`, `src/painel/**`, `src/qa/**`, `src/character/calibracao.ts`

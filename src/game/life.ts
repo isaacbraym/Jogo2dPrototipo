@@ -5,6 +5,7 @@ import { rng } from '../core/rng';
 import { clamp } from '../core/math';
 import { CAREERS } from './careers';
 import { inherit } from '../character/appearance';
+import { encerrarRelacao, relacoesAnual, mem } from './relacoes';
 
 export interface YearResult {
   scene: SceneReq;
@@ -116,11 +117,13 @@ export function ageUp(L: Life): YearResult {
   for (const p of L.people) {
     if (!p.alive) continue;
     bond(p, -rng.int(1, 4));
-    if (p.bond < 12 && (p.rel === 'amigo' || p.rel === 'amiga')) { p.rel = 'colega'; note(`Eu e ${p.first} nos afastamos.`, 'neutro', '🍂'); }
-    if (p.bond < 10 && (p.rel === 'namorado' || p.rel === 'namorada' || p.rel === 'conjuge')) {
-      note(`${p.first} ${p.rel === 'conjuge' ? 'pediu o divórcio' : 'terminou comigo'}.`, 'ruim', '💔');
-      p.rel = 'ex';
-      stat(L, 'felicidade', -12);
+    if (p.bond < 12 && (p.rel === 'amigo' || p.rel === 'amiga')) { p.rel = 'conhecido'; note(`Eu e ${p.first} nos afastamos.`, 'neutro', '🍂'); }
+    // relação desgastada demais (vínculo mínimo ou mágoa extrema): a outra pessoa encerra — com as mesmas regras de separação
+    const desgaste = p.bond < 10 || (p.memo !== undefined && mem(p).rancor >= 90);
+    if (desgaste && (p.rel === 'namorado' || p.rel === 'namorada' || p.rel === 'conjuge')) {
+      const eraCasamento = p.rel === 'conjuge';
+      const extra = encerrarRelacao(L, p, 'parceiro', { consensual: p.bond < 10, semDiario: true });
+      note(`${p.first} ${eraCasamento ? 'pediu o divórcio' : 'terminou comigo'}. ${extra}`.trim(), 'ruim', '💔');
     }
     // mortes naturais de NPCs muito idosos (pais são tratados por evento)
     if (!['mae', 'pai', 'avo', 'avoM'].includes(p.rel) && p.age > 75 && rng.chance((p.age - 75) / 60)) {
@@ -129,6 +132,7 @@ export function ageUp(L: Life): YearResult {
       stat(L, 'felicidade', -6);
     }
   }
+  relacoesAnual(L, note);
   for (const pet of L.pets) {
     if (!pet.alive) continue;
     if (pet.age > 10 && rng.chance((pet.age - 10) / 8)) {

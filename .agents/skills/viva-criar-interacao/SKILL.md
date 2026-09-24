@@ -24,6 +24,15 @@ Specs: `SPEC-01` (Outcome/consequências), `SPEC-05` (agressão/entrevistas), `S
 - A **mesma interação deve dar resultados diferentes por contexto**: relação (chefe × amigo × mãe), idade, vínculo (`p.bond`), traços (`p.traits`).
 - Cena: `sc(L, p, acao)` usa ações de `physical()` (lista no CATALOGO). Precisa de ação nova? Crie o `case` (skill `viva-criar-cena`).
 
+## Memória de relacionamento (obrigatório em interações com pessoas)
+Leia `docs/RELACIONAMENTOS.md` §7.
+- Gesto positivo? preencha `gesto: 'carinho' | 'conversa' | 'romance' | 'consolo' | 'pedido' | 'diversao'` — o motor recusa
+  por mágoa/medo, reduz o efeito e trata repetição sozinho. Não reimplemente isso na interação.
+- Algo marcante aconteceu com a pessoa? `lembrar(L, p, 'humilhacao' | 'favor' | 'agressao' | ..., sev, 'texto curto')`.
+- Condições e textos podem ler `mem(p).rancor`, `.medo`, `.confianca`, `.gratidao`, `.fatos`.
+- Fim de namoro/casamento: sempre `encerrarRelacao(L, p, 'jogador' | 'parceiro', { consensual })`.
+- Romance só com `podeNamorar(L, p)`.
+
 ## Atividade (`ACTIONS`)
 `{ id, label, icon, desc, group, minAge, maxAge?, cost?, cond?, run(L) }` — `cost` é cobrado pela UI. Pode retornar um
 `PendingEvent` (`{ ev, ctx }`) para abrir escolhas. Grupos existentes no CATALOGO.

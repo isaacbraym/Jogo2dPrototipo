@@ -71,6 +71,8 @@ export interface Action {
 
 export interface Interaction {
   id: string;
+  /** gesto positivo sujeito à memória da pessoa (recusa por mágoa/medo, efeito reduzido por repetição) */
+  gesto?: import('./relacoes').TipoGesto;
   label: string;
   icon: string;
   group?: string;

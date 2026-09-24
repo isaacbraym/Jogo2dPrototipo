@@ -439,8 +439,37 @@ export function editorScreen(app: App, opts: { presets?: boolean; ap?: Appearanc
   }
   updateFoot();
 
+  /** Pergunta com que idade a vida começa (presets + idade livre). */
+  function escolherIdade(): Promise<number | null> {
+    return new Promise((resolve) => {
+      let feito = false;
+      const PRESETS: [number, string, string][] = [
+        [0, '👶 Nascer', 'Desde o berço: família, escola, tudo.'],
+        [6, '🎒 Criança', 'Primeiro ano da escola.'],
+        [14, '🧑‍🎤 Adolescente', 'Ensino médio, crushes e espinhas.'],
+        [18, '🎓 Maioridade', 'Mundo adulto: sem escola, sem mesada.'],
+        [25, '💼 Jovem adulto', 'Hora de arrumar emprego.'],
+        [40, '🧔 Meia-idade', 'A crise dos 40 já vem incluída.'],
+        [65, '👵 Terceira idade', 'Netos, INSS e hidroginástica.'],
+      ];
+      const livre = h('input.input', { type: 'number', min: 0, max: 90, value: String(startAge), style: { width: '90px' } }) as HTMLInputElement;
+      const ok = (idade: number) => { feito = true; close(); resolve(Math.max(0, Math.min(90, Math.round(idade)))); };
+      const body = h('div', null,
+        h('p', null, 'Com que idade você quer começar esta vida?'),
+        h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '8px', margin: '10px 0' } },
+          ...PRESETS.map(([idade, rot, desc]) => h('button.btn' + (idade === startAge ? '.primary' : '.ghost'), { style: { flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', height: 'auto', padding: '10px 12px' }, onclick: () => ok(idade) },
+            h('b', null, `${rot} · ${idade} anos`), h('small', { style: { opacity: '0.8', fontWeight: '600' } }, desc)))),
+        h('div.row', { style: { gap: '8px', alignItems: 'center' } }, h('span', null, 'Outra idade:'), livre, h('button.btn.primary', { onclick: () => ok(Number(livre.value) || 0) }, 'Começar')),
+      );
+      const close = modal('Começar nova vida', body, { onClose: () => { if (!feito) resolve(null); } });
+    });
+  }
+
   async function start() {
     if (!first.trim()) { toast('Dê um nome ao personagem!', 'bad'); cat = CATS[0]; renderPanel(); return; }
+    const idade = await escolherIdade();
+    if (idade === null) return;
+    startAge = idade;
     sfx.success();
     const L = newLife(ap, first.trim(), last.trim() || 'Silva', city, startAge);
     saveLife(L);

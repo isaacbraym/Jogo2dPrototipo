@@ -5,6 +5,7 @@ import { rng } from '../core/rng';
 import { inherit } from '../character/appearance';
 import { CURSOS, CAREERS, careerById } from './careers';
 import { aggress } from './aggression';
+import { mem, lembrar, limitarVinculo, encerrarRelacao, podeNamorar } from './relacoes';
 import { DESTINOS, PETS_NOMES } from './names';
 
 const O = (text: string, tone: Outcome['tone'], extra: Partial<Outcome> = {}): Outcome => ({ text, tone, ...extra });
@@ -173,12 +174,12 @@ export const EVENTS: LifeEvent[] = [
     ],
   },
   {
-    id: 'pedidoParceiro', min: 22, max: 65, weight: (L) => { const p = partner(L); return p && p.rel !== 'conjuge' && p.bond > 70 && L.player.age - (p.metAt ?? L.player.age) >= 2 ? 10 : 0; }, icon: '💍', title: 'Pedido de casamento!',
+    id: 'pedidoParceiro', min: 22, max: 65, weight: (L) => { const p = partner(L); return p && p.rel !== 'conjuge' && p.bond > 70 && (p.memo?.rancor ?? 0) < 30 && p.memo?.noivado === undefined && L.player.age - (p.metAt ?? L.player.age) >= 2 ? 10 : 0; }, icon: '💍', title: 'Pedido de casamento!',
     setup: (L) => ({ person: partner(L) }),
     text: (_L, c) => `${c.person!.first} preparou um jantar especial e está se ajoelhando com uma aliança!`,
     choices: [
-      { label: 'Aceitar!', icon: '💖', run: (L, c) => { const p = c.person!; p.rel = 'conjuge'; bond(p, 15); stat(L, 'felicidade', 15); L.money -= 15000; addLog(L, `Casei com ${p.first}!`, 'especial', '💒'); return O(`Vocês se casaram numa cerimônia linda!`, 'especial', { scene: { id: 'casamento', others: [p] }, log: false }); } },
-      { label: 'Recusar', icon: '💔', run: (L, c) => { const p = c.person!; p.rel = 'ex'; bond(p, -40); stat(L, 'felicidade', -10); return O(`${p.first} ficou arrasado(a) e terminou o relacionamento.`, 'ruim', { scene: { id: 'termino', others: [p] } }); } },
+      { label: 'Aceitar!', icon: '💖', run: (L, c) => { const p = c.person!; p.rel = 'conjuge'; lembrar(L, p, 'casamento', 1, 'Vocês se casaram (o pedido foi dele/dela).'); bond(p, 15); stat(L, 'felicidade', 15); L.money -= 15000; addLog(L, `Casei com ${p.first}!`, 'especial', '💒'); return O(`Vocês se casaram numa cerimônia linda!`, 'especial', { scene: { id: 'casamento', others: [p] }, log: false }); } },
+      { label: 'Recusar', icon: '💔', run: (L, c) => { const p = c.person!; lembrar(L, p, 'pedidoRecusado', 1, 'Você recusou o pedido de casamento.'); encerrarRelacao(L, p, 'parceiro', { semDiario: true }); bond(p, -20); return O(`${p.first} ficou arrasado(a) e terminou o relacionamento.`, 'ruim', { scene: { id: 'termino', others: [p] } }); } },
     ],
   },
   {
@@ -207,7 +208,7 @@ export const EVENTS: LifeEvent[] = [
     setup: (L) => { const person = partner(L); return person ? { person } : null; },
     text: (_L, c) => `Você viu mensagens estranhas no celular de ${c.person!.first}...`,
     choices: [
-      { label: 'Confrontar', icon: '😡', run: (L, c) => { const p = c.person!; if (rng.chance(0.4)) { p.rel = 'ex'; bond(p, -50); stat(L, 'felicidade', -15); return O(`${p.first} confessou tudo. O relacionamento acabou.`, 'ruim', { scene: { id: 'termino', others: [p] } }); } bond(p, -8); return O(`Era só uma surpresa de aniversário! Que vergonha...`, 'neutro', { scene: { id: 'interacao', others: [p], data: { action: 'discutir' } } }); } },
+      { label: 'Confrontar', icon: '😡', run: (L, c) => { const p = c.person!; if (rng.chance(0.4)) { encerrarRelacao(L, p, 'jogador', { semDiario: true }); bond(p, -30); stat(L, 'felicidade', -8); return O(`${p.first} confessou tudo. O relacionamento acabou.`, 'ruim', { scene: { id: 'termino', others: [p] } }); } bond(p, -8); return O(`Era só uma surpresa de aniversário! Que vergonha...`, 'neutro', { scene: { id: 'interacao', others: [p], data: { action: 'discutir' } } }); } },
       { label: 'Confiar e esquecer', icon: '🕊️', run: (L, c) => { bond(c.person!, 3); stat(L, 'felicidade', -2); return O('Você escolheu confiar.', 'neutro'); } },
       { label: 'Fingir que não viu', icon: '🙈', run: (L, c) => { bond(c.person!, -3); stat(L, 'felicidade', -4); return O('Você guardou a suspeita e fechou o celular. A senha mudou; a dúvida, não.', 'neutro', { mood: 'tenso', react: { player: { expr: 'serio' } } }); } },
       { label: 'Revidar com agressão verbal', icon: '🗯️', run: (L, c) => aggress(L, c.person!, 'xingar') },
@@ -1497,6 +1498,58 @@ export const EVENTS: LifeEvent[] = [
     choices: [
       { label: 'Ouvir as novidades', icon: '💬', run: (L, c) => { delete L.flags.netoLembraConversaIdade; delete L.flags.netoLembraConversaPessoaId; bond(c.neto!, 7); stat(L, 'felicidade', 6); return O('Vocês conversaram sem olhar o relógio. O neto contou da escola; você contou de quando telefone tinha fio.', 'bom', { scene: { id: 'interacao', others: [c.neto!], data: { action: 'conversar', env: 'sala' } }, react: { npc: { expr: 'feliz', say: 'Da próxima eu volto com mais tempo.' }, player: { expr: 'feliz' } } }); } },
       { label: 'Ensinar uma receita de família', icon: '🍲', run: (L, c) => { delete L.flags.netoLembraConversaIdade; delete L.flags.netoLembraConversaPessoaId; bond(c.neto!, 5); L.karma += 1; stat(L, 'felicidade', 4); return O('Vocês fizeram a receita juntos e anotaram as medidas. “Um pouco” virou três colheres, para a tradição sobreviver à memória.', 'bom', { react: { npc: { expr: 'feliz', say: 'Vou guardar essa receita.' }, player: { expr: 'feliz' } } }); } },
+    ],
+  },
+  // ======================================================== relacionamentos com memória (ver docs/RELACIONAMENTOS.md)
+  {
+    id: 'parceiroTermina', min: 15, max: 95, icon: '💔', title: (_L, c) => `${c.person!.first} quer terminar`,
+    weight: (L) => { const p = partner(L); if (!p || p.rel === 'conjuge') return 0; const m = mem(p); return p.bond < 30 || m.rancor >= 55 ? 20 : 0; },
+    setup: (L) => { const p = partner(L); return p && p.rel !== 'conjuge' ? { person: p } : null; },
+    text: (_L, c) => { const m = mem(c.person!); return `${c.person!.first} chamou pra conversar: "${m.rancor >= 55 ? 'Eu não consigo esquecer o que você fez.' : 'A gente virou dois estranhos dividindo senha de streaming.'}" Parece o fim.`; },
+    choices: [
+      { label: 'Implorar por mais uma chance', icon: '🥺', run: (L, c) => {
+        const p = c.person!; const m = mem(p);
+        if (rng.chance(Math.max(0.05, 0.3 + m.gratidao / 250 + m.confianca / 400 - m.rancor / 120 - m.promessasQuebradas * 0.1))) { m.rancor = Math.max(0, m.rancor - 10); bond(p, 8); limitarVinculo(p); return O(`${p.first} suspirou e deu mais uma chance. "A última." Você anotou.`, 'neutro', { mood: 'tenso', react: { npc: { expr: 'serio' } } }); }
+        const extra = encerrarRelacao(L, p, 'parceiro'); stat(L, 'felicidade', -4); return O(`Implorar não adiantou. ${p.first} foi embora e levou o carregador. ${extra}`.trim(), 'ruim', { scene: { id: 'termino', others: [p] }, mood: 'triste', log: false });
+      } },
+      { label: 'Aceitar com dignidade', icon: '🕊️', run: (L, c) => { const p = c.person!; const extra = encerrarRelacao(L, p, 'parceiro', { consensual: true }); mem(p).rancor = Math.max(0, mem(p).rancor - 10); L.karma += 2; return O(`Vocês terminaram sem gritaria. Doeu, mas foi adulto. ${extra}`.trim(), 'neutro', { scene: { id: 'termino', others: [p] }, mood: 'triste', log: false }); } },
+      { label: 'Fazer escândalo', icon: '📢', run: (L, c) => { const p = c.person!; lembrar(L, p, 'humilhacao', 1, 'Você fez um escândalo no término.'); L.karma -= 4; const extra = encerrarRelacao(L, p, 'parceiro'); return O(`Gritos, choro e um vizinho filmando. O término virou meme do condomínio. ${extra}`.trim(), 'ruim', { scene: { id: 'termino', others: [p] }, mood: 'tenso', log: false, react: { npc: { expr: 'desprezo' } } }); } },
+    ],
+  },
+  {
+    id: 'conjugePedeDivorcio', min: 18, max: 100, icon: '⚖️', title: 'Pedido de divórcio',
+    weight: (L) => { const s = spouse(L); if (!s) return 0; const m = mem(s); return s.bond < 30 || m.rancor >= 55 ? 18 : 0; },
+    setup: (L) => { const s = spouse(L); return s ? { person: s } : null; },
+    text: (_L, c) => { const m = mem(c.person!); return `${c.person!.first} colocou os papéis do divórcio na mesa do café. ${m.agressoes ? '"Depois de tudo que você fez, acabou."' : '"A gente não é mais um casal. É uma sociedade limitada."'}`; },
+    choices: [
+      { label: 'Assinar (divórcio amigável)', icon: '✍️', run: (L, c) => { const p = c.person!; const extra = encerrarRelacao(L, p, 'parceiro', { consensual: true }); return O(`Divórcio amigável. Vocês até dividiram a pizza no dia da assinatura. ${extra}`.trim(), 'ruim', { scene: { id: 'termino', others: [p] }, mood: 'triste', log: false }); } },
+      { label: 'Propor terapia de casal (R$ 3 mil)', icon: '🛋️', run: (L, c) => {
+        const p = c.person!; const m = mem(p); L.money -= 3000;
+        if (!m.afastado && rng.chance(Math.max(0.05, 0.35 + m.confianca / 300 + m.gratidao / 300 - m.rancor / 110 - m.medo / 90))) { m.rancor = Math.max(0, m.rancor - 20); m.confianca = Math.min(100, m.confianca + 8); bond(p, 12); limitarVinculo(p); return O(`Dez sessões, três crises de choro e uma revelação sobre a toalha molhada na cama. Vocês continuam casados — e conversando.`, 'bom', { mood: 'feliz' }); }
+        const extra = encerrarRelacao(L, p, 'parceiro'); return O(`A terapeuta desistiu antes de vocês. O divórcio saiu, e a terapia não tem reembolso. ${extra}`.trim(), 'ruim', { scene: { id: 'termino', others: [p] }, mood: 'triste', log: false });
+      } },
+      { label: 'Brigar na Justiça', icon: '👨‍⚖️', run: (L, c) => { const p = c.person!; L.money -= 8000; lembrar(L, p, 'humilhacao', 1, 'Você arrastou o divórcio na Justiça.'); const extra = encerrarRelacao(L, p, 'parceiro'); return O(`Dois anos de audiência para decidir quem fica com o micro-ondas. Os advogados agradecem (R$ 8 mil). ${extra}`.trim(), 'ruim', { scene: { id: 'julgamento', data: { fala: 'Partilha decidida. Próximo caso!' } }, mood: 'tenso', log: false }); } },
+    ],
+  },
+  {
+    id: 'exQuerVoltar', min: 16, max: 80, icon: '📱', title: (_L, c) => `${c.person!.first} mandou mensagem`,
+    weight: (L) => (!partner(L) && L.people.some((p) => p.alive && p.rel === 'ex' && p.bond >= 45 && (p.memo?.rancor ?? 0) < 25 && podeNamorar(L, p)) ? 4 : 0),
+    setup: (L) => { const p = pickRandom(L.people.filter((x) => x.alive && x.rel === 'ex' && x.bond >= 45 && (x.memo?.rancor ?? 0) < 25 && podeNamorar(L, x))); return p ? { person: p } : null; },
+    text: (_L, c) => `23h47: "oi sumido(a)". É ${c.person!.first}, seu/sua ex. Querendo conversar. Sobre "a gente".`,
+    choices: [
+      { label: 'Dar mais uma chance', icon: '🔁', run: (L, c) => { const p = c.person!; lembrar(L, p, 'reconciliacao', 1, 'Vocês voltaram.'); p.rel = p.sex === 'f' ? 'namorada' : 'namorado'; p.metAt = L.player.age; bond(p, 8); limitarVinculo(p); stat(L, 'felicidade', 8); return O(`Vocês voltaram. Seus amigos reviraram os olhos em uníssono.`, 'bom', { scene: { id: 'encontro', others: [p], data: { good: true, line: 'Senti sua falta.' } } }); } },
+      { label: 'Visualizar e não responder', icon: '👀', run: (L, c) => { const p = c.person!; bond(p, -6); lembrar(L, p, 'rejeicao'); return O(`Dois tiques azuis e silêncio. A vingança mais fria do Brasil.`, 'neutro'); } },
+      { label: 'Responder "quem é?"', icon: '🤷', run: (L, c) => { const p = c.person!; bond(p, -12); lembrar(L, p, 'humilhacao', 1, 'Você fingiu não lembrar dele(a).'); stat(L, 'felicidade', 3); return O(`Crueldade gratuita, mas deu uma satisfação estranha.`, 'neutro'); } },
+    ],
+  },
+  {
+    id: 'bodas', min: 20, max: 110, icon: '💐', title: (L, c) => `${L.player.age - (mem(c.person!).casamento ?? L.player.age)} anos de casados`,
+    weight: (L) => { const s = spouse(L); const c = s?.memo?.casamento; return s && c !== undefined && L.player.age > c && (L.player.age - c) % 5 === 0 ? 40 : 0; },
+    setup: (L) => { const s = spouse(L); return s ? { person: s } : null; },
+    text: (L, c) => `Hoje faz ${L.player.age - (mem(c.person!).casamento ?? L.player.age)} anos que você casou com ${c.person!.first}.`,
+    choices: [
+      { label: 'Jantar surpresa (R$ 500)', icon: '🕯️', run: (L, c) => { const p = c.person!; L.money -= 500; bond(p, 10); lembrar(L, p, 'presente'); limitarVinculo(p); stat(L, 'felicidade', 6); return O(`${p.first} se emocionou. O garçom cantou parabéns achando que era aniversário. Ninguém corrigiu.`, 'especial', { scene: { id: 'encontro', others: [p], data: { good: true, line: 'Feliz aniversário de casamento.' } } }); } },
+      { label: 'Esquecer a data', icon: '🙈', run: (L, c) => { const p = c.person!; bond(p, -10); lembrar(L, p, 'discussao', 1, 'Você esqueceu as bodas.'); return O(`Você lembrou às 23h50, ao ver a mesa posta e fria. ${p.first} não disse nada. Disse tudo.`, 'ruim', { mood: 'tenso', react: { npc: { expr: 'desprezo' } } }); } },
     ],
   },
 ];

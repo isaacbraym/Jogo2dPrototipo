@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-09-24 — Relacionamentos com memória, namoro/casamento/divórcio, ações por idade e idade inicial (Claude) · branch `claude/relacionamentos`
+- **Memória de relacionamento** (`src/game/relacoes.ts`, pedido de engine atendido): cada pessoa guarda mágoa, medo, gratidão,
+  confiança, agressões, desculpas e promessas quebradas + últimos fatos. Gestos positivos (campo novo `Interaction.gesto`)
+  podem ser recusados e rendem menos com mágoa/repetição; **consolo é recusado por quem você machucou**; medo recusa contato;
+  corte de contato após agressões graves; teto de vínculo; o tempo cura devagar (anual). Agressões gravam na memória e a
+  mágoa aumenta o revide. Save compatível (`Person.memo` opcional).
+- **Amor:** interações novas `paquerar`, `encontro`, `dr`, `pedirCasamento`, `casar` (evento encadeado "O grande dia"),
+  `divorcio`, `reatar`; `terminar` reescrita. Eventos novos `parceiroTermina`, `conjugePedeDivorcio`, `exQuerVoltar`, `bodas`.
+  `pedidoParceiro` e `traicao` passam a usar memória/`encerrarRelacao`. Divórcio com advogado, partilha, casa e **pensão
+  alimentícia** anual. Término automático do fim do ano usa as mesmas regras. Mapa completo em `docs/RELACIONAMENTOS.md`.
+- **Ações do palco por idade:** só aparecem as que a idade permite (bebê: rir e chorar); ao liberar novas, aparece um aviso
+  simples "Novas ações liberadas!". Sai o toast "Você ainda é um bebê!".
+- **Nova vida pergunta a idade:** ao clicar em "Começar vida" abre um seletor (nascer, 6, 14, 18, 25, 40, 65 ou livre).
+  `newLife` agora prepara idades intermediárias (escola e turma para 6–17, dinheiro/CNH para adultos, pais idosos podem já ter
+  falecido).
+- **Correção:** amizade que esfriava virava "colega de escola"; agora vira "conhecido(a)".
+- **Validador:** perfis de teste novos `casamentoEmCrise` e `noivoComEx`. Flags novas `acoesPalcoVistas`, `pensaoDesde` (SPEC-01).
+
 ## 2026-09-24 — V4 do chute promovida para a cena oficial (Codex)
 - Aplicada a trajetória escolhida ao ramo `kind === 'chute'` da cena `agressao`: impacto sincronizado, reação com salto, queda ajoelhada para a frente e pose no chão.
 - A vítima se levanta da pose frontal antes de revidar ou voltar à discussão. Preservado o caminho de esquiva e os demais tipos de agressão.

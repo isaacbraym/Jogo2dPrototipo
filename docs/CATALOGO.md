@@ -3,7 +3,7 @@
 > **Não edite à mão.** Gerado por `npm run catalog` a partir dos registros do código.
 > Use para conferir nomes existentes antes de criar algo novo.
 
-## Eventos anuais — 102
+## Eventos anuais — 106
 
 | id | idades | título | tipo |
 |---|---|---|---|
@@ -109,6 +109,10 @@
 | `celularVolta` | 14–100 | 📱 A notificação atrasada | 2 escolhas, única |
 | `piramideContatoVolta` | 21–100 | 📈 O conhecido tem outra oportunidade | 2 escolhas, única |
 | `netoLembraConversa` | 46–100 | ☕ Uma visita sem pedido de Pix | 2 escolhas, única |
+| `parceiroTermina` | 15–95 | 💔 (dinâmico) | 3 escolhas |
+| `conjugePedeDivorcio` | 18–100 | ⚖️ Pedido de divórcio | 3 escolhas |
+| `exQuerVoltar` | 16–80 | 📱 (dinâmico) | 3 escolhas |
+| `bodas` | 20–110 | 💐 (dinâmico) | 2 escolhas |
 
 ## Ações (aba Atividades) — 27
 
@@ -142,7 +146,7 @@
 | `furto` | Crime | 🦹 Furtar uma loja | 14 |
 | `briga` | Crime | 🥊 Arrumar briga | 10 |
 
-## Interações (aba Relações) — 27
+## Interações (aba Relações) — 34
 
 | id | grupo | rótulo |
 |---|---|---|
@@ -172,7 +176,14 @@
 | `agg_soco` | Agressão | 👊 Dar um soco |
 | `agg_chute` | Agressão | 🦵 Dar um chute |
 | `agg_cabecada` | Agressão | 🤕 Dar uma cabeçada |
-| `terminar` | Geral | 💔 Terminar namoro |
+| `paquerar` | Amor | 💌 Chamar para sair |
+| `encontro` | Amor | 🍷 Encontro romântico |
+| `dr` | Amor | 🗣️ Conversar sobre a relação |
+| `pedirCasamento` | Amor | 💍 Pedir em casamento |
+| `casar` | Amor | 💒 Marcar o casamento |
+| `terminar` | Amor | 💔 Terminar namoro |
+| `divorcio` | Amor | ⚖️ Pedir o divórcio |
+| `reatar` | Amor | 🔁 Tentar voltar |
 
 ## Agressões — 10
 
@@ -330,6 +341,7 @@ Além destas, `ev_<id>` marca eventos `once` já ocorridos.
 
 | flag | onde |
 |---|---|
+| `acoesPalcoVistas` | ui/game.ts |
 | `advertencias` | game/events.ts, game/aggression.ts, game/state.ts |
 | `amigoAjudaIdade` | game/events.ts |
 | `amigoAjudaPessoaId` | game/events.ts |

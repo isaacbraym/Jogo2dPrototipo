@@ -108,6 +108,8 @@ Valores: number, boolean ou string (JSON). Nomes camelCase. Guarde a **idade** q
 | `irmaoEmprestimoPessoaId` | id do irmão que recebeu o empréstimo pendente | events; irmaoNaoDevolve |
 | `irmaoEmprestimoIdade` | idade em que o empréstimo ao irmão foi feito | events; irmaoNaoDevolve |
 | `irmaoEmprestimoValor` | valor do empréstimo ao irmão | events; irmaoNaoDevolve |
+| `acoesPalcoVistas` | quantas ações do palco (acenar, dançar…) o jogador já viu liberadas; controla o aviso "Novas ações liberadas" | ui/game |
+| `pensaoDesde` | idade em que começou a pagar pensão alimentícia (divórcio com filhos menores) | game/relacoes |
 | `testamentoGatoIdade` | idade em que parte dos bens foi reservada ao gato | events; familiaContestaTestamento |
 | `testamentoGatoValor` | valor reservado para os cuidados do gato | events; familiaContestaTestamento |
 | `testamentoGatoPetId` | id do gato citado no testamento | events; familiaContestaTestamento |

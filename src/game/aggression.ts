@@ -2,6 +2,7 @@ import { Outcome } from './types';
 import { Life, Person, stat, bond, addLog, parents, living, money, he, enrollSchool, leaveJobPeople } from './state';
 import { rng } from '../core/rng';
 import { careerById } from './careers';
+import { mem, lembrar, encerrarRelacao } from './relacoes';
 
 export type AggroKind = 'xingar' | 'empurrar' | 'jogarBebida' | 'humilhar' | 'pegadinha' | 'tapa' | 'roubar' | 'soco' | 'chute' | 'cabecada';
 
@@ -65,7 +66,9 @@ export function aggress(L: Life, p: Person, kind: AggroKind): Outcome {
   // revide
   let retaliate = false;
   if (!kidVsParent && !victimFrail && kind !== 'roubar') {
-    const pr = 0.22 + (traitsAngry ? 0.28 : 0) - (traitsSoft ? 0.15 : 0) + sev * 0.05 - (injured ? 0.35 : 0) + (dodged ? 0.25 : 0);
+    // memória: mágoa acumulada deixa a vítima mais disposta a revidar; medo a deixa encolhida
+    const mm = mem(p);
+    const pr = 0.22 + (traitsAngry ? 0.28 : 0) - (traitsSoft ? 0.15 : 0) + sev * 0.05 - (injured ? 0.35 : 0) + (dodged ? 0.25 : 0) + mm.rancor / 250 - mm.medo / 180;
     retaliate = rng.chance(Math.max(0.03, pr));
   }
   const roubado = kind === 'roubar' && !rng.chance(0.3) ? rng.int(2, 40) * 10 : 0;
@@ -74,6 +77,8 @@ export function aggress(L: Life, p: Person, kind: AggroKind): Outcome {
   // efeitos imediatos
   bond(p, -(sev * 9 + rng.int(3, 10)));
   L.karma -= sev * 3;
+  // a vítima lembra (mágoa, medo, confiança) — ver game/relacoes.ts
+  lembrar(L, p, kind === 'humilhar' ? 'humilhacao' : 'agressao', kind === 'humilhar' ? 2 : sev, `Agressão: ${AGGRO[kind].label.toLowerCase()}.`);
   if (injured) addLog(L, `${p.first} ficou com ${injury} por minha causa.`, 'ruim', '🩹');
   if (roubado) L.money += roubado;
   let dmg = 0;
@@ -178,11 +183,11 @@ export function aggress(L: Life, p: Person, kind: AggroKind): Outcome {
         scene: { id: 'brigaFamilia', others: [p] },
       }));
     }
-  } else if (ctx === 'casal' && sev >= 3) {
-    p.rel = 'ex';
-    bond(p, -40);
-    stat(L, 'felicidade', -10);
-    list.push(O(`${p.first} fez as malas na mesma noite. Relação acabou — e com razão.`, 'ruim', {
+  } else if (ctx === 'casal' && (sev >= 3 || mem(p).rancor >= 70 || mem(p).agressoes >= 3)) {
+    // violência na relação: agressão física grave termina na hora; agressões "menores" repetidas também (a memória acumula)
+    const extra = encerrarRelacao(L, p, 'parceiro', { consensual: false });
+    bond(p, -30);
+    list.push(O(`${p.first} fez as malas na mesma noite.${sev < 3 ? ' Não foi uma vez só — foi a gota d’água.' : ''} Relação acabou — e com razão. ${extra}`.trim(), 'ruim', {
       title: 'Fim da relação', icon: '💔',
       scene: { id: 'termino', others: [p] },
     }));

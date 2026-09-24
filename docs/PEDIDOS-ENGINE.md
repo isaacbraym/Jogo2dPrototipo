@@ -19,7 +19,8 @@ Quando atendido: troque `[ABERTO]` por `[FEITO 2026-xx-xx]` e cite o commit.
 - **Problema:** com o cartão aberto a câmera sobe e o balão de quem está falando pode ficar sob a barra superior.
 - **Proposta:** limitar o y do balão à área visível (abaixo do HUD) em `actor.ts`/`scene.ts`.
 
-### [ABERTO] Memória de NPC (rancor/gratidão)
+### [FEITO 2026-09-24] Memória de NPC (rancor/gratidão)
+- **Atendido:** `Person.memo` (rancor, medo, gratidão, confiança, agressões, desculpas, promessas quebradas, fatos) em `src/game/relacoes.ts`, com `lembrar`, `mem`, `reacao`, `chanceDesculpas`, `encerrarRelacao`; decaimento anual; opcional no save. Documentado em `docs/RELACIONAMENTOS.md`.
 - **Quem pediu / quando:** Claude, 2026-09-23 (backlog H)
 - **Proposta:** `Person.memo?: Record<string, number>` com helpers `remember(p, chave, valor)` / `recall(p, chave)`, migração de save.
 - **Conteúdo que depende disso:** retornos de agressão, favores, vinganças personalizadas.

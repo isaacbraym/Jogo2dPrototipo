@@ -3,6 +3,7 @@ import { RNG, rng } from '../core/rng';
 import { clamp } from '../core/math';
 import { NOMES_F, NOMES_M, SOBRENOMES } from './names';
 import type { CastMember } from '../scenes/situations';
+import type { Memoria } from './relacoes';
 
 export type StatKey = 'felicidade' | 'saude' | 'inteligencia' | 'aparencia';
 export type Stats = Record<StatKey, number>;
@@ -33,6 +34,8 @@ export interface Person {
   job?: string;
   money?: number;
   metAt?: number;
+  /** memória do que o jogador fez com esta pessoa (opcional; criada sob demanda — ver game/relacoes.ts) */
+  memo?: Memoria;
 }
 
 export interface Pet {
@@ -161,14 +164,24 @@ export function newLife(ap: Appearance, first: string, last: string, city: strin
     city, dead: false, generation: 1, yearsActions: 0, licenca: false, seed,
   };
   if (startAge >= 18) {
-    L.edu.stage = 'medio';
-    L.money = r.int(500, 4000);
+    L.money = r.int(500, 4000) + (startAge >= 30 ? r.int(2, 30) * 1000 : 0);
     L.edu.stage = 'formado';
     L.edu.faculdade = false;
-    addLog(L, `Aos ${startAge} anos, ${first} começa uma nova fase da vida em ${city}.`, 'especial', '🌱');
-  } else {
-    addLog(L, `Nasci em ${city}. Sou filho(a) de ${mom.first} e ${dad.first}.`, 'especial', '👶');
+    L.licenca = startAge >= 20 && r.chance(0.7);
+  } else if (startAge >= 6) {
+    // começa no meio da vida escolar: série correspondente + turma
+    L.edu.stage = startAge < 14 ? 'fundamental' : 'medio';
+    enrollSchool(L);
   }
+  // pais idosos podem já ter falecido quando a vida começa tarde
+  for (const pa of [mom, dad]) {
+    if (pa.age > 72 && r.chance(Math.min(0.97, (pa.age - 72) / 22))) {
+      pa.alive = false;
+      addLog(L, `${pa.first}, ${pa.rel === 'mae' ? 'minha mãe' : 'meu pai'}, já faleceu.`, 'ruim', '🕯️');
+    }
+  }
+  if (startAge > 0) addLog(L, `Aos ${startAge} anos, ${first} começa uma nova fase da vida em ${city}.`, 'especial', '🌱');
+  else addLog(L, `Nasci em ${city}. Sou filho(a) de ${mom.first} e ${dad.first}.`, 'especial', '👶');
   return L;
 }
 

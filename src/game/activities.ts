@@ -5,6 +5,8 @@ import { CAREERS, Career } from './careers';
 import { DESTINOS, FILMES, PETS_NOMES } from './names';
 import { EVENTS } from './events';
 import { aggress, AGGRO, AggroKind, contextOf, envFor as aggroEnv } from './aggression';
+import { mem, lembrar, reacao, contarGesto, limitarVinculo, chanceDesculpas, encerrarRelacao, podeNamorar, Reacao } from './relacoes';
+import { LifeEvent } from './types';
 
 const O = (text: string, tone: Outcome['tone'], extra: Partial<Outcome> = {}): Outcome => ({ text, tone, ...extra });
 
@@ -223,48 +225,48 @@ const sc = (L: Life, p: Person, action: string) => ({ id: 'interacao', others: [
 
 export const INTERACTIONS: Interaction[] = [
   {
-    id: 'conversar', label: 'Conversar', icon: '💬', cond: (L) => L.player.age >= 3,
+    id: 'conversar', gesto: 'conversa', label: 'Conversar', icon: '💬', cond: (L) => L.player.age >= 3,
     run: (L, p) => { bond(p, rng.int(3, 7)); stat(L, 'felicidade', 2); return O(`Você teve uma ótima conversa com ${p.first}.`, 'bom', { scene: sc(L, p, 'conversar') }); },
   },
   {
-    id: 'abracar', label: 'Abraçar', icon: '🤗', cond: () => true,
+    id: 'abracar', gesto: 'carinho', label: 'Abraçar', icon: '🤗', cond: () => true,
     run: (L, p) => { bond(p, rng.int(5, 9)); stat(L, 'felicidade', 4); return O(`Um abraço apertado em ${p.first}. Aquece o coração!`, 'bom', { scene: sc(L, p, 'abracar') }); },
   },
   {
-    id: 'beijar', label: 'Beijar', icon: '💋', cond: (L, p) => romantic(p) && L.player.age >= 13,
+    id: 'beijar', gesto: 'romance', label: 'Beijar', icon: '💋', cond: (L, p) => romantic(p) && L.player.age >= 13,
     run: (L, p) => { bond(p, rng.int(6, 10)); stat(L, 'felicidade', 6); return O(`Um beijo apaixonado em ${p.first}.`, 'bom', { scene: sc(L, p, 'beijar') }); },
   },
   {
-    id: 'highFive', label: 'Toca aqui!', icon: '🙌', cond: (L) => L.player.age >= 4,
+    id: 'highFive', gesto: 'diversao', label: 'Toca aqui!', icon: '🙌', cond: (L) => L.player.age >= 4,
     run: (L, p) => { bond(p, rng.int(2, 5)); stat(L, 'felicidade', 2); return O(`${p.first} bateu na sua mão com entusiasmo!`, 'bom', { scene: sc(L, p, 'highFive') }); },
   },
   {
-    id: 'dancar', label: 'Dançar juntos', icon: '💃', cond: (L) => L.player.age >= 4,
+    id: 'dancar', gesto: 'diversao', label: 'Dançar juntos', icon: '💃', cond: (L) => L.player.age >= 4,
     run: (L, p) => { bond(p, rng.int(4, 8)); stat(L, 'felicidade', 5); return O(`Você e ${p.first} dançaram e riram muito.`, 'bom', { scene: sc(L, p, 'dancar') }); },
   },
   {
-    id: 'elogiar', label: 'Elogiar', icon: '🌟', cond: (L) => L.player.age >= 4,
+    id: 'elogiar', gesto: 'conversa', label: 'Elogiar', icon: '🌟', cond: (L) => L.player.age >= 4,
     run: (L, p) => { bond(p, rng.int(3, 7)); return O(`${p.first} ficou todo(a) sem graça com o elogio.`, 'bom', { scene: sc(L, p, 'elogiar') }); },
   },
   {
-    id: 'presente', label: 'Dar presente', icon: '🎁', cond: (L) => L.player.age >= 5 && L.money >= 100,
-    run: (L, p) => { L.money -= 100; bond(p, rng.int(8, 14)); return O(`${p.first} amou o presente!`, 'bom', { scene: sc(L, p, 'presente') }); },
+    id: 'presente', gesto: 'carinho', label: 'Dar presente', icon: '🎁', cond: (L) => L.player.age >= 5 && L.money >= 100,
+    run: (L, p) => { L.money -= 100; bond(p, rng.int(8, 14)); lembrar(L, p, 'presente'); return O(`${p.first} amou o presente!`, 'bom', { scene: sc(L, p, 'presente') }); },
   },
   {
-    id: 'brincar', label: 'Brincar', icon: '🪁', cond: (L, p) => L.player.age < 14 || p.age < 14,
+    id: 'brincar', gesto: 'diversao', label: 'Brincar', icon: '🪁', cond: (L, p) => L.player.age < 14 || p.age < 14,
     run: (L, p) => { bond(p, rng.int(5, 9)); stat(L, 'felicidade', 5); return O(`Tarde divertida brincando com ${p.first}!`, 'bom', { scene: sc(L, p, 'brincar') }); },
   },
   {
-    id: 'pedirDinheiro', label: 'Pedir dinheiro', icon: '💰', cond: (L, p) => L.player.age >= 8 && ['mae', 'pai', 'avo', 'avoM', 'conjuge'].includes(p.rel),
+    id: 'pedirDinheiro', gesto: 'pedido', label: 'Pedir dinheiro', icon: '💰', cond: (L, p) => L.player.age >= 8 && ['mae', 'pai', 'avo', 'avoM', 'conjuge'].includes(p.rel),
     run: (L, p) => { if (rng.chance(p.bond / 140)) { const v = rng.int(1, 20) * (L.player.age < 18 ? 10 : 100); L.money += v; bond(p, -2); return O(`${p.first} te deu ${money(v)}.`, 'bom', { scene: sc(L, p, 'pedirDinheiro') }); } bond(p, -6); return O(`${p.first} negou e ficou incomodado(a).`, 'ruim', { scene: sc(L, p, 'pedirDinheiro') }); },
   },
   {
     id: 'discutir', label: 'Discutir', icon: '😤', cond: (L) => L.player.age >= 5,
-    run: (L, p) => { bond(p, -rng.int(8, 14)); stat(L, 'felicidade', -4); return O(`Você e ${p.first} tiveram uma discussão feia.`, 'ruim', { scene: sc(L, p, 'discutir') }); },
+    run: (L, p) => { bond(p, -rng.int(8, 14)); stat(L, 'felicidade', -4); lembrar(L, p, 'discussao', 1, 'Vocês discutiram feio.'); return O(`Você e ${p.first} tiveram uma discussão feia.`, 'ruim', { scene: sc(L, p, 'discutir') }); },
   },
   // ---------------- gestos gentis / conversa
   {
-    id: 'piada', label: 'Contar piada', icon: '🤡', group: 'Conversa', cond: (L) => L.player.age >= 6,
+    id: 'piada', gesto: 'conversa', label: 'Contar piada', icon: '🤡', group: 'Conversa', cond: (L) => L.player.age >= 6,
     run: (L, p) => {
       const piada = rng.pick(['Por que o pão não entende a batata? Porque o pão é francês.', 'Sabe o que o zero disse pro oito? Que cinto maneiro!', 'O que é um pontinho amarelo no céu? Um yellowcóptero.', 'Qual o contrário de volátil? Vem cá, sobrinho.']);
       const ok = rng.chance(0.45 + L.stats.inteligencia / 300);
@@ -278,31 +280,41 @@ export const INTERACTIONS: Interaction[] = [
       const alvo = L.people.find((x) => x.alive && x !== p && x.rel !== 'mae' && x.rel !== 'pai');
       bond(p, rng.int(2, 6));
       L.karma -= 2;
-      if (alvo && rng.chance(0.3)) { bond(alvo, -15); return O(`A fofoca sobre ${alvo.first} vazou — e adivinha quem foi apontado(a) como fonte? Pois é.`, 'ruim', { scene: sc(L, p, 'fofocar') }); }
+      if (alvo && rng.chance(0.3)) { bond(alvo, -15); lembrar(L, alvo, 'humilhacao', 1, 'Você espalhou fofoca sobre ' + alvo.first + '.'); return O(`A fofoca sobre ${alvo.first} vazou — e adivinha quem foi apontado(a) como fonte? Pois é.`, 'ruim', { scene: sc(L, p, 'fofocar') }); }
       return O(`Você e ${p.first} passaram uma hora falando mal dos outros. Terapêutico.`, 'neutro', { scene: sc(L, p, 'fofocar') });
     },
   },
   {
-    id: 'consolar', label: 'Consolar', icon: '🫂', group: 'Conversa', cond: (L) => L.player.age >= 5,
-    run: (L, p) => { bond(p, rng.int(6, 11)); L.karma += 2; return O(`Você ouviu os desabafos de ${p.first} por horas. Nem olhou o celular. Isso é amor.`, 'bom', { scene: sc(L, p, 'consolar') }); },
+    id: 'consolar', gesto: 'consolo', label: 'Consolar', icon: '🫂', group: 'Conversa', cond: (L) => L.player.age >= 5,
+    run: (L, p) => { bond(p, rng.int(6, 11)); L.karma += 2; lembrar(L, p, 'apoio'); return O(`Você ouviu os desabafos de ${p.first} por horas. Nem olhou o celular. Isso é amor.`, 'bom', { scene: sc(L, p, 'consolar') }); },
   },
   {
-    id: 'desculpas', label: 'Pedir desculpas', icon: '🙏', group: 'Conversa', cond: (_L, p) => p.bond < 60,
+    id: 'desculpas', label: 'Pedir desculpas', icon: '🙏', group: 'Conversa', cond: (_L, p) => p.bond < 60 || (p.memo?.rancor ?? 0) >= 20 || !!p.memo?.afastado,
     run: (L, p) => {
-      const ok = rng.chance(0.35 + p.bond / 150 + (p.traits.includes('gentil') ? 0.2 : 0));
+      const m = mem(p);
+      const ok = rng.chance(chanceDesculpas(L, p));
       const s = sc(L, p, 'desculpas');
       s.data = { ...s.data, ok } as any;
-      if (ok) { bond(p, rng.int(10, 20)); return O(`${p.first} aceitou suas desculpas. Com ressalvas, mas aceitou.`, 'bom', { scene: s }); }
-      bond(p, -3);
-      return O(`${p.first} ouviu tudo e respondeu: "desculpa não conserta nada". Saiu andando.`, 'ruim', { scene: s, mood: 'triste' });
+      if (ok) {
+        const quebrou = m.promessasQuebradas;
+        lembrar(L, p, 'desculpaAceita', 1, 'Você pediu desculpas e foi perdoado(a).');
+        bond(p, rng.int(6, 12));
+        limitarVinculo(p);
+        const ressalva = quebrou >= 1 ? ' Mas avisou: "É a última vez. Da outra vez você também prometeu."' : m.rancor >= 40 ? ' A ferida ainda está aberta; vai levar tempo.' : '';
+        return O(`${p.first} aceitou suas desculpas.${ressalva}`, 'bom', { scene: s, react: { npc: { expr: m.rancor >= 40 ? 'serio' : 'triste' } } });
+      }
+      lembrar(L, p, 'desculpaRecusada');
+      bond(p, -2);
+      const fala = m.promessasQuebradas >= 2 ? `"Você já me pediu desculpas ${m.desculpas + m.desculpasRecusadas} vezes. E continua fazendo."` : m.medo >= 40 ? '"Fica longe de mim."' : '"Desculpa não conserta nada."';
+      return O(`${p.first} ouviu tudo e respondeu: ${fala} Saiu andando.`, 'ruim', { scene: s, mood: 'triste', react: { npc: { expr: m.medo >= 40 ? 'assustado' : 'desprezo' } } });
     },
   },
   {
-    id: 'massagem', label: 'Fazer massagem', icon: '💆', group: 'Carinho', cond: (L, p) => L.player.age >= 14 && ['namorado', 'namorada', 'conjuge', 'mae', 'pai', 'avo', 'avoM'].includes(p.rel),
+    id: 'massagem', gesto: 'carinho', label: 'Fazer massagem', icon: '💆', group: 'Carinho', cond: (L, p) => L.player.age >= 14 && ['namorado', 'namorada', 'conjuge', 'mae', 'pai', 'avo', 'avoM'].includes(p.rel),
     run: (L, p) => { bond(p, rng.int(6, 10)); return O(`${p.first} derreteu na massagem. Você descobriu um nó nas costas do tamanho de uma noz.`, 'bom', { scene: sc(L, p, 'massagem') }); },
   },
   {
-    id: 'serenata', label: 'Fazer serenata', icon: '🎸', group: 'Carinho', cond: (L, p) => L.player.age >= 13 && ['namorado', 'namorada', 'conjuge', 'amigo', 'amiga'].includes(p.rel),
+    id: 'serenata', gesto: 'romance', label: 'Fazer serenata', icon: '🎸', group: 'Carinho', cond: (L, p) => L.player.age >= 13 && ['namorado', 'namorada', 'conjuge', 'amigo', 'amiga'].includes(p.rel),
     run: (L, p) => {
       const ok = rng.chance(0.4 + (L.flags.musica ? 0.3 : 0));
       bond(p, ok ? rng.int(10, 16) : -4);
@@ -321,11 +333,183 @@ export const INTERACTIONS: Interaction[] = [
     cond: (L, p) => L.player.age >= (k === 'xingar' || k === 'empurrar' ? 4 : k === 'roubar' ? 8 : 6) && !(k === 'roubar' && p.age < 10),
     run: (L, p) => aggress(L, p, k),
   })),
+  // ---------------- amor (namoro, noivado, casamento, separação) — ver docs/RELACIONAMENTOS.md
   {
-    id: 'terminar', label: 'Terminar namoro', icon: '💔', cond: (_L, p) => p.rel === 'namorado' || p.rel === 'namorada',
-    run: (L, p) => { p.rel = 'ex'; bond(p, -30); stat(L, 'felicidade', -8); return O(`Você terminou com ${p.first}.`, 'ruim', { scene: { id: 'termino', others: [p] } }); },
+    id: 'paquerar', label: 'Chamar para sair', icon: '💌', group: 'Amor',
+    cond: (L, p) => !partner(L) && ['amigo', 'amiga', 'conhecido', 'colega', 'colegaTrab'].includes(p.rel) && podeNamorar(L, p) && !p.memo?.afastado,
+    run: (L, p) => {
+      const m = mem(p);
+      const chance = 0.18 + p.bond / 260 + L.stats.aparencia / 400 + m.gratidao / 400 - m.rancor / 90 - m.medo / 80 + (L.stats.felicidade > 70 ? 0.05 : 0);
+      if (rng.chance(Math.max(0.03, chance))) {
+        const doTrabalho = p.rel === 'colegaTrab';
+        p.rel = p.sex === 'f' ? 'namorada' : 'namorado';
+        p.metAt = L.player.age;
+        bond(p, rng.int(8, 14));
+        limitarVinculo(p);
+        stat(L, 'felicidade', 10);
+        addLog(L, `Comecei a namorar ${p.first}.`, 'especial', '💘');
+        return O(`${p.first} disse sim! O "vamos tomar um café" virou namoro.${doTrabalho ? ' Romance no trabalho: o RH ainda não sabe.' : ''}`, 'especial', { scene: { id: 'encontro', others: [p], data: { first: true, good: true } }, log: false });
+      }
+      bond(p, -rng.int(2, 6));
+      stat(L, 'felicidade', -6);
+      lembrar(L, p, 'rejeicao');
+      return O(rng.pick([`${p.first} respondeu: "Te vejo como amigo(a)". A friendzone tem vista pro mar, pelo menos.`, `${p.first} riu, achando que era piada. Não era.`, `${p.first} disse que "não está num bom momento". O bom momento durou até sábado, com outra pessoa.`]), 'ruim', { scene: { id: 'encontro', others: [p], data: { first: true, good: false } }, mood: 'triste' });
+    },
+  },
+  {
+    id: 'encontro', gesto: 'romance', label: 'Encontro romântico', icon: '🍷', group: 'Amor',
+    cond: (L, p) => romantic(p) && L.player.age >= 14,
+    run: (L, p) => {
+      const custo = L.player.age >= 18 ? 250 : 40;
+      L.money -= custo;
+      if (rng.chance(0.15)) { bond(p, -2); return O(`O restaurante perdeu a reserva, choveu e o carro de aplicativo cancelou três vezes. ${p.first} riu no fim. Você não.`, 'neutro', { scene: { id: 'encontro', others: [p], data: { good: false, line: 'Pelo menos a companhia é boa...' } } }); }
+      bond(p, rng.int(7, 13));
+      stat(L, 'felicidade', 6);
+      return O(`Jantar, conversa boa e aquela troca de olhares. Custou ${money(custo)} e valeu cada centavo.`, 'bom', { scene: { id: 'encontro', others: [p], data: { good: true } } });
+    },
+  },
+  {
+    id: 'dr', label: 'Conversar sobre a relação', icon: '🗣️', group: 'Amor',
+    cond: (L, p) => romantic(p) && L.player.age >= 16,
+    run: (L, p) => {
+      const m = mem(p);
+      if (m.afastado) return O(`${p.first} não quer conversar. Nem sobre a relação, nem sobre o tempo.`, 'ruim', { mood: 'tenso' });
+      const ok = rng.chance(0.45 + p.bond / 250 + m.confianca / 300 - m.rancor / 200);
+      if (ok) {
+        m.rancor = Math.max(0, m.rancor - rng.int(8, 15));
+        m.confianca = Math.min(100, m.confianca + 4);
+        bond(p, rng.int(3, 7));
+        limitarVinculo(p);
+        return O('Duas horas de "a gente precisa conversar". Choro, sinceridade e um acordo: lavar a louça é dos dois. A relação respirou.', 'bom', { scene: sc(L, p, 'conversar'), react: { npc: { expr: 'aliviado' } } });
+      }
+      lembrar(L, p, 'discussao', 1, 'A conversa sobre a relação virou briga.');
+      bond(p, -rng.int(4, 9));
+      return O('A DR virou briga, a briga virou lista de defeitos, a lista virou "e a sua mãe, hein?". Todos perderam.', 'ruim', { scene: sc(L, p, 'discutir'), mood: 'tenso' });
+    },
+  },
+  {
+    id: 'pedirCasamento', label: 'Pedir em casamento', icon: '💍', group: 'Amor',
+    cond: (L, p) => (p.rel === 'namorado' || p.rel === 'namorada') && L.player.age >= 18 && p.age >= 18 && p.memo?.noivado === undefined,
+    run: (L, p) => {
+      const m = mem(p);
+      const anos = L.player.age - (p.metAt ?? L.player.age);
+      const alianca = L.money >= 3000 ? 3000 : 0;
+      L.money -= alianca;
+      const chance = 0.1 + p.bond / 170 + Math.min(3, anos) * 0.08 + m.confianca / 400 - m.rancor / 70 - m.medo / 60 - (anos < 1 ? 0.25 : 0) - (alianca ? 0 : 0.08);
+      if (rng.chance(Math.max(0.02, chance))) {
+        lembrar(L, p, 'noivado', 1, 'Vocês ficaram noivos.');
+        bond(p, 10);
+        limitarVinculo(p);
+        stat(L, 'felicidade', 14);
+        addLog(L, `${p.first} disse SIM! Estamos noivos.`, 'especial', '💍');
+        return O(`De joelhos, no meio do restaurante, ${alianca ? 'com uma aliança de ' + money(alianca) : 'com um anel de latinha de refrigerante'}. ${p.first} chorou e disse SIM. Agora é marcar a data (Relações → ${p.first} → "Marcar o casamento").`, 'especial', { scene: { id: 'encontro', others: [p], data: { good: true, line: 'Quer casar comigo?' } }, log: false, react: { npc: { expr: 'chorando', emote: 'coracao' } } });
+      }
+      lembrar(L, p, 'pedidoRecusado', 1, 'Seu pedido de casamento foi recusado.');
+      bond(p, -8);
+      stat(L, 'felicidade', -14);
+      const termina = m.rancor >= 30 || p.bond < 40 || anos < 1 ? rng.chance(0.5) : rng.chance(0.15);
+      if (termina) {
+        const extra = encerrarRelacao(L, p, 'parceiro');
+        return O(`${p.first} olhou a aliança, olhou pra você e disse: "Acho que a gente precisa terminar". Na frente do garçom. ${extra}`.trim(), 'ruim', { scene: { id: 'termino', others: [p] }, mood: 'triste', log: false });
+      }
+      return O(`${p.first} disse "ainda não estou pronto(a)". O restaurante inteiro fingiu não ouvir.${alianca ? ' A aliança não tem devolução.' : ''}`, 'ruim', { scene: { id: 'encontro', others: [p], data: { good: false, line: 'Quer casar comigo?' } }, mood: 'triste' });
+    },
+  },
+  {
+    id: 'casar', label: 'Marcar o casamento', icon: '💒', group: 'Amor',
+    cond: (_L, p) => (p.rel === 'namorado' || p.rel === 'namorada') && p.memo?.noivado !== undefined,
+    run: (_L, p) => ({ text: `Hora de decidir como vai ser o grande dia com ${p.first}.`, tone: 'neutro', log: false, skipCard: true, followUp: { ev: EVENTO_CASAMENTO, ctx: { person: p } } }),
+  },
+  {
+    id: 'terminar', label: 'Terminar namoro', icon: '💔', group: 'Amor', cond: (_L, p) => p.rel === 'namorado' || p.rel === 'namorada',
+    run: (L, p) => {
+      const amava = p.bond >= 60 && (p.memo?.rancor ?? 0) < 30;
+      const extra = encerrarRelacao(L, p, 'jogador');
+      const txt = amava ? `${p.first} não esperava. Chorou, perguntou "o que eu fiz?" e você não soube responder.` : `${p.first} só disse "finalmente". Ninguém ficou surpreso(a).`;
+      return O(`${txt} ${extra}`.trim(), 'ruim', { scene: { id: 'termino', others: [p] }, react: { npc: { expr: amava ? 'chorando' : 'serio' } }, mood: 'triste', log: false });
+    },
+  },
+  {
+    id: 'divorcio', label: 'Pedir o divórcio', icon: '⚖️', group: 'Amor', cond: (_L, p) => p.rel === 'conjuge',
+    run: (L, p) => {
+      const consensual = p.bond < 35 || (p.memo?.rancor ?? 0) >= 50;
+      const extra = encerrarRelacao(L, p, 'jogador', { consensual });
+      return O(consensual ? `${p.first} assinou sem discutir: "Eu ia pedir primeiro". Divórcio amigável — dentro do possível. ${extra}` : `${p.first} não aceitou bem. Advogados, audiências e uma discussão épica sobre quem fica com a air fryer. ${extra}`, 'ruim', { scene: { id: 'termino', others: [p] }, mood: 'triste', log: false, react: { npc: { expr: consensual ? 'serio' : 'furioso' } } });
+    },
+  },
+  {
+    id: 'reatar', label: 'Tentar voltar', icon: '🔁', group: 'Amor',
+    cond: (L, p) => p.rel === 'ex' && !partner(L) && podeNamorar(L, p) && !p.memo?.afastado,
+    run: (L, p) => {
+      const m = mem(p);
+      const chance = p.bond / 160 + m.gratidao / 300 + m.confianca / 400 - m.rancor / 70 - (m.terminos ?? 0) * 0.08 - (m.divorcio !== undefined ? 0.1 : 0);
+      if (rng.chance(Math.max(0.03, chance))) {
+        lembrar(L, p, 'reconciliacao', 1, 'Vocês reataram.');
+        p.rel = p.sex === 'f' ? 'namorada' : 'namorado';
+        p.metAt = L.player.age;
+        bond(p, 8);
+        limitarVinculo(p);
+        stat(L, 'felicidade', 8);
+        return O(`${p.first} topou tentar de novo. Os amigos já apostam quanto tempo dura.`, 'bom', { scene: { id: 'encontro', others: [p], data: { good: true, line: 'Dessa vez vai ser diferente.' } } });
+      }
+      bond(p, -4);
+      stat(L, 'felicidade', -6);
+      return O(`${p.first} respondeu: "Ex é ex por um motivo". E visualizou o resto sem responder.`, 'ruim', { mood: 'triste' });
+    },
   },
 ];
+
+// ---------------- memória: gestos positivos passam pela reação da pessoa (ver game/relacoes.ts)
+function recusa(L: Life, p: Person, r: Reacao): Outcome {
+  const m = mem(p);
+  bond(p, -1);
+  if (r.motivo === 'causador') m.rancor = Math.min(100, m.rancor + 3);
+  if (r.motivo === 'afastado') return O(r.texto!, 'ruim', { mood: 'triste', title: 'Sem resposta' });
+  const titulo = r.motivo === 'medo' ? 'Com medo de você' : r.motivo === 'causador' ? 'Não de você' : r.motivo === 'cansou' ? 'Deu por hoje' : 'Recusado';
+  return O(r.texto!, 'ruim', {
+    title: titulo, scene: sc(L, p, 'conversar'), mood: 'tenso',
+    react: { npc: { expr: r.motivo === 'medo' ? 'assustado' : r.motivo === 'causador' ? 'triste' : 'desprezo', motion: r.motivo === 'medo' ? 'nervoso' : 'bracosCruzados' }, player: { expr: 'envergonhado' } },
+  });
+}
+for (const it of INTERACTIONS) {
+  if (!it.gesto) continue;
+  const original = it.run;
+  const gesto = it.gesto;
+  it.run = (L, p) => {
+    const r = reacao(L, p, gesto);
+    if (!r.aceita) return recusa(L, p, r);
+    const antes = p.bond;
+    const o = original(L, p);
+    const ganho = p.bond - antes;
+    if (ganho > 0) p.bond = antes + Math.max(1, Math.round(ganho * r.fator));
+    limitarVinculo(p);
+    contarGesto(L, p);
+    if (r.nota && o.tone !== 'ruim') o.text += ' ' + r.nota;
+    return o;
+  };
+}
+
+/** Evento encadeado pela interação "Marcar o casamento". */
+const EVENTO_CASAMENTO: LifeEvent = {
+  id: 'casamentoNoivos', min: 18, max: 120, weight: 0, icon: '💒', title: 'O grande dia',
+  text: (_L, c) => `Você e ${c.person!.first} vão se casar. Como vai ser?`,
+  choices: [
+    { label: 'Festa grande (R$ 25 mil)', icon: '🎉', cond: (L) => L.money >= 25000, run: (L, c) => casar(L, c.person!, 25000, 'Festa com 200 convidados, 180 que você não conhece e um tio dançando no palco. Inesquecível — e parcelado.') },
+    { label: 'Cartório e churrasco (R$ 2 mil)', icon: '🍖', run: (L, c) => casar(L, c.person!, 2000, 'Cartório de manhã, churrasco à tarde, pagode à noite. O juiz de paz errou seu nome duas vezes.') },
+    { label: 'Adiar mais um pouco', icon: '⏳', run: (_L, c) => { const p = c.person!; bond(p, -6); mem(p).rancor = Math.min(100, mem(p).rancor + 6); return O(`${p.first} disse que entende. Não entende.`, 'neutro', { mood: 'tenso' }); } },
+    { label: 'Desistir do casamento', icon: '🏃', run: (L, c) => { const p = c.person!; lembrar(L, p, 'humilhacao', 1, 'Você desistiu do casamento.'); const extra = encerrarRelacao(L, p, 'jogador'); return O(`Você desmarcou tudo. ${p.first} devolveu a aliança pelo correio, sem remetente. ${extra}`.trim(), 'ruim', { scene: { id: 'termino', others: [p] }, mood: 'triste', log: false }); } },
+  ],
+};
+function casar(L: Life, p: Person, custo: number, texto: string): Outcome {
+  L.money -= custo;
+  p.rel = 'conjuge';
+  lembrar(L, p, 'casamento', 1, 'Vocês se casaram.');
+  bond(p, 12);
+  limitarVinculo(p);
+  stat(L, 'felicidade', 15);
+  addLog(L, `Casei com ${p.first}!`, 'especial', '💒');
+  return O(texto, 'especial', { scene: { id: 'casamento', others: [p] }, log: false });
+}
 
 export function relLabel(p: Person) {
   return REL_LABEL[p.rel];

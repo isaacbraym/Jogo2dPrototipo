@@ -16,6 +16,7 @@ import { sfx } from '../core/audio';
 import { rng } from '../core/rng';
 import { CAREERS } from '../game/careers';
 import { ACHIEVEMENTS, checkAchievements } from '../game/achievements';
+import { descreverMemoria, tetoVinculo } from '../game/relacoes';
 
 const STAT_ICON: Record<StatKey, string> = { felicidade: 'heart', saude: 'health', inteligencia: 'brain', aparencia: 'star' };
 const STAT_COL: Record<StatKey, string> = { felicidade: 'var(--st-felicidade)', saude: 'var(--st-saude)', inteligencia: 'var(--st-inteligencia)', aparencia: 'var(--st-aparencia)' };
@@ -82,25 +83,34 @@ export function gameScreen(app: App, L: Life) {
   });
   const right = h('div.g-right', null, h('div.tabs', null, ...tabBtns), tabBody);
 
-  // ações físicas diretas sobre o personagem na cena atual
-  const EMOTES: [string, string, string, () => void][] = [
-    ['👋', 'Acenar', 'acenar', () => sfx.pop()],
-    ['💃', 'Dançar', 'dancar', () => sfx.magic()],
-    ['🦘', 'Pular', 'pular', () => {}],
-    ['🙌', 'Comemorar', 'comemorar', () => sfx.cheer()],
-    ['😂', 'Rir', 'rir', () => sfx.laugh()],
-    ['😢', 'Chorar', 'chorar', () => sfx.cry()],
-    ['😡', 'Bravo', 'furia', () => sfx.thud()],
-    ['🤔', 'Pensar', 'pensando', () => sfx.tick()],
-    ['🧘', 'Meditar', 'meditar', () => sfx.magic()],
-    ['🙇', 'Reverência', 'reverencia', () => sfx.swoosh()],
+  // ações físicas diretas sobre o personagem na cena atual — só aparecem as que a idade permite
+  const EMOTES: { em: string; label: string; motion: string; minAge: number; snd: () => void }[] = [
+    { em: '😂', label: 'Rir', motion: 'rir', minAge: 0, snd: () => sfx.laugh() },
+    { em: '😢', label: 'Chorar', motion: 'chorar', minAge: 0, snd: () => sfx.cry() },
+    { em: '👋', label: 'Acenar', motion: 'acenar', minAge: 2, snd: () => sfx.pop() },
+    { em: '😡', label: 'Bravo', motion: 'furia', minAge: 2, snd: () => sfx.thud() },
+    { em: '💃', label: 'Dançar', motion: 'dancar', minAge: 3, snd: () => sfx.magic() },
+    { em: '🦘', label: 'Pular', motion: 'pular', minAge: 3, snd: () => {} },
+    { em: '🙌', label: 'Comemorar', motion: 'comemorar', minAge: 3, snd: () => sfx.cheer() },
+    { em: '🤔', label: 'Pensar', motion: 'pensando', minAge: 4, snd: () => sfx.tick() },
+    { em: '🙇', label: 'Reverência', motion: 'reverencia', minAge: 5, snd: () => sfx.swoosh() },
+    { em: '🧘', label: 'Meditar', motion: 'meditar', minAge: 8, snd: () => sfx.magic() },
   ];
+  const liberadas = () => EMOTES.filter((e) => L.player.age >= e.minAge);
   let emoteTimer = 0;
-  const emoteBar = h('div.emote-bar', null, ...EMOTES.map(([em, label, motion, snd]) => h('button.emote', { title: label, onclick: () => {
+  const emoteBar = h('div.emote-bar');
+  let emotesMostrados = -1;
+  function renderEmotes() {
+    const lista = liberadas();
+    if (lista.length === emotesMostrados) return;
+    emotesMostrados = lista.length;
+    clear(emoteBar).append(...lista.map((e) => h('button.emote', { title: e.label, onclick: () => fazerEmote(e) }, h('span', null, e.em))));
+  }
+  function fazerEmote(e: (typeof EMOTES)[number]) {
     const pa = stage.scene.actors.find((a) => a.name === L.player.first);
     if (!pa || busy || stage.busy) return;
-    if (L.player.age < 2 && motion !== 'rir' && motion !== 'chorar') { toast('Você ainda é um bebê!', 'info'); return; }
-    snd();
+    const motion = e.motion;
+    e.snd();
     const base = pa.baseMotion;
     clearTimeout(emoteTimer);
     if (motion === 'pular' || motion === 'reverencia') pa.play(motion);
@@ -115,7 +125,23 @@ export function gameScreen(app: App, L: Life) {
     if (motion === 'furia') pa.emoteOn('raiva');
     if (motion === 'pensando') pa.emoteOn('ideia', 2.4);
     if (motion === 'meditar') stage.scene.fx.spawn('brilho', hw.x, hw.y, 10, { speed: 90, size: 9 });
-  } }, h('span', null, em))));
+  }
+  /** Mostra (uma vez) um aviso simples quando novas ações do palco são liberadas pela idade. */
+  function avisarNovasAcoes() {
+    const vistas = typeof L.flags.acoesPalcoVistas === 'number' ? (L.flags.acoesPalcoVistas as number) : -1;
+    const lista = liberadas();
+    L.flags.acoesPalcoVistas = lista.length;
+    if (vistas < 0 || lista.length <= vistas) return; // 1ª vez (vida nova/save antigo): só registra
+    const novas = lista.slice(vistas);
+    modal('Novas ações liberadas!', h('div', null,
+      h('p', null, `Com ${L.player.age} anos você já consegue:`),
+      h('div', { style: { display: 'flex', gap: '10px', flexWrap: 'wrap', margin: '10px 0' } }, ...novas.map((e) => h('span.tag', { style: { fontSize: '15px', padding: '6px 12px' } }, `${e.em} ${e.label}`))),
+      h('p.muted', null, 'Use os botões no canto do palco para o seu personagem fazer isso a qualquer momento.'),
+    ));
+    sfx.levelUp();
+  }
+  renderEmotes();
+  avisarNovasAcoes();
   const stageWrap = h('div.g-stage', null, host, hud, skipBtn, evLayer, emoteBar);
   const left = h('div.g-left', null, stageWrap, bottom);
   const el = h('div.screen.game', null, left, right);
@@ -145,7 +171,8 @@ export function gameScreen(app: App, L: Life) {
       }
     }
     ageBtn.disabled = busy || L.dead;
-    emoteBar.classList.toggle('hide', busy || L.dead || L.crime.preso);
+    renderEmotes();
+    emoteBar.classList.toggle('hide', busy || L.dead || L.crime.preso || liberadas().length === 0);
     renderTab();
   }
 
@@ -200,7 +227,7 @@ export function gameScreen(app: App, L: Life) {
       portraitImg(p.ap, p.age, 52, p.alive ? (p.bond < 30 ? 'bravo' : 'feliz') : 'dormindo', p.rel === 'mae' || p.rel === 'pai' ? '#5ec3e8' : p.rel.startsWith('namor') || p.rel === 'conjuge' ? '#ff5c8a' : p.rel === 'filho' || p.rel === 'filha' ? '#ffb547' : '#7c5cff'),
       h('div.info', null,
         h('b', null, fullName(p)),
-        h('small', null, `${REL_LABEL[p.rel]} · ${p.age} anos${p.alive ? '' : ' · falecido(a)'}`),
+        h('small', null, `${REL_LABEL[p.rel]}${p.memo?.noivado !== undefined ? ' (noivado)' : ''} · ${p.age} anos${p.alive ? '' : ' · falecido(a)'}${p.memo?.afastado ? ' · 🚫 cortou contato' : (p.memo?.rancor ?? 0) >= 60 ? ' · 💢 magoado(a)' : (p.memo?.medo ?? 0) >= 40 ? ' · 😨 com medo' : ''}`),
         p.alive ? h('div.bond', null, h('i', { style: { width: p.bond + '%', backgroundPosition: `-${(100 - p.bond) * 2}px 0` } })) : null,
       ),
     );
@@ -244,9 +271,19 @@ export function gameScreen(app: App, L: Life) {
           h('div.muted', { style: { fontWeight: '700' } }, `${REL_LABEL[p.rel]} · ${p.age} anos${p.job ? ' · ' + p.job : ''}`),
           h('div', null, ...p.traits.map((t) => h('span.tag', null, t))),
           h('div.bond', { style: { width: '200px' } }, h('i', { style: { width: p.bond + '%', backgroundPosition: `-${(100 - p.bond) * 2}px 0` } })),
-          h('small.muted', null, `Relacionamento: ${p.bond}%`),
+          h('small.muted', null, `Relacionamento: ${p.bond}%${tetoVinculo(p) < 100 && p.memo ? ` · máximo possível hoje: ${tetoVinculo(p)}%` : ''}`),
         ),
       ),
+      ...(() => {
+        const etiquetas = descreverMemoria(p);
+        const fatos = (p.memo?.fatos ?? []).slice(-4).reverse();
+        if (!etiquetas.length && !fatos.length) return [];
+        return [
+          h('div.sec-title', null, 'O que ' + p.first + ' sente e lembra'),
+          h('div', null, ...etiquetas.map((e) => h('span.tag', { style: { background: e.tom === 'ruim' ? 'rgba(255,92,122,.28)' : e.tom === 'bom' ? 'rgba(79,209,139,.25)' : '' } }, e.texto))),
+          ...fatos.map((f) => h('div.muted', { style: { fontSize: '13px', marginTop: '4px' } }, `• aos ${f.idade}: ${f.texto}`)),
+        ];
+      })(),
       ...(() => {
         const groups = new Map<string, typeof list>();
         for (const it of list) {
@@ -254,7 +291,7 @@ export function gameScreen(app: App, L: Life) {
           if (!groups.has(g)) groups.set(g, []);
           groups.get(g)!.push(it);
         }
-        const order = ['Interações', 'Conversa', 'Carinho', 'Agressão'];
+        const order = ['Interações', 'Conversa', 'Carinho', 'Amor', 'Agressão'];
         return [...groups.entries()].sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0])).flatMap(([g, its]) => [
           h('div.sec-title' + (g === 'Agressão' ? '.danger' : ''), null, g === 'Agressão' ? '⚠️ Agressão (há consequências)' : g),
           h('div.inter-grid', null, ...its.map((it) => h('button.inter' + (g === 'Agressão' ? '.bad' : ''), { onclick: () => { close(); doOutcome(() => it.run(L, p)); } }, h('span.em', null, it.icon), it.label))),
@@ -519,7 +556,7 @@ export function gameScreen(app: App, L: Life) {
         deltas: deltaChips(before), cta: res.events.length ? 'Continuar' : 'Vamos lá!',
       });
       for (const pe of res.events) await presentEvent(pe);
-    });
+    }).then(() => avisarNovasAcoes());
   }
 
   async function deathFlow() {
