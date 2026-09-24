@@ -53,6 +53,8 @@ lábios estão encostando, `aconchego` ao afastar e `apaixonado` depois.
 
 ## 4. Regras do beijo
 
+- **Altura:** a boca encontra a boca em qualquer diferença de altura por **rastreio em malha fechada** — ver
+  `docs/specs/SPEC-08-rastreio-de-altura-no-beijo.md` (algoritmo, parâmetros `RASTREIO_BEIJO`, testes e diagnóstico).
 - Os dois em **perfil** (`turn` 1,42). Contato é **frente do lábio com frente do lábio** (`frenteBocaX` em `head.ts`).
 - Corpos quase eretos e próximos; quem desce é pescoço/cabeça (não a lombar — lombar afasta os quadris e estica os braços).
 - Cabeças em ângulos opostos: o mais alto baixa o queixo, o mais baixo ergue (e fica na ponta dos pés). O nariz de um cruza

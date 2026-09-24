@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-24 — Rastreio de altura no beijo (Claude) · branch `codex/vitrine-titulo`
+- **Boca encontra boca em qualquer altura** (`src/scenes/contato.ts`): o beijo mede as duas bocas a cada quadro e acumula a
+  correção (controle integral) até elas ficarem na mesma altura. A correção é distribuída em estágios, na ordem do corpo
+  real — mais alto: cabeça → pescoço → encurvar (peito, lombar) → joelhos; mais baixo: queixo → pescoço → ponta dos pés →
+  leve arco. 55% pelo mais alto, 45% pelo mais baixo. Papéis (alto/baixo) decididos uma vez; postura entra durante a
+  aproximação. Parâmetros em `RASTREIO_BEIJO`; diagnóstico ao vivo em `contato.diagnostico`.
+- **`Actor.ajuste.joelhos`**: dobra as pernas antes do apoio no chão — o quadril desce com os pés plantados.
+- **Correção de tremor em todo contato:** o `peso` do `Contato` oscilava entre 0,95 e 1,00 a cada quadro quando já estava
+  no alvo; agora para no alvo.
+- Medido: erro vertical entre as bocas < 1 px (alturas 334×374, 383×327 e iguais); excesso na chegada ≤ 3,4 px.
+- Harness: `&alt=<jogador>,<outro>` fixa as alturas nas cenas de teste.
+- **Docs:** nova `docs/specs/SPEC-08-rastreio-de-altura-no-beijo.md` (passo a passo, parâmetros com faixas seguras, roteiro
+  de verificação com critérios numéricos, tabela sintoma → causa → ajuste), SPEC-07 §4, AGENTS.md.
+
 ## 2026-09-24 — Correção das vitrines com contato pós abraço/beijo (Codex)
 - Corrigida a soltura após abraço e beijo para aguardar a finalização do controlador de contato antes do próximo movimento.
 - Adicionado seletor `?vitrine=` para reproduzir vitrines específicas da tela de título durante QA.

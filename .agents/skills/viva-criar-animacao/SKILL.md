@@ -42,6 +42,7 @@ use `physical(...)`, `golpear(...)` ou `maoAte(...)` e leia `docs/specs/SPEC-07-
 as regras: braço F × N, distâncias pela largura dos corpos, reação no impacto, antecipação → ação → acompanhamento).
 Nunca "encoste" atores com offsets fixos ou `moveActor`; braço apontado no ar na direção do outro é bug. Contato novo
 (dança a dois, colo) é pedido de engine. Poses deitadas (`grounded: false` + rotação) são apoiadas no chão pelo motor.
+Altura no beijo (boca com boca em qualquer altura) é automática — para ajustar, siga `docs/specs/SPEC-08-rastreio-de-altura-no-beijo.md`.
 
 ## Armadilhas
 - `b` (cotovelo/joelho) negativo quebra a articulação.

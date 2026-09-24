@@ -38,6 +38,9 @@ Harness visual (com `npm run dev` rodando):
 - Galeria/movimento: `http://localhost:5199/?test&env=<idAmbiente>&n=3&m=<movimento>&expr=<expressao>`
 - Vitrines da tela de título: `http://localhost:5199/?vitrine=casamento`, `?vitrine=parque`, `?vitrine=praia`, `?vitrine=balada`, `?vitrine=acampamento` (força uma vitrine específica para QA)
 - Jogo rápido com personagem aleatório de 25 anos: `http://localhost:5199/#demo`
+- Parâmetros extras das cenas de teste: `&alt=<jogador>,<outro>` (altura 0..1 de cada um — beijo/abraço com alturas diferentes),
+  `&hit=<s>` (congela <s> depois do primeiro contato de mão), `&oage=`, `&sex=`, `&seed=`. Galeria: `&hair=a,b,...&span=`.
+  Espere `window.frozen === true` **e mais ~1 s** antes de capturar a tela (o painel repinta com atraso).
 
 ## 3. Mapa da documentação
 
@@ -52,6 +55,7 @@ Harness visual (com `npm run dev` rodando):
 | `docs/PEDIDOS-ENGINE.md` | Fila de pedidos de mudanças no motor (zona vermelha) para o agente de lógica. |
 | `docs/DELEGACAO-LUNA.md` | Divisão de trabalho entre agentes e o prompt de delegação. |
 | `docs/RELACIONAMENTOS.md` | Mapa do sistema de relacionamentos (memória, namoro, casamento, divórcio): feito × falta × analisar, e regras para conteúdo. |
+| `docs/specs/SPEC-07` e `SPEC-08` | Contato entre personagens (abraço, beijo, mãos) e rastreio de altura no beijo — leia antes de mexer em qualquer animação com dois personagens. |
 | `docs/PAINEL-QA.md` | Painel de QA: uso, formatos de cenário/proposta/calibração, limites de edição, procedimento "localizar pelo ID". |
 
 ## 4. Zonas de edição

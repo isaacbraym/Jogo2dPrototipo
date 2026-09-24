@@ -25,6 +25,12 @@ export function testHarness(root: HTMLElement) {
       data: JSON.parse(q.get('data') ?? '{}'),
     };
     cast.others[0].name = 'Léo';
+    // &alt=<jogador>,<outro>: altura (0..1) de cada um — para testar contato com alturas bem diferentes (beijo, abraço)
+    const alt = q.get('alt')?.split(',').map(Number);
+    if (alt) {
+      if (Number.isFinite(alt[0])) cast.player.ap.height = alt[0];
+      if (Number.isFinite(alt[1])) cast.others[0].ap.height = alt[1];
+    }
     stage.play(sit, cast);
     // &hit=<seg>: congela <seg> depois do primeiro evento de contato (tapa, soco, toca-aqui...) — instante exato do impacto
     const hit = q.get('hit');

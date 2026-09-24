@@ -87,6 +87,14 @@ export class Contato {
   alvo = 1;
   t = 0;
   private falta = 0;
+  /** beijo: quem é o mais alto/mais baixo — decidido UMA vez, em pé (recalcular por quadro faz os papéis trocarem quando a
+   *  compensação iguala as bocas, e a pose oscila) */
+  private alta!: Actor;
+  private baixa!: Actor;
+  /** beijo: correção vertical acumulada em px (controle integral do rastreio de altura) */
+  private altC = 0;
+  /** beijo: o que cada um está fazendo agora (px por estágio) — lido pelo painel/QA e pelos testes */
+  diagnostico: { erro: number; c: number; alta: Record<string, number>; baixa: Record<string, number> } | null = null;
   private ini = new Map<Actor, Estado>();
   /** onde cada mão estava (relativa ao corpo) antes do contato — início do arco de alcance */
   private maoIni = new Map<Actor, { n: Pt; f: Pt }>();
@@ -103,6 +111,13 @@ export class Contato {
       alto.z = Math.min(this.ini.get(a)!.z0, this.ini.get(b)!.z0);
       if (baixo.z <= alto.z) baixo.z = alto.z + 0.5;
     }
+    if (tipo === 'beijo') {
+      const ya = marcos(a).boca.y, yb = marcos(b).boca.y;
+      this.alta = ya <= yb ? a : b;
+      this.baixa = this.alta === a ? b : a;
+      // pré-alimentação: começa já com a diferença em pé (o integrador só corrige o resto)
+      this.altC = clamp(Math.abs(ya - yb) * RASTREIO_BEIJO.preAlimentacao, 0, 400);
+    }
   }
 
   /** Quem está na frente (desenhado por cima): maior z. */
@@ -114,7 +129,9 @@ export class Contato {
     const { a, b } = this;
     this.t += dt;
     const entra = this.tipo === 'beijo' ? 1.0 : 0.8;
-    this.peso = clamp(this.peso + (this.alvo > this.peso ? dt / entra : -dt / 0.7), 0, 1);
+    // anda em direção ao alvo e PARA nele (antes, com peso == alvo, descia e subia a cada quadro: tremor em todo contato)
+    if (this.alvo > this.peso) this.peso = Math.min(this.alvo, this.peso + dt / entra);
+    else if (this.alvo < this.peso) this.peso = Math.max(this.alvo, this.peso - dt / 0.7);
     // Tempo em camadas (como um animador faria): primeiro giram o corpo e as mãos buscam o outro (antecipação);
     // só depois vem o contato (corpo/boca encostam). Na saída, a ordem se inverte: o rosto se afasta, as mãos soltam por último.
     const wM = easeInOut(clamp(this.peso / 0.6, 0, 1));
@@ -177,15 +194,38 @@ export class Contato {
       aplicar(tras, { lean: (0.04 + ap * 0.04) * w, chest: -0.04 * w, neck: 0.02 * w, head: (-0.04 - ap * 0.06) * w, y: -pt * w, footN: pt * 0.04 * w, footF: pt * 0.04 * w, hipTilt: -sway * 4, breath: respira * 0.6 * w, x: sway * 30, shrugN: (0.22 + ap * 0.2) * w, shrugF: (0.18 + ap * 0.2) * w }, dt);
       void alta; void baixa; void dif;
     } else {
-      // beijo: o mais alto desce a boca até a do mais baixo; o mais baixo ergue o rosto e fica na ponta dos pés
-      const desce = clamp(-ref / 90, -0.15, 0.45);
-      const pontas = clamp(dif * 0.22, 0, 9) * w;
-      // cabeças em ângulos opostos (o mais alto baixa o queixo, o mais baixo ergue): narizes se cruzam em vez de bater.
-      // "Pressão" lenta e fora de fase entre os dois — o beijo respira em vez de congelar.
+      // beijo: RASTREIO DE ALTURA (SPEC-08). Mede as duas bocas a cada quadro e acumula a correção até elas se encontrarem;
+      // a correção é distribuída em estágios, como o corpo real faz (ver RASTREIO_BEIJO e distribuirAltura).
+      const alta = this.alta, baixa = this.baixa;
+      const mA = alta === a ? ma : mb, mB = alta === a ? mb : ma;
+      const erroY = mB.boca.y - mA.boca.y; // > 0: a boca do mais alto ainda está acima
+      // a postura de altura entra JUNTO com a aproximação (wM), antes de os lábios encostarem (w): quem vai beijar
+      // já inclina a cabeça/fica na ponta dos pés enquanto chega — não "corrige" depois do toque
+      const wH = wM;
+      if (wH > RASTREIO_BEIJO.integraAPartirDe) this.altC += erroY * Math.min(1, dt * RASTREIO_BEIJO.ganho);
+      const capA = capacidade(alta, 'desce'), capB = capacidade(baixa, 'sobe');
+      this.altC = clamp(this.altC, -6, capA + capB);
+      const c = Math.max(0, this.altC);
+      // divisão: o mais alto faz a maior parte; se um esgotar, o outro completa
+      let usoA = Math.min(c * RASTREIO_BEIJO.parteDoMaisAlto, capA);
+      const usoB = Math.min(c - usoA, capB);
+      usoA = Math.min(c - usoB, capA);
+      const dA = distribuirAltura(alta, 'desce', usoA);
+      const dB = distribuirAltura(baixa, 'sobe', usoB);
+      // "pressão" lenta e fora de fase — o beijo respira em vez de congelar; base de inclinações opostas cruza os narizes
       const pressao = Math.sin(this.t * 2.2) * 0.035 * w;
-      // corpos quase eretos e próximos (peito perto do peito); quem desce é o pescoço/cabeça, não a lombar
-      aplicar(alta, { lean: (0.02 + desce * 0.3) * w, chest: (0.03 + desce * 0.3) * w, neck: (0.1 + desce * 0.35) * w, head: (0.12 + desce * 0.3) * w + pressao, breath: respira * 0.4 * w, hipTilt: sway * 2 }, dt);
-      aplicar(baixa, { lean: 0.02 * w, chest: -0.06 * w, neck: -0.14 * w, head: -0.3 * w - pressao, y: -pontas, footN: pontas * 0.05, footF: pontas * 0.05, breath: respira * 0.4 * w, hipTilt: -sway * 2 }, dt);
+      const ba = RASTREIO_BEIJO.base;
+      aplicar(alta, {
+        head: (ba.cabecaMaisAlto + dA.head) * wH + pressao, neck: dA.neck * wH, chest: (ba.peito + dA.chest) * wH, lean: (ba.lombar + dA.lean) * wH,
+        joelhos: dA.joelhos * wH, breath: respira * 0.4 * w, hipTilt: sway * 2,
+      }, dt);
+      aplicar(baixa, {
+        head: (ba.cabecaMaisBaixo - dB.head) * wH - pressao, neck: -dB.neck * wH, chest: (ba.peito - dB.chest) * wH, lean: ba.lombar * wH,
+        y: -dB.pontas * wH, footN: dB.pontas * RASTREIO_BEIJO.peRadPorPx * wH, footF: dB.pontas * RASTREIO_BEIJO.peRadPorPx * wH,
+        breath: respira * 0.4 * w, hipTilt: -sway * 2,
+      }, dt);
+      this.diagnostico = { erro: erroY, c, alta: dA, baixa: dB };
+      void dif; void ref;
     }
 
     // ---- 3. mãos nas costas do outro (IK), com alcance suave
@@ -286,8 +326,95 @@ function aplicar(a: Actor, alvo: Partial<Record<AjusteCampo, number>>, dt: numbe
     atual[c] = lerp(atual[c] ?? 0, v, k);
   }
 }
-export type AjusteCampo = 'x' | 'y' | 'lean' | 'chest' | 'neck' | 'head' | 'hipTilt' | 'breath' | 'shrugN' | 'shrugF' | 'footN' | 'footF';
-const CAMPOS: AjusteCampo[] = ['x', 'y', 'lean', 'chest', 'neck', 'head', 'hipTilt', 'breath', 'shrugN', 'shrugF', 'footN', 'footF'];
+export type AjusteCampo = 'x' | 'y' | 'lean' | 'chest' | 'neck' | 'head' | 'hipTilt' | 'breath' | 'shrugN' | 'shrugF' | 'footN' | 'footF' | 'joelhos';
+const CAMPOS: AjusteCampo[] = ['x', 'y', 'lean', 'chest', 'neck', 'head', 'hipTilt', 'breath', 'shrugN', 'shrugF', 'footN', 'footF', 'joelhos'];
+
+// =====================================================================================================================
+// Rastreio de altura do beijo (SPEC-08). Os números abaixo são os ÚNICOS que se deve ajustar para mudar o comportamento.
+
+/**
+ * Parâmetros do rastreio. Ângulos em radianos; `px` são pixels de subida/descida DA BOCA.
+ * `eficiencia` é quantos px a boca anda por radiano daquela articulação, em múltiplos da largura da cabeça (W) — é uma
+ * estimativa: o controle é em malha fechada, então um valor impreciso só muda a velocidade, não o resultado.
+ */
+export const RASTREIO_BEIJO = {
+  /** quanto da diferença o mais alto resolve (o resto é do mais baixo) */
+  parteDoMaisAlto: 0.55,
+  /** velocidade do integrador (1/s) — maior = acha a boca mais rápido, mas pode tremer */
+  ganho: 4,
+  /** só integra com a postura de altura já quase toda aplicada (antes disso o erro é da entrada, não da altura) */
+  integraAPartirDe: 0.97,
+  /** fração da diferença de altura em pé usada como palpite inicial (< 1: melhor chegar um pouco curto que passar da boca) */
+  preAlimentacao: 0.75,
+  /** inclinações de base, mesmo com alturas iguais: cabeças em ângulos opostos para os narizes se cruzarem */
+  base: { cabecaMaisAlto: 0.06, cabecaMaisBaixo: -0.1, peito: 0, lombar: 0.02 },
+  /** ordem e limites de quem DESCE (o mais alto): primeiro a cabeça, depois pescoço, depois encurvar, por último os joelhos */
+  desce: [
+    { campo: 'head', max: 0.18, eficiencia: 0.42 },
+    { campo: 'neck', max: 0.14, eficiencia: 0.55 },
+    { campo: 'chest', max: 0.12, eficiencia: 0.7 },
+    { campo: 'lean', max: 0.08, eficiencia: 0.8 },
+    { campo: 'joelhos', max: 0.9, eficiencia: 0 }, // joelhos: conta exata pela perna (ver pxDoEstagio)
+  ],
+  /** ordem e limites de quem SOBE (o mais baixo): queixo para cima, pescoço, ponta dos pés, e um leve arco nas costas */
+  sobe: [
+    { campo: 'head', max: 0.2, eficiencia: 0.42 },
+    { campo: 'neck', max: 0.12, eficiencia: 0.5 },
+    { campo: 'pontas', max: 0.075, eficiencia: 0 }, // ponta dos pés: max em fração do comprimento da perna; 1 px = 1 px
+    { campo: 'chest', max: 0.06, eficiencia: 0.5 },
+  ],
+  /** giro do pé por px de ponta dos pés (calcanhar sobe) */
+  peRadPorPx: 0.045,
+};
+
+type Sentido = 'desce' | 'sobe';
+type Estagio = { campo: string; max: number; eficiencia: number };
+
+/** px que a boca anda com o estágio no valor `v` (monotônico). */
+function pxDoEstagio(x: Actor, e: Estagio, v: number): number {
+  const W = x.d.headW * x.scale;
+  if (e.campo === 'joelhos') {
+    // dobrar b rad (coxa a/2 para a frente, canela b): o quadril desce Lp·(1 − cos(b/2))
+    const Lp = (x.d.thigh + x.d.shin) * x.scale;
+    return Lp * (1 - Math.cos(v / 2));
+  }
+  if (e.campo === 'pontas') return v; // já em px
+  return v * e.eficiencia * W;
+}
+
+function maxDoEstagio(x: Actor, e: Estagio): number {
+  if (e.campo === 'pontas') return e.max * legLength(x.d) * x.scale;
+  return e.max;
+}
+
+/** Soma de px que o ator consegue mover a boca naquele sentido, com todos os estágios no limite. */
+function capacidade(x: Actor, sentido: Sentido): number {
+  let t = 0;
+  for (const e of RASTREIO_BEIJO[sentido]) t += pxDoEstagio(x, e, maxDoEstagio(x, e));
+  return t;
+}
+
+/**
+ * Converte `px` (quanto a boca precisa andar) em valores de articulação, enchendo os estágios EM ORDEM: só passa ao
+ * próximo quando o anterior chegou ao limite. Os limites de cada estágio vêm de RASTREIO_BEIJO.
+ */
+export function distribuirAltura(x: Actor, sentido: Sentido, px: number): Record<string, number> {
+  const out: Record<string, number> = { head: 0, neck: 0, chest: 0, lean: 0, joelhos: 0, pontas: 0 };
+  let resta = Math.max(0, px);
+  for (const e of RASTREIO_BEIJO[sentido]) {
+    if (resta <= 0) break;
+    const vmax = maxDoEstagio(x, e);
+    const cap = pxDoEstagio(x, e, vmax);
+    if (cap <= 0) continue;
+    if (resta >= cap) { out[e.campo] += vmax; resta -= cap; continue; }
+    // inverso por bisseção (vale para estágios não lineares como os joelhos)
+    let lo = 0, hi = vmax;
+    for (let k = 0; k < 14; k++) { const m = (lo + hi) / 2; if (pxDoEstagio(x, e, m) < resta) lo = m; else hi = m; }
+    out[e.campo] += (lo + hi) / 2;
+    resta = 0;
+  }
+  return out;
+}
 
 // =====================================================================================================================
 // Trajeto de mão: a mão vai por IK de chave em chave; cada chave pode apontar para um marco VIVO do corpo do outro.

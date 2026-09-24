@@ -82,7 +82,8 @@ export class Actor {
   /** Parceiro(a) de contato (abraço, beijo...): a cena desenha os dois em camadas intercaladas. */
   enlace: Actor | null = null;
   /** Ajuste ADITIVO sobre a pose do movimento (usado por controladores de contato; null = nenhum). */
-  ajuste: Partial<Record<'x' | 'y' | 'lean' | 'chest' | 'neck' | 'head' | 'hipTilt' | 'breath' | 'shrugN' | 'shrugF' | 'footN' | 'footF', number>> | null = null;
+  /** `joelhos` (rad) dobra as duas pernas ANTES do apoio no chão: o quadril desce com os pés plantados (agachar de leve) */
+  ajuste: Partial<Record<'x' | 'y' | 'lean' | 'chest' | 'neck' | 'head' | 'hipTilt' | 'breath' | 'shrugN' | 'shrugF' | 'footN' | 'footF' | 'joelhos', number>> | null = null;
   /** reação física passageira (tapa, soco, empurrão), somada como o ajuste — escrita por Impacto (scenes/contato.ts) */
   impulso: Actor['ajuste'] = null;
   /** forma da mão imposta por um controlador (Trajeto) por cima do movimento */
@@ -212,13 +213,18 @@ export class Actor {
       for (const e of m.events) if (e.t > t - dt && e.t <= t) this.onEvent?.(e.name, this);
     }
     let target = this.motion.fn(this.motionT, { speed: this.speed * (this.run ? 2.1 : 1), seed: this.id });
+    const joelhos = (this.ajuste?.joelhos ?? 0) + (this.impulso?.joelhos ?? 0);
+    if (joelhos) {
+      // coxa vai metade para a frente, canela dobra o ângulo inteiro: o pé continua embaixo do quadril
+      target = { ...target, legN: { a: target.legN.a + joelhos / 2, b: target.legN.b + joelhos }, legF: { a: target.legF.a + joelhos / 2, b: target.legF.b + joelhos } };
+    }
     if (this.motion.grounded !== false && target.rot === 0) {
       target = { ...target, y: target.y + groundDrop(target, this.d.thigh, this.d.shin, this.d.hipW) };
     }
     if (this.ajuste || this.impulso || this.maoForma) {
       target = { ...target };
-      if (this.ajuste) for (const [k, v] of Object.entries(this.ajuste)) if (v) (target as any)[k] += v;
-      if (this.impulso) for (const [k, v] of Object.entries(this.impulso)) if (v) (target as any)[k] += v;
+      if (this.ajuste) for (const [k, v] of Object.entries(this.ajuste)) if (v && k !== 'joelhos') (target as any)[k] += v;
+      if (this.impulso) for (const [k, v] of Object.entries(this.impulso)) if (v && k !== 'joelhos') (target as any)[k] += v;
       if (this.maoForma?.N) target.handN = this.maoForma.N;
       if (this.maoForma?.F) target.handF = this.maoForma.F;
     }
