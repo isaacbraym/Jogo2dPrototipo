@@ -13,6 +13,8 @@ interface HG {
   turn: number;
   sway: number;
   t: number;
+  /** 0 em ¾ → 1 em perfil (ver perfilDe em head.ts) */
+  pf: number;
 }
 
 function hairFill(rc: RC, H: number) {
@@ -433,14 +435,20 @@ const STYLES: Record<string, Style> = {
     front: (rc, g) => { frontCap(rc, g, F.center(g.W, g.H), -g.H * 0.02, -g.v * 0.2); },
   },
   trancas: {
+    // trança do lado de lá: na camada de TRÁS, nascendo na silhueta do rosto (em ¾ o rosto a cobre em parte, como no real)
+    back: (rc, g) => {
+      const { W, H } = g;
+      if (g.turn > 1.3) return;
+      const ax = W * 0.44 * (1 - 0.15 * g.turn) + g.turn * W * 0.04, ay = H * 0.05;
+      tail(rc, ax, ay, H * 1.0, W * 0.2, -0.12 - g.turn * 0.08 + g.sway * 1.2, true, true);
+    },
+    // trança do lado de cá: na frente, sobre a orelha/ombro próximo
     front: (rc, g) => {
       frontCap(rc, g, F.center(g.W, g.H), 0);
       const { W, H } = g;
-      for (const s of [-1, 1]) {
-        if (s > 0 && g.turn > 0.8) continue;
-        const ax = s * W * 0.44 - g.turn * W * 0.1, ay = H * 0.05;
-        tail(rc, ax, ay, H * 1.0, W * 0.2, -s * 0.12 + g.sway * 1.2, true, true);
-      }
+      // em perfil a trança próxima nasce logo atrás da orelha (que foi para o meio da cabeça)
+      const ax = lerp(-W * 0.44 - g.turn * W * 0.1, -W * 0.28, g.pf), ay = H * 0.05;
+      tail(rc, ax, ay, H * 1.0, W * 0.2, 0.12 + g.sway * 1.2, true, true);
     },
   },
   dreads: {
@@ -542,7 +550,8 @@ function H0(g: HG) {
 export function drawHairBack(rc: RC, hg: HeadGeom) {
   const st = STYLES[rc.ap.hairStyle];
   if (!st?.back) return;
-  emPerfil(rc, hg, () => st.back!(rc, hgOf(rc, hg)), 0.08);
+  // em perfil o cabelo de trás cai pelas COSTAS (atrás da nuca), não atrás do tronco — recua bem mais que a frente
+  emPerfil(rc, hg, () => st.back!(rc, hgOf(rc, hg)), 0.3);
 }
 
 /** Camada frontal (sobre o rosto). */
@@ -586,7 +595,7 @@ function emPerfil(rc: RC, hg: HeadGeom, desenha: () => void, recuo: number) {
 function hgOf(rc: RC, hg: HeadGeom): HG {
   let v = hg.H * (0.03 + rc.ap.hairVolume * 0.07);
   if (rc.ap.hat !== 'nenhum' && rc.ap.hat !== 'faixa') v *= 0.3;
-  return { W: hg.W, H: hg.H, v, turn: rc.turn, sway: rc.sway, t: rc.t };
+  return { W: hg.W, H: hg.H, v, turn: rc.turn, sway: rc.sway, t: rc.t, pf: hg.pf };
 }
 
 // ------------------------------------------------ chapéus

@@ -1,4 +1,5 @@
 import { Scene } from './scenes/scene';
+import { Trajeto } from './scenes/contato';
 import { Stage } from './scenes/stage';
 import { randomAppearance, defaultAppearance } from './character/appearance';
 import { RNG } from './core/rng';
@@ -25,6 +26,18 @@ export function testHarness(root: HTMLElement) {
     };
     cast.others[0].name = 'Léo';
     stage.play(sit, cast);
+    // &hit=<seg>: congela <seg> depois do primeiro evento de contato (tapa, soco, toca-aqui...) — instante exato do impacto
+    const hit = q.get('hit');
+    if (hit !== null) {
+      const orig = Trajeto.prototype.update;
+      let alvoT = -1;
+      Trajeto.prototype.update = function (this: Trajeto, dt: number) {
+        const antes = this.t;
+        orig.call(this, dt);
+        if (alvoT < 0 && (this.o.eventos ?? []).some((e) => e.t > antes && e.t <= this.t)) alvoT = stage.scene.t + Number(hit);
+        if (alvoT >= 0 && stage.scene.t >= alvoT && !stage.paused) { stage.paused = true; (window as any).frozen = true; }
+      };
+    }
     const at = Number(q.get('at') ?? 0);
     if (at > 0) {
       const iv = setInterval(() => {
@@ -45,7 +58,11 @@ export function testHarness(root: HTMLElement) {
   const mot = q.get('m') ?? 'parado';
   for (let i = 0; i < n; i++) {
     const ap = q.get('def') ? defaultAppearance(i % 2 ? 'm' : 'f') : randomAppearance(r);
-    const a = sc.addActor(ap, ages[i % ages.length], { x: 640 + (i - (n - 1) / 2) * (1100 / Math.max(n, 1)), facing: i % 2 ? -1 : 1, turn, motion: mot });
+    // auditoria de penteados: &hair=trancas,longo,... (um por boneco, repete) e &span=largura ocupada pela fileira
+    const hairs = q.get('hair')?.split(',');
+    if (hairs) { ap.hairStyle = hairs[i % hairs.length]; ap.hat = 'nenhum'; }
+    const span = Number(q.get('span') ?? 1100);
+    const a = sc.addActor(ap, ages[i % ages.length], { x: 640 + (i - (n - 1) / 2) * (span / Math.max(n, 1)), facing: i % 2 ? -1 : 1, turn, motion: mot });
     if (q.get('expr')) a.setExpr(q.get('expr') as any);
     const exprs = q.get('exprs')?.split(',');
     if (exprs) a.setExpr(exprs[i % exprs.length] as any);

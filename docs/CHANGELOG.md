@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-24 — Contato de mão em todas as interações, cabelo corrigido e corpo caído no chão (Claude) · branch `claude/animacoes-contato`
+- **Bug do cabelo (trancas):** a trança do lado de lá era desenhada sobre o rosto (o elástico atravessava o nariz). Agora fica na
+  camada de trás, nascendo na silhueta. Em perfil, cabelo comprido cai pelas costas e a trança próxima fica atrás da orelha.
+  Auditoria de todos os penteados em ¾, 0,9 e perfil (`?test&...&hair=`).
+- **Contato de mão** (`Trajeto`, `Impacto` em `scenes/contato.ts`; `Actor.impulso`, `Actor.maoForma`): a mão vai por IK até um
+  ponto vivo do outro corpo, com antecipação/ação/acompanhamento e reação com mola no impacto. Refeitos: `tapa` (bochecha),
+  `soco` (jab no queixo; a vítima cai NO impacto), `empurrar` (mãos no peito), `apertoMao` (mãos se encontram e sacodem juntas),
+  `highFive` (mãos se encontram acima das cabeças), `presente` (o pacote passa de mão em mão), `consolar` (braço por trás dos
+  ombros, tapinhas nas costas), `massagem` (mãos nos ombros, amassando alternado). A cena `agressao` usa o mesmo `golpear`.
+- Movimentos novos só-de-corpo: `tapaCorpo`, `socoCorpo`, `empurrarCorpo`, `consolarCorpo`.
+- **Corpo caído no chão** (pedido de engine): `apoioNoChao` encosta o ponto mais baixo do corpo no chão em poses rotacionadas.
+- Distâncias de aproximação passam a considerar a largura dos corpos (nada de um atravessar o outro).
+- Harness: `&hair=` e `&span=` na galeria; `&hit=<s>` congela no instante do contato. Palco: pausar interrompe os subpassos.
+- **Docs:** SPEC-07 §8–10 (contato de mão, chão, **regras de animação para o Luna 6**), PEDIDOS-ENGINE, skill de animação,
+  prompt do Luna (DELEGACAO-LUNA).
+
 ## 2026-09-24 — Contato entre personagens: abraço e beijo refeitos (Claude) · branch `claude/animacoes-contato`
 - **Camadas por parte** (pedido "Profundidade de desenho entre partes" — parcialmente atendido): personagem em contato é
   desenhado em fatias (`tras`, `corpo`, `frente`, `maoN`) e a cena intercala as dos dois. No abraço o braço de quem está

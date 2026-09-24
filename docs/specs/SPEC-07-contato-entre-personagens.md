@@ -100,3 +100,50 @@ Para cada tipo (abraço e beijo), verifique **4 pares**: alturas parecidas · al
 - [ ] Nenhuma mão cobrindo olhos/boca de ninguém (nem a própria).
 - [ ] No beijo, os lábios se encontram na silhueta (não dentro do rosto do outro).
 - [ ] Nada congelado na sustentação (balanço/respiração/afago visíveis entre dois quadros).
+
+---
+
+## 8. Contato de mão (tapa, soco, empurrão, aperto de mão, toca-aqui, presente, consolar, massagem)
+
+Mesma ideia do abraço: **a mão vai até um ponto real do outro corpo**, não "para a frente no ar".
+
+- `Trajeto` (`scenes/contato.ts`): a mão (N ou F) passa por **chaves** `{ t, p, forma, ease }`. `p` é um ponto vivo — uma função
+  que lê o esqueleto do outro a cada quadro (`marcos(b).rosto`, `.queixo`, `.peitoFrente`, `.ombro`, `.ombroF`, `.costasAlto`)
+  — ou `null` (repouso: onde o movimento-base deixaria a mão). `mexe(t)` soma sacudida/afago; `eventos` disparam no instante exato.
+- `Impacto`: reação com mola (cabeça vira / tronco recua e volta) em `Actor.impulso`, no quadro do contato.
+- `golpear(d, a, b, 'tapa' | 'soco' | 'empurrar', { forca, aoImpacto })` em `situations.ts`: aproxima o passo certo, toca o
+  corpo do golpe (`tapaCorpo`, `socoCorpo`, `empurrarCorpo` — só corpo, sem braço), leva a mão ao alvo e, **no contato**, solta
+  efeito, som, tremor de câmera e a reação. Usado por `physical` e pela cena `agressao`.
+- `maoAte(d, ator, 'N'|'F', chaves)` e `aproximarAlcance(d, a, b, alvo, frac, 'N'|'F', folga)` para interações novas.
+
+**Qual braço usar (em ¾):** o ombro **F** fica do lado para onde a pessoa olha; o **N** fica atrás. Para alcançar o outro sem o
+braço cruzar o próprio rosto use **F** (tapa, jab, toca-aqui, consolar). **N** serve para gestos na altura da cintura (aperto de
+mão) ou com as duas mãos (empurrão, massagem). Quem golpeia fica na frente em profundidade (`z`); quem consola fica **atrás**
+(o braço passa por trás de quem chora e a mão reaparece nas costas — o rosto de quem chora continua visível).
+
+**Distâncias:** nunca use distância fixa. Aproximação por `(a.d.chestW + b.d.chestW) × fator` (golpes 0,8–1,0; aperto de mão e
+presente 0,95; consolar 0,9) e depois `aproximarAlcance`, que nunca deixa os peitos a menos de `folga`.
+
+**Reação no impacto, não depois:** quem apanha começa a reagir no quadro do contato (`aoImpacto`), não quando o golpe termina.
+
+## 9. Corpo caído encosta no chão
+
+Movimentos com `grounded: false` e rotação grande (`|rot| > 0,45`) são apoiados automaticamente: o motor calcula o ponto mais
+baixo do corpo (quadril, costas, cabeça, joelhos, calcanhares, cada um com sua espessura) e ajusta `y` para ele tocar o chão —
+em qualquer idade. O `y` escrito no movimento vira só um ponto de partida; não é preciso calibrar a altura na mão.
+
+## 10. Regras de animação para conteúdo (Luna 6 e outros)
+
+1. **Contato é do motor.** Se dois corpos se tocam, use `physical`, `golpear`, `maoAte` ou peça um tipo novo em
+   `PEDIDOS-ENGINE.md`. Braço apontado "no ar" na direção do outro é bug.
+2. **Antecipação → ação → acompanhamento → repouso**, sempre. Antecipação ≈ 0,2–0,3 s (sai em `recolhe`), ação ≈ 0,08–0,12 s
+   (chega em `golpe`), acompanhamento ≈ 0,1–0,15 s passando do alvo, repouso ≈ 0,3–0,4 s.
+3. **O tronco lidera**, o braço segue: nos `*Corpo` o peso vai para trás na antecipação e para a frente no impacto; inclinação
+   máxima ~0,2 (mais que isso o personagem "mergulha").
+4. **Nada congela:** poses sustentadas têm respiração, balanço ou afago (`mexe`).
+5. **Rosto sempre legível:** mão, braço ou cabeça do outro nunca cobrem olhos e boca de ninguém sem intenção.
+6. **Perfil (`turn` 1–1,45)** para beijo e cochicho; **¾ (0,72)** para o resto. Penteados precisam funcionar nos dois (o motor
+   recorta o cabelo em perfil; mechas do lado de lá ficam atrás do rosto).
+7. **QA obrigatório:** capture o instante do contato com `&hit=0.02` (congela logo após o primeiro evento de um `Trajeto`) e o
+   meio/fim com `&at=`. Espere ~1 s depois de congelar antes da captura (o painel repinta com atraso). Penteados:
+   `?test&env=parque&n=4&turn=0.9&hair=trancas,longo,...&span=560&zoom=1.6` em `turn` 0,72, 0,9 e 1,45.

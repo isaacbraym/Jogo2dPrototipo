@@ -1279,6 +1279,53 @@ Object.assign(MOTIONS, {
   },
 } as Record<string, Motion>);
 
+// ---- contato de mão: só o CORPO dos golpes (os braços vão por IK até o outro — scenes/contato.ts, SPEC-07).
+// Sem eventos: o efeito e o som saem do ponto de contato real, disparados pela cena.
+Object.assign(MOTIONS, {
+  // Tapa: gira o tronco para trás (antecipação), chicoteia para a frente e acompanha.
+  tapaCorpo: {
+    loop: false, dur: 0.75, expr: 'bravo',
+    fn: keyframes([
+      [0, {}],
+      [0.25, { lean: -0.1, chest: -0.12, hipTilt: -0.1, head: -0.05, legN: L(0.12, 0.1), legF: L(-0.12, 0.1) }, Ease.outQuad],
+      [0.34, { lean: 0.1, chest: 0.1, hipTilt: 0.12, head: -0.04, x: 8, legN: L(0.3, 0.2), legF: L(-0.25, 0.1) }, Ease.inQuad],
+      [0.46, { lean: 0.12, chest: 0.12, hipTilt: 0.12, head: -0.02, x: 10, legN: L(0.3, 0.2), legF: L(-0.25, 0.1) }],
+      [0.75, { lean: 0.03 }, Ease.inOutSine],
+    ]),
+  },
+  // Soco: recua o ombro e o peso na perna de trás, depois transfere tudo para a frente no impacto.
+  socoCorpo: {
+    loop: false, dur: 0.8, expr: 'furioso',
+    fn: keyframes([
+      [0, {}],
+      [0.22, { lean: -0.14, chest: -0.1, hipTilt: -0.12, x: -6, legN: L(0.2, 0.2), legF: L(-0.28, 0.22) }, Ease.outQuad],
+      [0.32, { lean: 0.16, chest: 0.12, hipTilt: 0.14, x: 6, legN: L(0.4, 0.3), legF: L(-0.3, 0.1) }, Ease.inQuad],
+      [0.5, { lean: 0.15, chest: 0.1, x: 6, legN: L(0.4, 0.3), legF: L(-0.3, 0.1) }],
+      [0.8, { lean: 0.05, armF: L(0.8, 2.2), handF: 'punho' }, Ease.inOutSine],
+    ]),
+  },
+  // Consolar de pé, ereto, cabeça inclinada para o outro (o braço vai por IK sobre os ombros de quem chora).
+  consolarCorpo: {
+    loop: true, expr: 'triste',
+    fn: (t: number) => {
+      const p = breathe(P({ lean: 0.02, chest: 0.02, neck: 0.06, head: 0.1 + S(t * 1.3) * 0.03, hipTilt: 0.04 }), t);
+      p.armN = L(0.15, 0.35);
+      return p;
+    },
+  },
+  // Empurrão: encolhe (braços ao peito) e explode para a frente com as pernas.
+  empurrarCorpo: {
+    loop: false, dur: 0.8, expr: 'bravo',
+    fn: keyframes([
+      [0, {}],
+      [0.2, { lean: -0.06, chest: -0.05, y: 4, legN: L(0.15, 0.3), legF: L(-0.15, 0.3) }, Ease.outQuad],
+      [0.32, { lean: 0.18, chest: 0.1, x: 6, legN: L(0.4, 0.2), legF: L(-0.35, 0.1) }, Ease.inQuad],
+      [0.45, { lean: 0.16, chest: 0.08, x: 6, legN: L(0.4, 0.2), legF: L(-0.35, 0.1) }],
+      [0.8, { lean: 0.05 }, Ease.inOutSine],
+    ]),
+  },
+} as Record<string, Motion>);
+
 export type MotionName = keyof typeof MOTIONS;
 
 /** Ajusta a altura da pelve para manter o pé mais baixo no chão. */

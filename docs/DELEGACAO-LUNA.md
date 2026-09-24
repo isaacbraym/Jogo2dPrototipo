@@ -49,6 +49,9 @@ em lotes, com segurança e documentando tudo.
   suicídio nunca como opção; nada de pessoas, partidos ou marcas reais (use nomes fictícios).
 - Não faça `git push` para `main` e não altere o GitHub sem eu autorizar explicitamente.
 - Não "conserte" o validador para passar. Conserte o conteúdo.
+- **Animação com dois personagens** segue a `docs/specs/SPEC-07-contato-entre-personagens.md` (§10 são as regras de animação):
+  contato sempre pelo motor (`physical`, `golpear`, `maoAte`), antecipação → ação → acompanhamento, rosto sempre legível, e QA
+  com captura no instante do contato (`&hit=0.02`).
 
 ### 3. Como trabalhar (dentro dos seus limites)
 - Trabalhe em **lotes pequenos e temáticos** (6–10 itens por lote). Antes de cada lote, releia a skill correspondente.

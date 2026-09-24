@@ -62,7 +62,7 @@ export class Stage {
     if (!this.paused && this.host.isConnected) {
       // passos fixos para estabilidade quando dt é grande
       let rest = dt;
-      while (rest > 0.0001) {
+      while (rest > 0.0001 && !this.paused) {
         const step = Math.min(0.05, rest);
         this.scene.update(step);
         rest -= step;

@@ -4,9 +4,9 @@ import { Actor } from '../character/actor';
 import { GROUND } from '../render/bg';
 import { legLength } from '../character/character';
 import { RNG, rng } from '../core/rng';
-import { Ease } from '../core/math';
+import { Ease, lerp } from '../core/math';
 import { sfx } from '../core/audio';
-import { Contato } from './contato';
+import { Contato, Trajeto, Impacto, marcos, doOmbro, faltaAlcance, golpe, recolhe, salta, type ChaveMao } from './contato';
 
 export interface CastMember {
   ap: Appearance;
@@ -63,6 +63,82 @@ function crowd(d: Director, n: number, x0: number, x1: number, seed: number, mot
   return list;
 }
 
+// ================================================================== contato de mão (SPEC-07)
+/** Registra um trajeto de mão (IK até pontos vivos do outro corpo) na cena. */
+export function maoAte(d: Director, x: Actor, qual: 'N' | 'F', chaves: ChaveMao[], o?: ConstructorParameters<typeof Trajeto>[3]) {
+  const tr = new Trajeto(x, qual, chaves, o);
+  d.sc.contatos.push(tr);
+  return tr;
+}
+
+/** Dá um passinho para o braço de `x` alcançar `alvo` (fração do braço), sem deixar os peitos a menos de `folga`. */
+export async function aproximarAlcance(d: Director, x: Actor, outro: Actor, alvo: () => { x: number; y: number }, frac = 0.85, qual: 'N' | 'F' = 'N', folga = 16) {
+  const vao = (marcos(outro).peitoFrente.x - marcos(x).peitoFrente.x) * x.facing;
+  const f = Math.min(faltaAlcance(x, alvo(), frac, qual), vao - folga);
+  if (Math.abs(f) > 5) await d.walk(x, x.x + x.facing * f);
+  faceEach(x, outro);
+}
+
+/**
+ * Golpe com contato real: o corpo faz antecipação → ataque → acompanhamento (movimento *Corpo) e a mão vai por IK até o
+ * rosto/queixo/peito do outro; no instante do contato saem efeito, som, tremor e a reação com mola (Impacto) de quem apanha.
+ * `aoImpacto` roda no quadro do contato (ex.: começar a queda). Resolve quando o golpe termina.
+ */
+export async function golpear(d: Director, a: Actor, b: Actor, tipo: 'tapa' | 'soco' | 'empurrar', o: { forca?: number; aoImpacto?: () => void } = {}) {
+  const forca = o.forca ?? 1;
+  a.z = Math.max(a.z, b.z) + 0.01;
+  faceEach(a, b);
+  const imp = (t: 'cabeca' | 'tronco', f: number) => d.sc.contatos.push(new Impacto(b, a.facing, f * forca, t));
+  if (tipo === 'tapa') {
+    // mão aberta do braço da frente sobe atrás, estala NA BOCHECHA e segue o arco
+    await aproximarAlcance(d, a, b, () => marcos(b).rosto, 0.9, 'F');
+    const corpo = d.act(a, 'tapaCorpo');
+    maoAte(d, a, 'F', [
+      { t: 0, p: null, forma: 'aberta' },
+      { t: 0.25, p: () => doOmbro(a, 'F', 0.75, -2.3), ease: recolhe },
+      { t: 0.33, p: () => marcos(b).rosto, ease: golpe },
+      { t: 0.45, p: () => { const r = marcos(b).rosto; return { x: r.x + a.facing * 26, y: r.y + 14 }; }, ease: recolhe },
+      { t: 0.75, p: null },
+    ], { eventos: [{ t: 0.33, fn: () => { const r = marcos(b).rosto; d.burst(r.x, r.y, '#ffb3b3'); d.sfx('slap'); d.shake(6); imp('cabeca', 1.1); o.aoImpacto?.(); } }] });
+    await corpo;
+  } else if (tipo === 'soco') {
+    // jab com o braço da FRENTE (em ¾ alcança sem um corpo atravessar o outro): punho recua, acerta o queixo
+    await aproximarAlcance(d, a, b, () => marcos(b).queixo, 0.97, 'F', 44);
+    const corpo = d.act(a, 'socoCorpo');
+    maoAte(d, a, 'F', [
+      { t: 0, p: null, forma: 'punho' },
+      { t: 0.22, p: () => doOmbro(a, 'F', 0.38, 2.5), ease: recolhe },
+      { t: 0.32, p: () => marcos(b).queixo, ease: golpe },
+      { t: 0.46, p: () => { const q = marcos(b).queixo; return { x: q.x + a.facing * 10, y: q.y + 4 }; } },
+      { t: 0.8, p: null, ease: recolhe },
+    ], { eventos: [{ t: 0.32, fn: () => { const q = marcos(b).queixo; d.burst(q.x, q.y); d.sfx('hit'); d.shake(10); imp('cabeca', 1.5); o.aoImpacto?.(); } }] });
+    await corpo;
+  } else {
+    // empurrão: as duas mãos recuam ao peito e batem espalmadas no peito do outro, que é arremessado para trás
+    await aproximarAlcance(d, a, b, () => marcos(b).peitoFrente, 0.92, 'N', 28);
+    const corpo = d.act(a, 'empurrarCorpo');
+    const ch = (qual: 'N' | 'F', dy: number): ChaveMao[] => {
+      const alvo = () => { const p = marcos(b).peitoFrente; return { x: p.x, y: p.y + dy }; };
+      return [
+        { t: 0, p: null },
+        { t: 0.2, p: () => doOmbro(a, qual, 0.35, 1.2), forma: 'aberta', ease: recolhe },
+        { t: 0.32, p: alvo, ease: golpe },
+        { t: 0.42, p: alvo },
+        { t: 0.8, p: null, ease: recolhe },
+      ];
+    };
+    maoAte(d, a, 'N', ch('N', -6), { eventos: [{ t: 0.32, fn: () => {
+      const p = marcos(b).peitoFrente;
+      d.fx('poeira', p.x, GROUND, 5, { speed: 90, size: 12, life: 0.6 }); d.sfx('whoosh'); d.shake(5);
+      imp('tronco', 1.2);
+      d.moveActor(b, b.x + a.facing * 60 * forca, b.y, 0.35, Ease.outQuad);
+      o.aoImpacto?.();
+    } }] });
+    maoAte(d, a, 'F', ch('F', 8));
+    await corpo;
+  }
+}
+
 /** Ação física genérica entre dois personagens (usada no menu de relacionamentos). */
 export async function physical(d: Director, a: Actor, b: Actor, action: string) {
   faceEach(a, b);
@@ -73,6 +149,10 @@ export async function physical(d: Director, a: Actor, b: Actor, action: string) 
     await Promise.all([d.walk(a, ax), d.walk(b, bx)]);
     faceEach(a, b);
   };
+  const mao = (x: Actor, qual: 'N' | 'F', chaves: ChaveMao[], o?: ConstructorParameters<typeof Trajeto>[3]) => maoAte(d, x, qual, chaves, o);
+  const alcance = (x: Actor, alvo: () => { x: number; y: number }, frac = 0.85, qual: 'N' | 'F' = 'N', folga = 16) => aproximarAlcance(d, x, x === a ? b : a, alvo, frac, qual, folga);
+  const ombro = (x: Actor, qual: 'N' | 'F' = 'N') => doOmbro(x, qual, 0, 0);
+  const bracoL = (x: Actor) => (x.d.upperArm + x.d.foreArm) * x.scale;
   switch (action) {
     case 'abracar': {
       // contato real (scenes/contato.ts): corpos se encontram pelo peito, mãos nas costas por IK, braços intercalados
@@ -121,26 +201,59 @@ export async function physical(d: Director, a: Actor, b: Actor, action: string) 
       break;
     }
     case 'highFive': {
-      await close(120);
-      await Promise.all([d.act(a, 'highFive'), d.act(b, 'highFive')]);
+      // toca aqui (braço do lado da frente, que não cruza o próprio rosto em ¾): as duas mãos sobem (antecipação), se encontram NO MESMO PONTO acima das cabeças e quicam de volta
+      await close(Math.max(150, (a.d.chestW + b.d.chestW) * 1.05));
+      a.z = Math.max(a.z, b.z) + 0.01;
       d.loop(a, 'feliz'); d.loop(b, 'feliz');
+      const encontro = () => {
+        const sa = ombro(a, 'F'), sb = ombro(b, 'F');
+        return { x: (sa.x + sb.x) / 2, y: Math.min(sa.y, sb.y) - Math.min(bracoL(a), bracoL(b)) * 0.92 };
+      };
+      const chaves = (x: Actor): ChaveMao[] => [
+        { t: 0, p: null },
+        { t: 0.3, p: () => doOmbro(x, 'F', 0.85, -1.95), forma: 'aberta', ease: recolhe },
+        { t: 0.42, p: () => ({ x: encontro().x - x.facing * 4, y: encontro().y }), ease: golpe },
+        { t: 0.56, p: () => ({ x: encontro().x - x.facing * 22, y: encontro().y - 10 }), ease: recolhe },
+        { t: 1.0, p: null },
+      ];
+      const ta = mao(a, 'F', chaves(a), { eventos: [{ t: 0.42, fn: () => { const p = encontro(); d.fx('estrela', p.x, p.y, 8, { speed: 260, size: 8, life: 0.6 }); d.sfx('slap'); d.shake(4); } }] });
+      mao(b, 'F', chaves(b));
+      await ta.feito;
+      d.loop(a, 'comemorar'); d.loop(b, 'feliz');
+      await d.wait(0.6);
+      d.loop(a, 'feliz');
       break;
     }
     case 'apertoMao': {
-      await close(110);
+      // aperto de mão: as duas mãos se encontram no meio, na altura da cintura, e sacodem JUNTAS
+      await close(Math.max(135, (a.d.chestW + b.d.chestW) * 0.95));
+      a.z = Math.max(a.z, b.z) + 0.01;
       d.loop(a, 'apertoMao'); d.loop(b, 'apertoMao');
-      await d.wait(1.6);
+      d.look(a, b); d.look(b, a);
+      const meio = () => {
+        const sa = ombro(a), sb = ombro(b);
+        return { x: (sa.x + sb.x) / 2, y: Math.max(sa.y, sb.y) + Math.min(bracoL(a), bracoL(b)) * 0.55 };
+      };
+      const sacode = (t: number) => ({ x: 0, y: t > 0.55 && t < 1.65 ? Math.sin((t - 0.55) * 15) * 5 * Math.sin((Math.PI * (t - 0.55)) / 1.1) : 0 });
+      const chaves = (x: Actor): ChaveMao[] => [
+        { t: 0, p: null },
+        { t: 0.5, p: () => ({ x: meio().x - x.facing * 3, y: meio().y }), forma: 'segura', ease: salta },
+        { t: 1.75, p: () => ({ x: meio().x - x.facing * 3, y: meio().y }) },
+        { t: 2.15, p: null, forma: 'aberta' },
+      ];
+      const ta = mao(a, 'N', chaves(a), { mexe: sacode });
+      mao(b, 'N', chaves(b), { mexe: sacode });
+      await ta.feito;
       d.loop(a, 'parado'); d.loop(b, 'parado');
       break;
     }
     case 'soco': {
-      await close(125);
+      // soco: guarda → punho recua → acerta o QUEIXO de verdade → cabeça estala com mola → cai (ver golpear)
+      await close(Math.max(150, (a.d.chestW + b.d.chestW) * 1.0));
       d.loop(b, 'lutar');
       d.focus((a.x + b.x) / 2, 360, 1.2);
-      await d.act(a, 'soco');
-      d.act(b, 'cair').then(() => d.loop(b, 'caidoChao'));
-      d.expr(b, 'tonto', 3);
-      await d.wait(1.2);
+      await golpear(d, a, b, 'soco', { aoImpacto: () => { d.expr(b, 'tonto', 3); d.act(b, 'cair').then(() => d.loop(b, 'caidoChao')); } });
+      await d.wait(0.8);
       d.emote(b, 'estrela');
       d.loop(a, 'ofegante');
       d.expr(a, 'serio');
@@ -170,12 +283,25 @@ export async function physical(d: Director, a: Actor, b: Actor, action: string) 
       break;
     }
     case 'consolar': {
+      // consolar: braço por cima dos ombros do outro, mão nas costas altas dando tapinhas (nunca sobre o rosto)
       d.loop(b, 'chorar');
-      await close(95);
-      d.loop(a, 'consolar');
+      await close(Math.max(125, (a.d.chestW + b.d.chestW) * 0.9));
+      // quem consola fica ATRÁS em profundidade: o braço passa por trás de quem chora e a mão reaparece nas costas,
+      // sem cobrir o rosto (mesma lógica de camadas do abraço)
+      b.z = Math.max(a.z, b.z) + 0.01;
+      d.loop(a, 'consolarCorpo');
+      const noOmbro = () => { const m = marcos(b); return { x: lerp(m.ombroF.x, m.costasAlto.x, 0.8), y: Math.min(m.ombro.y, m.ombroF.y) + 6 }; };
+      await alcance(a, noOmbro, 0.95, 'F', 34);
+      const tapinhas = (t: number) => ({ x: 0, y: t > 0.8 && t < 2.6 ? -Math.abs(Math.sin((t - 0.8) * 5.5)) * 4 : 0 });
+      const tr = mao(a, 'F', [
+        { t: 0, p: null },
+        { t: 0.7, p: noOmbro, forma: 'aberta', ease: salta },
+        { t: 2.9, p: noOmbro },
+        { t: 3.4, p: null },
+      ], { mexe: tapinhas });
       await d.say(a, 'Vai ficar tudo bem. Tô aqui.', 2);
-      await d.wait(1);
       d.loop(b, 'triste');
+      await tr.feito;
       break;
     }
     case 'desculpas': {
@@ -196,10 +322,24 @@ export async function physical(d: Director, a: Actor, b: Actor, action: string) 
       a.facing = b.facing;
       a.z = b.z + 1;
       d.loop(a, 'massagem');
-      await d.wait(2.4);
+      await d.wait(0.2);
+      // as duas mãos NOS OMBROS de quem está sentado, amassando em tempos alternados
+      const amassa = (fase: number) => (t: number) => ({ x: Math.sin(t * 6 + fase) * 1.5 * a.facing, y: Math.sin(t * 6 + fase) * 3.5 });
+      const ch = (qual: 'N' | 'F'): ChaveMao[] => {
+        const alvo = () => { const o = qual === 'N' ? marcos(b).ombro : marcos(b).ombroF; return { x: o.x, y: o.y - 3 }; };
+        return [
+          { t: 0, p: null },
+          { t: 0.5, p: alvo, forma: 'aberta', ease: salta },
+          { t: 3.0, p: alvo },
+          { t: 3.4, p: null },
+        ];
+      };
+      const tn = mao(a, 'N', ch('N'), { mexe: amassa(0) });
+      mao(a, 'F', ch('F'), { mexe: amassa(Math.PI) });
+      await d.wait(2.2);
       d.expr(b, 'apaixonado', 2);
       d.hearts(b.x, b.headWorld().y - 30, 5);
-      await d.wait(1.2);
+      await tn.feito;
       break;
     }
     case 'serenata': {
@@ -212,22 +352,20 @@ export async function physical(d: Director, a: Actor, b: Actor, action: string) 
       break;
     }
     case 'tapa': {
-      await close(110);
-      await d.act(a, 'tapa');
-      d.act(b, 'estremecer');
-      d.expr(b, 'surpreso', 2);
-      await d.wait(0.8);
+      // tapa: mão aberta estala NA BOCHECHA, cabeça do outro vira com mola (ver golpear)
+      await close(Math.max(110, (a.d.chestW + b.d.chestW) * 0.8));
+      await golpear(d, a, b, 'tapa', { aoImpacto: () => { d.act(b, 'estremecer'); d.expr(b, 'surpreso', 2); } });
+      await d.wait(0.5);
       d.loop(b, 'furia');
       d.emote(b, 'raiva');
       await d.wait(1);
       break;
     }
     case 'empurrar': {
-      await close(110);
-      await d.act(a, 'empurrar');
-      d.moveActor(b, b.x + a.facing * 60, b.y, 0.35, Ease.outQuad);
-      d.act(b, 'estremecer');
-      await d.wait(1);
+      // empurrão: mãos espalmadas no peito, o outro é arremessado para trás (ver golpear)
+      await close(Math.max(110, (a.d.chestW + b.d.chestW) * 0.8));
+      await golpear(d, a, b, 'empurrar', { aoImpacto: () => { d.act(b, 'estremecer'); } });
+      await d.wait(0.6);
       d.loop(b, 'bracosCruzados');
       break;
     }
@@ -260,11 +398,28 @@ export async function physical(d: Director, a: Actor, b: Actor, action: string) 
       break;
     }
     case 'presente': {
-      await close(120);
+      // entregar: quem dá estende o pacote até o meio; quem recebe estende a mão, pega NO PACOTE e traz ao peito
+      await close(Math.max(135, (a.d.chestW + b.d.chestW) * 0.95));
+      a.z = Math.max(a.z, b.z) + 0.01;
       a.propN = 'presente';
-      await d.act(a, 'entregar');
-      a.propN = undefined;
-      b.propN = 'presente';
+      const meio = () => {
+        const sa = ombro(a), sb = ombro(b);
+        return { x: (sa.x + sb.x) / 2, y: Math.max(sa.y, sb.y) + Math.min(bracoL(a), bracoL(b)) * 0.42 };
+      };
+      const ta = mao(a, 'N', [
+        { t: 0, p: null, forma: 'segura' },
+        { t: 0.5, p: () => ({ x: meio().x - a.facing * 8, y: meio().y }), ease: salta },
+        { t: 0.8, p: () => ({ x: meio().x - a.facing * 8, y: meio().y }), forma: 'aberta' },
+        { t: 1.2, p: null },
+      ], { eventos: [{ t: 0.72, fn: () => { a.propN = undefined; b.propN = 'presente'; d.sfx('pop'); } }] });
+      mao(b, 'N', [
+        { t: 0, p: null },
+        { t: 0.3, p: null },
+        { t: 0.68, p: () => ({ x: meio().x + a.facing * 8, y: meio().y }), forma: 'segura', ease: salta },
+        { t: 1.05, p: () => doOmbro(b, 'N', 0.42, 1.25), ease: recolhe },
+        { t: 1.6, p: null },
+      ]);
+      await ta.feito;
       d.loop(b, 'comemorar');
       d.fx('brilho', b.x, b.topWorld() + 40, 10, { speed: 200 });
       await d.wait(1.6);
@@ -1265,10 +1420,9 @@ const S: Situation[] = [
           break;
         }
         case 'empurrar': {
-          await close(110);
-          await d.act(p, 'empurrar');
-          d.moveActor(v, v.x + 70, v.y, 0.35, Ease.outQuad);
-          await d.act(v, 'estremecer');
+          await close(Math.max(110, (p.d.chestW + v.d.chestW) * 0.8));
+          await golpear(d, p, v, 'empurrar', { forca: 1.15, aoImpacto: () => { d.act(v, 'estremecer'); } });
+          await d.wait(0.4);
           break;
         }
         case 'jogarBebida': {
@@ -1292,10 +1446,9 @@ const S: Situation[] = [
           break;
         }
         case 'tapa': {
-          await close(110);
-          await d.act(p, 'tapa');
-          await d.act(v, 'estremecer');
-          d.expr(v, 'chocado', 1.5);
+          await close(Math.max(110, (p.d.chestW + v.d.chestW) * 0.8));
+          await golpear(d, p, v, 'tapa', { aoImpacto: () => { d.act(v, 'estremecer'); d.expr(v, 'chocado', 1.5); } });
+          await d.wait(0.4);
           break;
         }
         case 'roubar': {
@@ -1321,7 +1474,7 @@ const S: Situation[] = [
         }
         default: {
           // soco / chute / cabeçada
-          await close(k === 'cabecada' || k === 'chute' ? 92 : 125);
+          await close(k === 'cabecada' || k === 'chute' ? 92 : Math.max(150, (p.d.chestW + v.d.chestW) * 1.0));
           if (k === 'chute') { p.z = 0.25; v.z = 0.55; }
           d.loop(v, 'lutar');
           d.focus((p.x + v.x) / 2, 360, 1.2);
@@ -1347,8 +1500,19 @@ const S: Situation[] = [
             await Promise.all([golpe, reação]);
             d.loop(v, 'caidoChuteQA4');
             onGround = true;
+          } else if (k !== 'cabecada') {
+            // soco com contato real: o punho encosta no queixo e a vítima reage NO impacto (não depois do golpe)
+            const cai = !!(c.data?.injured || !c.data?.retaliate);
+            let queda: Promise<void> | null = null;
+            await golpear(d, p, v, 'soco', { forca: 1.3, aoImpacto: () => { d.expr(v, 'tonto', 2.5); queda = cai ? d.act(v, 'cair') : d.act(v, 'estremecer'); } });
+            if (queda) await queda;
+            if (cai) {
+              d.loop(v, 'caidoChao');
+              onGround = true;
+              d.emote(v, 'estrela');
+            }
           } else {
-            await d.act(p, k === 'chute' ? 'chute' : k === 'cabecada' ? 'cabecada' : 'socoForte');
+            await d.act(p, 'cabecada');
             if (c.data?.injured || !c.data?.retaliate) {
               await d.act(v, 'cair');
               d.loop(v, 'caidoChao');

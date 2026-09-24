@@ -37,9 +37,11 @@ Spec: `docs/specs/SPEC-03-animacao-rig-expressoes.md` (tabela de ossos e faixas 
 7. Use o movimento em alguma cena/interação (senão ele não aparece no jogo) e liste no CHANGELOG.
 
 ## Dois personagens se tocando
-Abraço e beijo **não** são movimentos: use `physical(d, a, b, 'abracar' | 'beijar')` e leia
-`docs/specs/SPEC-07-contato-entre-personagens.md`. Nunca "encoste" atores com offsets fixos ou `moveActor`; contato novo
-(dança a dois, colo, mão no ombro) é pedido de engine.
+Abraço, beijo, tapa, soco, empurrão, aperto de mão, toca-aqui, presente, consolar e massagem **não** são movimentos soltos:
+use `physical(...)`, `golpear(...)` ou `maoAte(...)` e leia `docs/specs/SPEC-07-contato-entre-personagens.md` (§8 e §10 têm
+as regras: braço F × N, distâncias pela largura dos corpos, reação no impacto, antecipação → ação → acompanhamento).
+Nunca "encoste" atores com offsets fixos ou `moveActor`; braço apontado no ar na direção do outro é bug. Contato novo
+(dança a dois, colo) é pedido de engine. Poses deitadas (`grounded: false` + rotação) são apoiadas no chão pelo motor.
 
 ## Armadilhas
 - `b` (cotovelo/joelho) negativo quebra a articulação.

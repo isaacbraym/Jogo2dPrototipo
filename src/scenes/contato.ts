@@ -14,7 +14,7 @@
  */
 import { Actor } from '../character/actor';
 import { skeleton, legLength } from '../character/character';
-import type { Pose, Pt } from '../character/rig';
+import type { Hand, Pose, Pt } from '../character/rig';
 import { frenteBocaX, perfilDe } from '../character/head';
 import { clamp, lerp } from '../core/math';
 
@@ -56,6 +56,7 @@ export function marcos(a: Actor) {
   const mx = frenteBocaX(W, t), my = H * 0.325;
   const ca = Math.cos(sk.headAng), sa = Math.sin(sk.headAng);
   const bocaLocal = { x: sk.head.x + mx * ca - my * sa, y: sk.head.y + mx * sa + my * ca };
+  const naCabeca = (hx: number, hy: number) => localParaMundo(a, { x: sk.head.x + hx * ca - hy * sa, y: sk.head.y + hx * sa + hy * ca });
   return {
     peitoFrente: noTronco(a, frenteX, -T * 0.62),
     costasAlto: noTronco(a, costasX - 2, -T * 0.72),
@@ -63,6 +64,12 @@ export function marcos(a: Actor) {
     cabeca: cab,
     boca: localParaMundo(a, bocaLocal),
     ombro: localParaMundo(a, sk.shoulderN),
+    /** ombro do lado de lá — em ¾ é o que fica do lado para onde a pessoa olha (o mais perto de quem está à frente dela) */
+    ombroF: localParaMundo(a, sk.shoulderF),
+    /** bochecha visível (alvo de tapa, carinho) */
+    rosto: naCabeca(W * (0.26 + t * 0.12), H * 0.12),
+    /** queixo/mandíbula (alvo de soco) — na silhueta do rosto, do lado para onde a pessoa olha */
+    queixo: naCabeca(W * (0.22 + t * 0.12), H * 0.36),
   };
 }
 
@@ -281,3 +288,124 @@ function aplicar(a: Actor, alvo: Partial<Record<AjusteCampo, number>>, dt: numbe
 }
 export type AjusteCampo = 'x' | 'y' | 'lean' | 'chest' | 'neck' | 'head' | 'hipTilt' | 'breath' | 'shrugN' | 'shrugF' | 'footN' | 'footF';
 const CAMPOS: AjusteCampo[] = ['x', 'y', 'lean', 'chest', 'neck', 'head', 'hipTilt', 'breath', 'shrugN', 'shrugF', 'footN', 'footF'];
+
+// =====================================================================================================================
+// Trajeto de mão: a mão vai por IK de chave em chave; cada chave pode apontar para um marco VIVO do corpo do outro.
+// É o jeito de fazer tapa, soco, empurrão, aperto de mão, toca-aqui, entregar objeto e mão no ombro encostarem de verdade.
+
+export type PontoMao = Pt | (() => Pt) | null; // null = repouso (onde o movimento-base deixaria a mão)
+export interface ChaveMao {
+  /** segundos desde o início */
+  t: number;
+  p: PontoMao;
+  /** forma da mão a partir desta chave */
+  forma?: Hand;
+  /** easing do trecho que CHEGA nesta chave (padrão: inOutSine) */
+  ease?: (k: number) => number;
+}
+
+export class Trajeto {
+  vivo = true;
+  t = 0;
+  private repouso: Pt | null = null;
+  private resolver!: () => void;
+  /** resolve quando a última chave termina */
+  feito = new Promise<void>((r) => (this.resolver = r));
+  constructor(
+    public a: Actor,
+    public mao: 'N' | 'F',
+    public chaves: ChaveMao[],
+    public o: { mexe?: (t: number) => Pt; eventos?: { t: number; fn: () => void }[] } = {},
+  ) {
+    const h = a.handWorld(mao === 'N');
+    this.repouso = { x: h.x - a.x, y: h.y - a.y };
+  }
+
+  private ponto(p: PontoMao): Pt {
+    if (p === null) return { x: this.a.x + this.repouso!.x, y: this.a.y + this.repouso!.y };
+    return typeof p === 'function' ? p() : p;
+  }
+
+  update(dt: number) {
+    if (!this.vivo) return;
+    const t0 = this.t;
+    this.t += dt;
+    for (const e of this.o.eventos ?? []) if (e.t > t0 && e.t <= this.t) e.fn();
+    const ks = this.chaves, a = this.a, near = this.mao === 'N';
+    const fim = ks[ks.length - 1].t;
+    if (this.t >= fim) { this.encerrar(); return; }
+    let i = 0;
+    while (i < ks.length - 2 && this.t >= ks[i + 1].t) i++;
+    const k0 = ks[i], k1 = ks[i + 1];
+    const u = clamp((this.t - k0.t) / Math.max(1e-4, k1.t - k0.t), 0, 1);
+    const e = (k1.ease ?? suave)(u);
+    // trecho entre dois repousos: devolve o braço ao movimento-base
+    if (k0.p === null && k1.p === null) {
+      if (near) a.reachN = null; else a.reachF = null;
+    } else {
+      const p0 = this.ponto(k0.p), p1 = this.ponto(k1.p);
+      const m = this.o.mexe?.(this.t) ?? { x: 0, y: 0 };
+      const alvo = { x: lerp(p0.x, p1.x, e) + m.x, y: lerp(p0.y, p1.y, e) + m.y };
+      if (near) a.reachN = alvo; else a.reachF = alvo;
+    }
+    let forma: Hand | undefined;
+    for (const k of ks) if (k.t <= this.t && k.forma) forma = k.forma;
+    if (forma) a.maoForma = { ...(a.maoForma ?? {}), [this.mao]: forma };
+  }
+
+  encerrar() {
+    if (!this.vivo) return;
+    if (this.mao === 'N') this.a.reachN = null; else this.a.reachF = null;
+    if (this.a.maoForma) { delete this.a.maoForma[this.mao]; if (!this.a.maoForma.N && !this.a.maoForma.F) this.a.maoForma = null; }
+    this.vivo = false;
+    this.resolver();
+  }
+}
+
+/**
+ * Reação física com mola (cabeça vira, tronco recua, corpo é empurrado) — sincronizada com o impacto.
+ * `dir` = sentido do golpe no mundo (+1 para a direita). Soma em Actor.impulso e some sozinha.
+ */
+export class Impacto {
+  vivo = true;
+  t = 0;
+  constructor(public a: Actor, public dir: number, public forca = 1, public tipo: 'cabeca' | 'tronco' = 'cabeca') {}
+  update(dt: number) {
+    this.t += dt;
+    // mola subamortecida: pico rápido, pequeno rebote, volta
+    const k = Math.exp(-this.t * 6) * Math.sin(this.t * 17 + 0.35) * this.forca;
+    // golpe vindo da frente do personagem empurra para trás (recuo) — no quadro dele, "para trás" é -facing
+    const contra = this.dir * this.a.facing < 0 ? 1 : -1;
+    const f = this.tipo === 'cabeca'
+      ? { head: -0.55 * k * contra, neck: -0.25 * k * contra, lean: -0.12 * k * contra, x: -8 * k * contra }
+      : { lean: -0.3 * k * contra, chest: -0.2 * k * contra, head: 0.15 * k * contra, x: -16 * k * contra };
+    this.a.impulso = f;
+    if (this.t > 1.1) { this.a.impulso = null; this.vivo = false; }
+  }
+}
+
+function suave(k: number) {
+  return 0.5 - Math.cos(Math.PI * k) / 2;
+}
+/** Easings de golpe: aceleração no ataque (inQuad), desaceleração no recolher (outQuad). */
+export const golpe = (k: number) => k * k;
+export const recolhe = (k: number) => 1 - (1 - k) * (1 - k);
+export const salta = (k: number) => { const c = 1.7; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+
+/** Ponto a uma fração do alcance do braço, a partir do ombro, na direção `ang` (0 = frente do ator, +π/2 = para baixo). */
+export function doOmbro(a: Actor, mao: 'N' | 'F', frac: number, ang: number): Pt {
+  const sk = skeleton(a.d, a.pose, a.turn);
+  const sh = localParaMundo(a, mao === 'N' ? sk.shoulderN : sk.shoulderF);
+  const L = (a.d.upperArm + a.d.foreArm) * a.scale * frac;
+  return { x: sh.x + Math.cos(ang) * L * a.facing, y: sh.y + Math.sin(ang) * L };
+}
+
+/** Distância horizontal que falta para o ombro de `a` alcançar `alvo` com o braço a `frac` do comprimento. */
+export function faltaAlcance(a: Actor, alvo: Pt, frac = 0.85, mao: 'N' | 'F' = 'N') {
+  const sk = skeleton(a.d, a.pose, a.turn);
+  const sh = localParaMundo(a, mao === 'N' ? sk.shoulderN : sk.shoulderF);
+  const L = (a.d.upperArm + a.d.foreArm) * a.scale * frac;
+  const dy = alvo.y - sh.y;
+  const dxQuer = Math.sqrt(Math.max(0, L * L - dy * dy));
+  return (alvo.x - sh.x) * a.facing - dxQuer;
+}

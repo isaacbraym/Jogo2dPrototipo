@@ -62,6 +62,36 @@ export function legLength(d: Dims) {
   return d.thigh + d.shin + d.ankle * 0.5 + d.footH * 0.55;
 }
 
+/**
+ * Apoio no chão para poses deitadas/caídas (rotação grande): quanto somar em `pose.y` para que o ponto MAIS BAIXO do corpo
+ * (quadril, costas, cabeça, joelhos, calcanhares — cada um com sua espessura) encoste no chão. Sem isso, um corpo girado em
+ * volta da pelve fica flutuando na altura do quadril (adulto) ou afundado (criança). Pedido "Contato do corpo caído com o chão".
+ */
+export function apoioNoChao(d: Dims, pose: Pose, turn: number): number {
+  const sk = skeleton(d, pose, turn);
+  const c = Math.cos(pose.rot), s = Math.sin(pose.rot);
+  const base = -legLength(d) + pose.y;
+  let max = -Infinity;
+  const ponto = (p: Pt, r: number) => {
+    // ponto mais baixo de um círculo de raio r em volta de p, depois da rotação do corpo
+    const ry = p.x * s + p.y * c;
+    max = Math.max(max, ry + r + base);
+  };
+  const ombros = { x: (sk.shoulderN.x + sk.shoulderF.x) / 2, y: (sk.shoulderN.y + sk.shoulderF.y) / 2 };
+  ponto({ x: 0, y: 0 }, d.hipW * 0.42);
+  ponto({ x: ombros.x * 0.5, y: ombros.y * 0.5 }, d.chestW * 0.44);
+  ponto(ombros, d.chestW * 0.36);
+  ponto(sk.head, d.headH * 0.46);
+  for (const [hip, leg] of [[sk.hipN, pose.legN], [sk.hipF, pose.legF]] as const) {
+    const k = { x: hip.x + Math.sin(leg.a) * d.thigh, y: hip.y + Math.cos(leg.a) * d.thigh };
+    const sa = leg.a - leg.b;
+    const an = { x: k.x + Math.sin(sa) * d.shin, y: k.y + Math.cos(sa) * d.shin };
+    ponto(k, d.thighW * 0.42);
+    ponto(an, d.footH * 0.7);
+  }
+  return -max;
+}
+
 /** Desenha o personagem com a origem no chão, virado para +x. */
 export function drawCharacter(ctx: Ctx, apIn: Appearance, d: Dims, pose: Pose, face: Face, o: DrawOpts = {}): CharFrame {
   const ap = effective(apIn, d.age, o.outfit);

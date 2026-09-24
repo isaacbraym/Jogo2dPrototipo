@@ -62,7 +62,9 @@ Quando atendido: troque `[ABERTO]` por `[FEITO 2026-xx-xx]` e cite o commit.
 - **Proposta:** permitir ordem de desenho por partes com pontos de camada controlados pela cena/pose (ao menos perna distante, tronco/cabeça, perna próxima e membros do agressor), mantendo ordenação determinística, sombras e objetos existentes. Expor no painel um identificador/campo de camada por parte para inspeção e comparação.
 - **Conteúdo que depende disso:** ramo `kind === 'chute'` da cena oficial `agressao`.
 
-### [ABERTO] Contato do corpo caído com o chão
+### [FEITO] Contato do corpo caído com o chão
+- **Atendido em 2026-09-24 (Claude):** `apoioNoChao` (`character.ts`) + `Actor.update` encostam o ponto mais baixo do corpo no chão
+  em qualquer movimento `grounded: false` com rotação grande (mistura suave pela rotação). Ver SPEC-07 §9.
 - **Quem pediu / quando:** Codex, a partir do teste de QA, 2026-09-24
 - **Problema:** movimentos com `grounded: false` e rotação do corpo não têm ancoragem automática do ponto de contato; valores fixos de `y` podem deixar cabeça/tronco suspensos ou afundados conforme idade e proporções do personagem.
 - **Proposta:** adicionar âncora de contato no chão para poses rotacionadas, calculada a partir dos pontos inferiores do corpo/rig e das dimensões do ator, permitindo manter o corpo apoiado durante animação e loop final sem deslocamentos bruscos.

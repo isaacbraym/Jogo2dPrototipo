@@ -1,8 +1,8 @@
 import { Appearance } from './appearance';
-import { computeDims, Dims, Pose, blendPose, copyPose, solveIK } from './rig';
+import { computeDims, Dims, Pose, blendPose, copyPose, solveIK, Hand } from './rig';
 import { EXPRESSIONS, ExprName, Face, blendFace, NEUTRAL } from './expressions';
 import { MOTIONS, groundDrop, Motion } from './motions';
-import { drawCharacter, CharFrame, legLength, skeleton } from './character';
+import { drawCharacter, CharFrame, legLength, skeleton, apoioNoChao } from './character';
 import { Ctx, roundRect, heartPath, starPath } from '../render/draw';
 import { clamp, damp, Ease, lerp } from '../core/math';
 import { rng } from '../core/rng';
@@ -83,6 +83,10 @@ export class Actor {
   enlace: Actor | null = null;
   /** Ajuste ADITIVO sobre a pose do movimento (usado por controladores de contato; null = nenhum). */
   ajuste: Partial<Record<'x' | 'y' | 'lean' | 'chest' | 'neck' | 'head' | 'hipTilt' | 'breath' | 'shrugN' | 'shrugF' | 'footN' | 'footF', number>> | null = null;
+  /** reação física passageira (tapa, soco, empurrão), somada como o ajuste — escrita por Impacto (scenes/contato.ts) */
+  impulso: Actor['ajuste'] = null;
+  /** forma da mão imposta por um controlador (Trajeto) por cima do movimento */
+  maoForma: { N?: Hand; F?: Hand } | null = null;
 
   bubble: Bubble | null = null;
   emote: Emote | null = null;
@@ -211,14 +215,22 @@ export class Actor {
     if (this.motion.grounded !== false && target.rot === 0) {
       target = { ...target, y: target.y + groundDrop(target, this.d.thigh, this.d.shin, this.d.hipW) };
     }
-    if (this.ajuste) {
+    if (this.ajuste || this.impulso || this.maoForma) {
       target = { ...target };
-      for (const [k, v] of Object.entries(this.ajuste)) if (v) (target as any)[k] += v;
+      if (this.ajuste) for (const [k, v] of Object.entries(this.ajuste)) if (v) (target as any)[k] += v;
+      if (this.impulso) for (const [k, v] of Object.entries(this.impulso)) if (v) (target as any)[k] += v;
+      if (this.maoForma?.N) target.handN = this.maoForma.N;
+      if (this.maoForma?.F) target.handF = this.maoForma.F;
     }
     if (this.fromPose && this.fade < 1) {
       this.fade = Math.min(1, this.fade + dt / this.fadeDur);
       this.pose = blendPose(this.fromPose, target, Ease.inOutQuad(this.fade));
     } else this.pose = target;
+    // corpo deitado/caído: encosta o ponto mais baixo no chão (mistura pela rotação: em pé não muda nada)
+    if (this.motion.grounded === false) {
+      const k = clamp((Math.abs(this.pose.rot) - 0.45) / 0.6, 0, 1);
+      if (k > 0) this.pose = { ...this.pose, y: this.pose.y + apoioNoChao(this.d, this.pose, this.turn) * k };
+    }
     this.applyIK();
     // expressão
     let en: ExprName = this.exprOverride && this.exprOverride.until > this.time ? this.exprOverride.name : this.exprName;
