@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-09-24 — Contato entre personagens: abraço e beijo refeitos (Claude) · branch `claude/animacoes-contato`
+- **Camadas por parte** (pedido "Profundidade de desenho entre partes" — parcialmente atendido): personagem em contato é
+  desenhado em fatias (`tras`, `corpo`, `frente`, `maoN`) e a cena intercala as dos dois. No abraço o braço de quem está
+  atrás passa por trás do corpo da frente e a mão reaparece nas costas — os braços finalmente entrelaçam.
+- **Controlador de contato** novo (`src/scenes/contato.ts`): lê o esqueleto a cada quadro e encosta peito com peito / lábio
+  com lábio, corrige diferença de altura (joelhos, lombar, ponta dos pés, controle integral até os dois rostos aparecerem),
+  leva as mãos por IK em arco, com tempo em camadas (antecipação → contato → sustentação viva → saída em ordem inversa),
+  balanço, respiração, afago, "apertão" no abraço e "pressão" no beijo. Ajuste aditivo `Actor.ajuste` e `Actor.enlace`.
+- **Cabeça em perfil** (`head.ts`, `hair.ts`): com `turn > 1` o rosto passa continuamente de ¾ para perfil — silhueta com
+  testa, sobrancelha, nariz, lábios e queixo; olho distante some; orelha, boca, nariz, barba, bigode, óculos e lágrimas
+  acompanham; o cabelo recua e é recortado pela linha do cabelo. Ombro próximo vai para o meio do tronco em perfil.
+- **Beijo:** os dois de perfil, lábios na silhueta, cabeças em ângulos opostos, mão no rosto do outro (ou na cintura se o
+  rosto estiver longe), o de trás envolve a cintura. Cena `beijar` reencenada (olhar → mão → giro → beijo → afastar).
+- **Abraço:** mais baixo na frente com a bochecha no ombro/peito (cabeça sem "deitar de lado"), mais alto atrás na ponta
+  dos pés; mãos da frente nunca acima do próprio ombro (criança não cruza o braço no rosto).
+- Expressão nova `aconchego`. Vale para todo lugar que usa `physical(..., 'abracar' | 'beijar')`: interações, eventos,
+  `casamento`, `beijoPraia`, tela de título.
+- **Docs:** `docs/specs/SPEC-07-contato-entre-personagens.md` (regras, parâmetros, checklist de QA com 4 pares × 3 momentos).
+- **Verificação:** `npm run check`, `npm run build`; capturas de beijo e abraço em 4 pares (alturas parecidas, alto atrás,
+  adulto × criança, idosos), casamento e tela de título.
+
 ## 2026-09-24 — Relacionamentos com memória, namoro/casamento/divórcio, ações por idade e idade inicial (Claude) · branch `claude/relacionamentos`
 - **Memória de relacionamento** (`src/game/relacoes.ts`, pedido de engine atendido): cada pessoa guarda mágoa, medo, gratidão,
   confiança, agressões, desculpas e promessas quebradas + últimos fatos. Gestos positivos (campo novo `Interaction.gesto`)

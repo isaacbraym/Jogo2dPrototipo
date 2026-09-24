@@ -36,6 +36,11 @@ Spec: `docs/specs/SPEC-03-animacao-rig-expressoes.md` (tabela de ossos e faixas 
    - Visual: `http://localhost:5199/?test&env=sala&n=3&ages=8,30,75&m=espreguicar&def=1` — criança, adulto e idoso.
 7. Use o movimento em alguma cena/interação (senão ele não aparece no jogo) e liste no CHANGELOG.
 
+## Dois personagens se tocando
+Abraço e beijo **não** são movimentos: use `physical(d, a, b, 'abracar' | 'beijar')` e leia
+`docs/specs/SPEC-07-contato-entre-personagens.md`. Nunca "encoste" atores com offsets fixos ou `moveActor`; contato novo
+(dança a dois, colo, mão no ombro) é pedido de engine.
+
 ## Armadilhas
 - `b` (cotovelo/joelho) negativo quebra a articulação.
 - Sentado precisa de `sit(p)` e, na cena, de uma `cadeira`/`banco` embaixo.

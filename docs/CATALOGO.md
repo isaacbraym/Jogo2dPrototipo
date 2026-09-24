@@ -311,9 +311,9 @@ Ações físicas de `physical()` (use em `interacao` com `data.action`): `abraca
 
 **Ações (duração fixa):** `soco (0.8s)` · `tapa (0.75s)` · `chute (0.8s)` · `empurrar (0.8s)` · `highFive (1s)` · `cair (1.2s)` · `pular (0.9s)` · `reverencia (1.4s)` · `jogarChapeu (1s)` · `soprar (1.2s)` · `bater (0.6s)` · `estremecer (0.6s)` · `entregar (1s)` · `levantarChao (1.4s)` · `cabecada (0.9s)` · `socoForte (1s)` · `jogarBebida (1s)` · `espreguicar (1.6s)` · `bocejar (1.4s)` · `limparSuor (1.1s)` · `tropecarEscada (0.9s)` · `escorregar (0.9s)` · `desmaiar (1.2s)` · `selfie (1.3s)` · `impactoChuteQA4 (2.45s)` · `levantarChuteFrenteQA4 (1.25s)`
 
-## Expressões — 35
+## Expressões — 36
 
-`neutro` · `feliz` · `alegre` · `rindo` · `triste` · `chorando` · `bravo` · `furioso` · `surpreso` · `assustado` · `apaixonado` · `convencido` · `cansado` · `doente` · `enojado` · `pensativo` · `dormindo` · `beijo` · `determinado` · `envergonhado` · `tonto` · `encantado` · `concentrado` · `dor` · `ofegante` · `humilhado` · `desprezo` · `chocado` · `serio` · `gritando` · `sarcastico` · `desconfiado` · `aliviado` · `enjoado` · `derrotado`
+`neutro` · `feliz` · `alegre` · `rindo` · `triste` · `chorando` · `bravo` · `furioso` · `surpreso` · `assustado` · `apaixonado` · `convencido` · `cansado` · `doente` · `enojado` · `pensativo` · `dormindo` · `beijo` · `aconchego` · `determinado` · `envergonhado` · `tonto` · `encantado` · `concentrado` · `dor` · `ofegante` · `humilhado` · `desprezo` · `chocado` · `serio` · `gritando` · `sarcastico` · `desconfiado` · `aliviado` · `enjoado` · `derrotado`
 
 ## Objetos de cena (`d.prop`) — 71
 

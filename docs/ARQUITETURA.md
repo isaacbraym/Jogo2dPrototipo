@@ -66,6 +66,10 @@ Helpers obrigatórios: `stat(L,k,d)` e `bond(p,d)` já limitam 0–100; `addLog(
   fadeActor, fx, burst, confetti, hearts, shake, flash, focus, resetCam, caption, fadeOut, fadeIn, sfx, wait`.
 - **Stage**: loop `requestAnimationFrame` com watchdog; `stage.play(id, cast)` troca de cena com transição.
 - `physical(d, a, b, action)` em `situations.ts`: biblioteca de interações corporais reutilizáveis (abraço, soco, tapa...).
+- **Contato** (`scenes/contato.ts`, zona vermelha): controlador que encosta dois atores pelo esqueleto (abraço, beijo),
+  com IK das mãos, ajuste aditivo de postura (`Actor.ajuste`) e camadas por parte (`Actor.enlace` → `scene.ts` intercala
+  braço distante / corpo / braço próximo / mão dos dois). Registrado em `scene.contatos` e atualizado antes dos atores.
+  Regras em `docs/specs/SPEC-07-contato-entre-personagens.md`.
 
 ## 5. Personagem (`character/`) — zona vermelha
 
@@ -73,6 +77,8 @@ Helpers obrigatórios: `stat(L,k,d)` e `bond(p,d)` já limitam 0–100; `addLog(
   `neck`, `head`, ombros (`shrugN/F`), braços e pernas de 2 ossos (`Limb {a, b}`), pés (`footN/F`), punhos (`wristN/F`),
   mãos (`handN/F`: aberta, punho, aponta, segura, acena, joinha), squash & stretch (`sx`, `sy`).
   Sufixo **N** = membro próximo da câmera (desenhado na frente), **F** = distante.
+- **Giro (`turn`)**: 0 frontal, 0,72 ¾ (padrão), de 1 a 1,45 a cabeça passa continuamente para **perfil** (`perfilDe` em
+  `head.ts`: silhueta de nariz/lábios/queixo, olho distante some, cabelo recortado pela linha do cabelo).
 - **Motion**: `{ loop, dur?, fn(t) → Pose, expr?, propN?, propF?, grounded? }`. Keyframes com easing via `keyframes([[t, poseParcial, ease]])`.
   `breathe(p, t)` adiciona respiração/micro-movimento. O Actor faz crossfade entre movimentos, IK de 2 ossos e contato com o chão.
 - **Face**: parâmetros contínuos (sobrancelhas, pálpebras, sorriso, boca, dentes, língua, pupila) + marcadores (lágrimas, suor,

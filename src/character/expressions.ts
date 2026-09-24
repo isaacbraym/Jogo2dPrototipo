@@ -51,6 +51,7 @@ export const EXPRESSIONS = {
   pensativo: E({ smile: 0, asym: 0.4, lidTop: 0.22, browUp: 0.25, browIn: 0.3 }),
   dormindo: E({ smile: 0.1, lidTop: 1 }),
   beijo: E({ smile: 0.2, pucker: 1, lidTop: 0.85, blush: 0.6 }),
+  aconchego: E({ smile: 0.5, happyEyes: true, lidTop: 0.2, blush: 0.45, browIn: 0.15, browUp: 0.12 }), // olhos fechados e sorriso calmo (abraço)
   determinado: E({ smile: 0.25, browIn: -0.5, lidTop: 0.18, asym: 0.2 }),
   envergonhado: E({ smile: 0.35, lidTop: 0.3, browIn: 0.4, blush: 1, sweat: true }),
   tonto: E({ smile: -0.2, open: 0.3, dizzy: true, browIn: 0.4 }),

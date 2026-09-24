@@ -4,6 +4,7 @@ import { Pt } from './rig';
 import { part, splineOpen, splineClosed, capsule, circle, ellipse } from '../render/draw';
 import { rgba, shade } from '../core/color';
 import { RNG } from '../core/rng';
+import { lerp } from '../core/math';
 
 interface HG {
   W: number;
@@ -541,16 +542,45 @@ function H0(g: HG) {
 export function drawHairBack(rc: RC, hg: HeadGeom) {
   const st = STYLES[rc.ap.hairStyle];
   if (!st?.back) return;
-  const g = hgOf(rc, hg);
-  st.back(rc, g);
+  emPerfil(rc, hg, () => st.back!(rc, hgOf(rc, hg)), 0.08);
 }
 
 /** Camada frontal (sobre o rosto). */
 export function drawHairFront(rc: RC, hg: HeadGeom) {
   const st = STYLES[rc.ap.hairStyle];
   if (!st?.front) return;
-  const g = hgOf(rc, hg);
-  st.front(rc, g);
+  emPerfil(rc, hg, () => st.front!(rc, hgOf(rc, hg)), 0.06);
+}
+
+/**
+ * Perfil: os penteados foram desenhados para ¾ e cairiam sobre o nariz/boca. Recua o cabelo para o crânio e recorta
+ * pela linha do cabelo (testa → têmpora → costeleta), deixando a silhueta do rosto livre. Em ¾ (pf = 0) não faz nada.
+ */
+function emPerfil(rc: RC, hg: HeadGeom, desenha: () => void, recuo: number) {
+  if (hg.pf < 0.02) return desenha();
+  const { ctx } = rc;
+  const { W, H, pf } = hg;
+  const lim = (x: number) => lerp(W * 1.2, x, pf);
+  const corte = new Path2D();
+  corte.moveTo(-W * 3, -H * 3);
+  corte.lineTo(W * 3, -H * 3);
+  corte.lineTo(W * 3, -H * 0.44);
+  corte.lineTo(lim(hg.plano - W * 0.02), -H * 0.4);
+  corte.lineTo(lim(hg.plano - W * 0.12), -H * 0.3);
+  corte.lineTo(lim(W * 0.16), -H * 0.16);
+  corte.lineTo(lim(W * 0.05), H * 0.06);
+  corte.lineTo(lim(W * 0.02), H * 0.3);
+  corte.lineTo(lim(W * 0.02), H * 0.62);
+  corte.lineTo(lim(W * 0.2), H * 0.72);
+  corte.lineTo(W * 3, H * 0.72);
+  corte.lineTo(W * 3, H * 3);
+  corte.lineTo(-W * 3, H * 3);
+  corte.closePath();
+  ctx.save();
+  ctx.clip(corte);
+  ctx.translate(-pf * W * recuo, 0);
+  desenha();
+  ctx.restore();
 }
 
 function hgOf(rc: RC, hg: HeadGeom): HG {

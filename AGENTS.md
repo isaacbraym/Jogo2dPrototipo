@@ -76,7 +76,7 @@ Harness visual (com `npm run dev` rodando):
 
 **🔴 Vermelha — NÃO editar. Se precisar, registre em `docs/PEDIDOS-ENGINE.md`:**
 - `src/character/{rig,character,body,head,hair,actor,appearance,rc,palette}.ts` (esqueleto, desenho, IK)
-- `src/scenes/{scene,stage}.ts`, `src/render/{draw,bg,particles}.ts` (motor de cena/câmera/render)
+- `src/scenes/{scene,stage,contato}.ts`, `src/render/{draw,bg,particles}.ts` (motor de cena/câmera/render/contato entre personagens)
 - `src/game/{state,types,life,storage,relacoes}.ts` (formato do save, motor anual, tipos, memória de relacionamento)
 - `src/ui/**`, `src/main.ts`, `src/test.ts`, `index.html`
 - `package.json`, `tsconfig.json`, `vite.config.ts`, `.github/**`, `scripts/**`

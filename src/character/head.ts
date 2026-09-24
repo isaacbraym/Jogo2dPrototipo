@@ -31,6 +31,35 @@ export interface HeadGeom {
   cheekW: number;
   jawY: number;
   chinY: number;
+  /** 0 em ¾ → 1 em perfil (turn ≥ 1,45): nariz, lábios e queixo passam a formar a silhueta */
+  pf: number;
+  /** x do plano frontal do rosto (onde fica a silhueta em perfil) */
+  plano: number;
+  /** centro e escala horizontal da boca (já misturados entre ¾ e perfil) */
+  mouthX: number;
+  mouthSX: number;
+  /** contorno denso do rosto já com o perfil aplicado (null em ¾ puro) */
+  contorno: Pt[] | null;
+}
+
+/** 0 em ¾, 1 em perfil completo. Mesma regra usada pelo contato (scenes/contato.ts). */
+export function perfilDe(turn: number) {
+  return clamp((turn - 1) / 0.45, 0, 1);
+}
+
+/** x da frente dos lábios (ponto de contato do beijo), no quadro da cabeça, sem expressão. */
+export function frenteBocaX(W: number, turn: number) {
+  const pf = perfilDe(turn);
+  return lerp(turn * W * 0.165 * 1.3 + W * 0.06 * (1 - 0.18 * turn), W * 0.475, pf);
+}
+
+/** Posição e escala horizontal de cada olho (mesma conta para olho, sobrancelha, óculos, sombra, lágrima). */
+export function olhoPos(hg: HeadGeom, turn: number, side: -1 | 1) {
+  const x0 = hg.fx + side * hg.eyeSp * (side > 0 ? 1 - 0.3 * turn : 1 + 0.02 * turn);
+  const s0 = side > 0 ? 1 - 0.3 * turn : 1 + 0.03 * turn;
+  // em perfil o olho distante some atrás da ponte do nariz; o próximo vai para perto da frente e estreita
+  if (side > 0) return { x: lerp(x0, hg.plano - hg.W * 0.03, hg.pf), sx: s0 * (1 - hg.pf) };
+  return { x: lerp(x0, hg.plano - hg.W * 0.16, hg.pf), sx: lerp(s0, 0.6, hg.pf) };
 }
 
 export function headGeom(rc: RC): HeadGeom {
@@ -60,24 +89,100 @@ export function headGeom(rc: RC): HeadGeom {
     if (y > -0.1 * H) x += turn * W * 0.1 * clamp((y + 0.1 * H) / (0.6 * H), 0, 1);
     return { x, y };
   });
+  const fx = turn * W * 0.165;
+  const eyeY = H * (0.03 + (ap.eyeHeight - 0.5) * 0.08 + baby * 0.07);
+  const noseY = H * (0.2 + (ap.noseHeight - 0.5) * 0.05 + baby * 0.03);
+  const mouthY = H * (0.325 + (ap.mouthHeight - 0.5) * 0.045 + baby * 0.01);
+  const browY = eyeY - H * (0.115 + (ap.browHeight - 0.5) * 0.05);
+  const chinY = (s.cd + chinDrop) * H;
+  const pf = perfilDe(turn);
+  const plano = W * (0.43 + (ap.jaw - 0.5) * 0.03);
   const facePath = new Path2D();
-  splineClosed(facePath, contour, 1);
+  let contorno: Pt[] | null = null;
+  if (pf > 0.001) {
+    const full = clamp(ap.lipFullness + (ap.mouthStyle === 'carnuda' ? 0.3 : ap.mouthStyle === 'fina' ? -0.3 : 0), 0, 1.3);
+    contorno = perfilContorno(contour, W, H, pf, {
+      plano,
+      nariz: W * (0.075 + ap.noseSize * 0.06 + (ap.noseStyle === 'aquilino' ? 0.015 : ap.noseStyle === 'botao' || ap.noseStyle === 'pequeno' ? -0.02 : 0)) * (1 - baby * 0.45),
+      arrebitado: ap.noseStyle === 'arrebitado' ? 1 : 0,
+      labio: W * (0.016 + full * 0.018),
+      queixo: W * ((ap.chin - 0.5) * 0.05 - baby * 0.03),
+      browY, eyeY, noseY, mouthY, chinY,
+    });
+    splineClosed(facePath, contorno, 1);
+  } else splineClosed(facePath, contour, 1);
   // crânio (parte de trás da cabeça em 3/4)
   facePath.moveTo(0, 0);
   facePath.ellipse(-turn * W * 0.1, -H * 0.13, W * (0.5 + turn * 0.04), H * 0.39, 0, 0, Math.PI * 2);
-  const fx = turn * W * 0.165;
-  const eyeY = H * (0.03 + (ap.eyeHeight - 0.5) * 0.08 + baby * 0.07);
   const eyeSp = W * (0.2 + (ap.eyeSpacing - 0.5) * 0.06) * (1 - 0.1 * turn);
   const ew = W * (0.19 + (ap.eyeSize - 0.5) * 0.05) * (1 + baby * 0.2);
   return {
-    W, H, contour, facePath, fx, eyeY, eyeSp, ew,
-    noseY: H * (0.2 + (ap.noseHeight - 0.5) * 0.05 + baby * 0.03),
-    mouthY: H * (0.325 + (ap.mouthHeight - 0.5) * 0.045 + baby * 0.01),
-    browY: eyeY - H * (0.115 + (ap.browHeight - 0.5) * 0.05),
+    W, H, contour, facePath, fx, eyeY, eyeSp, ew, noseY, mouthY, browY, chinY,
     cheekW: cheek * W * 0.5,
     jawY: s.jy * H,
-    chinY: (s.cd + chinDrop) * H,
+    pf, plano, contorno,
+    mouthX: lerp(fx * 1.3, plano - W * 0.045, pf),
+    mouthSX: lerp(1 - 0.18 * turn, 0.42, pf),
   };
+}
+
+interface PerfilParams { plano: number; nariz: number; arrebitado: number; labio: number; queixo: number; browY: number; eyeY: number; noseY: number; mouthY: number; chinY: number }
+
+/**
+ * Silhueta de perfil: testa → arco da sobrancelha → sela do nariz → ponta → base do nariz → lábio superior → boca →
+ * lábio inferior → sulco → queixo. O contorno de ¾ é amostrado e só o lado da frente (x > 0) é puxado para a silhueta,
+ * proporcional a `pf` — a transição ¾ → perfil é contínua (dá para animar o giro da cabeça).
+ */
+function perfilContorno(contour: Pt[], W: number, H: number, pf: number, g: PerfilParams): Pt[] {
+  const P = g.plano;
+  const keys: Pt[] = [
+    { x: W * 0.12, y: -H * 0.52 },
+    { x: P - W * 0.1, y: -H * 0.37 },
+    { x: P - W * 0.025, y: g.browY - H * 0.08 },
+    { x: P + W * 0.012, y: g.browY + H * 0.025 },
+    { x: P - W * 0.028, y: g.eyeY + H * 0.005 },
+    { x: P + g.nariz * 0.72, y: g.noseY - H * 0.035 - g.arrebitado * H * 0.01 },
+    { x: P + g.nariz, y: g.noseY + H * 0.01 - g.arrebitado * H * 0.012 },
+    { x: P + g.nariz * 0.45, y: g.noseY + H * 0.045 },
+    { x: P + W * 0.004, y: g.noseY + H * 0.058 },
+    { x: P + g.labio, y: g.mouthY - H * 0.022 },
+    { x: P - W * 0.004, y: g.mouthY },
+    { x: P + g.labio * 0.85, y: g.mouthY + H * 0.028 },
+    { x: P - W * 0.035, y: g.mouthY + H * 0.075 },
+    { x: P + g.queixo, y: g.chinY - H * 0.075 },
+    { x: P - W * 0.07, y: g.chinY - H * 0.005 },
+    { x: W * 0.12, y: g.chinY + H * 0.03 },
+  ];
+  // tabela y → x da silhueta (Catmull-Rom aberta pelos pontos-chave)
+  const tab: Pt[] = [];
+  for (let i = 0; i < keys.length - 1; i++) {
+    const p0 = keys[Math.max(0, i - 1)], p1 = keys[i], p2 = keys[i + 1], p3 = keys[Math.min(keys.length - 1, i + 2)];
+    for (let k = 0; k < 6; k++) {
+      const t = k / 6, t2 = t * t, t3 = t2 * t;
+      const cr = (a: number, b: number, c: number, d: number) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
+      tab.push({ x: cr(p0.x, p1.x, p2.x, p3.x), y: cr(p0.y, p1.y, p2.y, p3.y) });
+    }
+  }
+  tab.push(keys[keys.length - 1]);
+  const silhueta = (y: number) => {
+    if (y <= tab[0].y) return tab[0].x;
+    for (let i = 1; i < tab.length; i++) {
+      if (y <= tab[i].y) {
+        const a = tab[i - 1], b = tab[i];
+        return lerp(a.x, b.x, b.y === a.y ? 0 : (y - a.y) / (b.y - a.y));
+      }
+    }
+    return tab[tab.length - 1].x;
+  };
+  const densa = sampleClosed(contour, 10);
+  const out = densa.map((p) => {
+    if (p.x <= -W * 0.08) return p;
+    const wx = clamp((p.x + W * 0.08) / (W * 0.3), 0, 1);
+    const wy = clamp((p.y + H * 0.56) / (H * 0.1), 0, 1);
+    return { x: lerp(p.x, silhueta(p.y), pf * wx * wy), y: p.y };
+  });
+  // a parte de baixo do queixo: puxa os pontos do fundo junto para não formar "degrau"
+  return out;
 }
 
 // ---------------------------------------------------------------- orelhas
@@ -88,7 +193,7 @@ export function drawEar(rc: RC, hg: HeadGeom, side: -1 | 1) {
   const eh = H * 0.21 * sz * (ap.earStyle === 'grande' ? 1.2 : ap.earStyle === 'pequena' ? 0.82 : 1);
   const ewid = W * 0.11 * sz * (ap.earStyle === 'grande' ? 1.2 : ap.earStyle === 'colada' ? 0.75 : 1);
   let x: number;
-  if (side < 0) x = -hg.cheekW * (1 + 0.02 * turn) + turn * W * 0.2;
+  if (side < 0) x = lerp(-hg.cheekW * (1 + 0.02 * turn) + turn * W * 0.2, -W * 0.1, hg.pf);
   else x = hg.cheekW * (1 - 0.12 * turn) - turn * W * 0.05;
   const y = H * 0.07;
   ctx.save();
@@ -144,14 +249,14 @@ export function drawFaceBase(rc: RC, hg: HeadGeom) {
   ctx.save();
   ctx.clip(hg.facePath);
   // plano lateral em 3/4
-  if (turn > 0.2) {
-    ctx.fillStyle = rgba(pal.skinSh, 0.35 * turn);
+  if (turn > 0.2 && hg.pf < 0.95) {
+    ctx.fillStyle = rgba(pal.skinSh, 0.35 * Math.min(turn, 1) * (1 - hg.pf));
     ctx.beginPath();
     ctx.ellipse(hg.cheekW + W * 0.12 - turn * W * 0.05, H * 0.1, W * 0.18, H * 0.5, 0, 0, Math.PI * 2);
     ctx.fill();
   }
   // luz na bochecha
-  const hx = hg.fx - hg.eyeSp * 0.9, hy = hg.eyeY + H * 0.16;
+  const hx = lerp(hg.fx - hg.eyeSp * 0.9, hg.plano - W * 0.2, hg.pf), hy = hg.eyeY + H * 0.16;
   const gl = ctx.createRadialGradient(hx, hy, 0, hx, hy, W * 0.22);
   gl.addColorStop(0, rgba(pal.skinHi, 0.55));
   gl.addColorStop(1, rgba(pal.skinHi, 0));
@@ -161,7 +266,8 @@ export function drawFaceBase(rc: RC, hg: HeadGeom) {
   const bl = clamp(ap.blush * 0.45 + rc.face.blush * 0.7 + d.childFace * 0.15, 0, 1);
   if (bl > 0.02) {
     for (const s of [-1, 1]) {
-      const bx = hg.fx + s * hg.eyeSp * (s > 0 ? 1.05 - turn * 0.3 : 1.1), by = hg.eyeY + H * 0.15;
+      if (s > 0 && hg.pf > 0.6) continue;
+      const bx = lerp(hg.fx + s * hg.eyeSp * (s > 0 ? 1.05 - turn * 0.3 : 1.1), hg.plano - W * 0.2, hg.pf), by = hg.eyeY + H * 0.15;
       const g = ctx.createRadialGradient(bx, by, 0, bx, by, W * 0.13);
       g.addColorStop(0, rgba(pal.blush, 0.55 * bl));
       g.addColorStop(1, rgba(pal.blush, 0));
@@ -257,7 +363,9 @@ export function drawFaceBase(rc: RC, hg: HeadGeom) {
   // sombra de maquiagem
   if (ap.eyeshadow) {
     for (const s of [-1, 1] as const) {
-      const ex = hg.fx + s * hg.eyeSp * (s > 0 ? 1 - 0.28 * turn : 1);
+      const op = olhoPos(hg, turn, s);
+      if (op.sx < 0.08) continue;
+      const ex = op.x;
       const g = ctx.createRadialGradient(ex, hg.eyeY - hg.ew * 0.25, 0, ex, hg.eyeY - hg.ew * 0.2, hg.ew * 0.75);
       g.addColorStop(0, rgba(ap.eyeshadow, 0.55));
       g.addColorStop(1, rgba(ap.eyeshadow, 0));
@@ -299,8 +407,9 @@ export function drawEye(rc: RC, hg: HeadGeom, side: -1 | 1) {
   const ew = hg.ew * (spec.w ?? 1);
   const eh = ew * spec.h * 0.95 * (1 + d.childFace * 0.12);
   const tilt = spec.tilt + (ap.eyeTilt - 0.5) * 0.4;
-  const scaleX = side > 0 ? 1 - 0.3 * turn : 1 + 0.03 * turn;
-  const ex = hg.fx + side * hg.eyeSp * (side > 0 ? 1 - 0.3 * turn : 1 + 0.02 * turn);
+  const op = olhoPos(hg, turn, side);
+  if (op.sx < 0.06) return;
+  const scaleX = op.sx, ex = op.x;
   // quadro do olho: +x aponta para fora do rosto em ambos os olhos
   ctx.save();
   ctx.translate(ex, hg.eyeY);
@@ -510,8 +619,9 @@ export function drawEye(rc: RC, hg: HeadGeom, side: -1 | 1) {
 export function drawBrow(rc: RC, hg: HeadGeom, side: -1 | 1) {
   const { ctx, ap, pal, face, turn } = rc;
   const ew = hg.ew;
-  const scaleX = side > 0 ? 1 - 0.3 * turn : 1 + 0.03 * turn;
-  const ex = hg.fx + side * hg.eyeSp * (side > 0 ? 1 - 0.3 * turn : 1 + 0.02 * turn);
+  const op = olhoPos(hg, turn, side);
+  if (op.sx < 0.06) return;
+  const scaleX = op.sx, ex = op.x + (side < 0 ? hg.pf * hg.W * 0.02 : 0);
   const style = ap.browStyle;
   let th = ew * (0.12 + ap.browThickness * 0.14);
   if (style === 'grossa' || style === 'cerrada') th *= 1.35;
@@ -589,12 +699,15 @@ export function drawNose(rc: RC, hg: HeadGeom) {
   const size = (0.8 + ap.noseSize * 0.4) * (1 - d.childFace * 0.3);
   const nw = W * (0.1 + ap.noseWidth * 0.06) * size;
   const nl = H * (0.13 + ap.noseSize * 0.05) * size;
-  const x = hg.fx * 1.55;
-  const y = hg.noseY;
+  const pf = hg.pf;
+  // em perfil a ponta do nariz já é a silhueta: o desenho vira só a asa/narina, perto da ponta
+  const x = lerp(hg.fx * 1.55, hg.plano + W * 0.012, pf);
+  const y = hg.noseY + pf * H * 0.012;
   const st = ap.noseStyle;
   const line = rgba(pal.skinLine, 0.75);
   ctx.save();
   ctx.translate(x, y);
+  ctx.scale(1 - pf * 0.45, 1);
   // sombra projetada
   ctx.fillStyle = rgba(pal.skinSh2, 0.3);
   ctx.beginPath();
@@ -604,13 +717,13 @@ export function drawNose(rc: RC, hg: HeadGeom) {
   ctx.lineCap = 'round';
   ctx.lineWidth = 1.5;
   // ponte (visível em 3/4)
-  if (turn > 0.45 || st === 'aquilino') {
+  if ((turn > 0.45 || st === 'aquilino') && pf < 0.9) {
     ctx.beginPath();
     const bx = nw * 0.35 + turn * nw * 0.4;
     ctx.moveTo(bx - 1, -nl * 0.7);
     if (st === 'aquilino') ctx.quadraticCurveTo(bx + nw * 0.55, -nl * 0.45, bx + nw * 0.35, -nl * 0.1);
     else ctx.quadraticCurveTo(bx + nw * 0.15, -nl * 0.4, bx + nw * 0.35 + (st === 'arrebitado' ? -2 : 0), -nl * 0.1);
-    ctx.globalAlpha = 0.25 + turn * 0.3;
+    ctx.globalAlpha = (0.25 + Math.min(turn, 1) * 0.3) * (1 - pf);
     ctx.stroke();
     ctx.globalAlpha = 1;
   }
@@ -680,10 +793,10 @@ export function drawMouth(rc: RC, hg: HeadGeom) {
   const pucker = face.pucker;
   const mw = W * (0.12 + ap.mouthWidth * 0.06) * wMul * (1 + face.wide * 0.35 + face.smile * 0.08) * (1 - pucker * 0.55) * (1 - d.childFace * 0.2);
   const smile = face.smile;
-  const x = hg.fx * 1.3, y = hg.mouthY;
+  const x = pucker > 0.5 ? lerp(hg.fx * 1.3, hg.plano + W * 0.012, hg.pf) : hg.mouthX, y = hg.mouthY;
   ctx.save();
   ctx.translate(x, y);
-  ctx.scale(1 - 0.18 * turn, 1);
+  ctx.scale(pucker > 0.5 ? lerp(1 - 0.18 * turn, 0.7, hg.pf) : hg.mouthSX, 1);
   const cy = -smile * H * 0.04;
   const L: Pt = { x: -mw, y: cy + face.asym * H * 0.012 };
   const R: Pt = { x: mw, y: cy - face.asym * H * 0.03 };
@@ -801,10 +914,10 @@ export function drawMouth(rc: RC, hg: HeadGeom) {
 // ---------------------------------------------------------------- barba
 function beardPath(rc: RC, hg: HeadGeom, kind: string): Path2D | null {
   const { W, H } = hg;
-  const c = sampleClosed(hg.contour, 8);
+  const c = hg.contorno ?? sampleClosed(hg.contour, 8);
   const p = new Path2D();
-  const mx = hg.fx * 1.3, my = hg.mouthY;
-  const mw = W * 0.2;
+  const mx = hg.mouthX, my = hg.mouthY;
+  const mw = W * 0.2 * lerp(1, 0.5, hg.pf);
   if (kind === 'cheia' || kind === 'rala' || kind === 'lenhador' || kind === 'costeleta') {
     const yTop = hg.eyeY + H * 0.12;
     const lower = c.filter((q) => q.y > yTop);
@@ -889,8 +1002,8 @@ export function drawMustache(rc: RC, hg: HeadGeom) {
   const kind = ap.facialHair;
   if (d.age < 16 || !['bigode', 'guidao', 'cavanhaque', 'cheia', 'lenhador'].includes(kind)) return;
   const { W, H } = hg;
-  const mx = hg.fx * 1.3, my = hg.mouthY - H * 0.035 - face.open * H * 0.01 - face.smile * H * 0.01;
-  const mw = W * (kind === 'guidao' ? 0.2 : 0.17);
+  const mx = hg.mouthX, my = hg.mouthY - H * 0.035 - face.open * H * 0.01 - face.smile * H * 0.01;
+  const mw = W * (kind === 'guidao' ? 0.2 : 0.17) * lerp(1, 0.5, hg.pf);
   const p = new Path2D();
   p.moveTo(mx, my - H * 0.03);
   p.quadraticCurveTo(mx + mw * 0.6, my - H * 0.045, mx + mw, my + H * 0.005);
@@ -916,7 +1029,7 @@ export function drawFaceExtras(rc: RC, hg: HeadGeom) {
   if (face.tears) {
     for (const s of [-1, 1] as const) {
       if (s > 0 && rc.turn > 0.8) continue;
-      const ex = hg.fx + s * hg.eyeSp * (s > 0 ? 1 - 0.3 * rc.turn : 1) + s * hg.ew * 0.25;
+      const ex = olhoPos(hg, rc.turn, s).x + s * hg.ew * 0.25 * (1 - hg.pf * 0.6);
       const g = ctx.createLinearGradient(0, hg.eyeY, 0, hg.chinY);
       g.addColorStop(0, 'rgba(140,200,255,0.85)');
       g.addColorStop(1, 'rgba(140,200,255,0.1)');
@@ -970,12 +1083,13 @@ export function drawGlasses(rc: RC, hg: HeadGeom) {
   const dark = st === 'aviador' || st === 'escuro';
   const ew = hg.ew;
   const lensW = ew * 0.72, lensH = ew * (st === 'aviador' ? 0.62 : st === 'redondo' ? 0.66 : 0.5);
-  const centers = ([-1, 1] as const).map((s) => ({ s, x: hg.fx + s * hg.eyeSp * (s > 0 ? 1 - 0.3 * turn : 1 + 0.02 * turn), sx: s > 0 ? 1 - 0.3 * turn : 1 }));
+  const centers = ([-1, 1] as const).map((s) => { const op = olhoPos(hg, turn, s); return { s, x: op.x, sx: s > 0 ? op.sx : op.sx / (1 + 0.03 * turn) }; });
   ctx.save();
   ctx.lineWidth = st === 'quadrado' || st === 'escuro' ? 3 : 2.2;
   ctx.strokeStyle = pal.glass;
   ctx.lineJoin = 'round';
   for (const c of centers) {
+    if (c.sx < 0.06) continue;
     ctx.save();
     ctx.translate(c.x, hg.eyeY + 1);
     ctx.scale(c.s * c.sx, 1);
@@ -1041,7 +1155,7 @@ export function drawGlasses(rc: RC, hg: HeadGeom) {
   // haste para a orelha próxima
   ctx.beginPath();
   ctx.moveTo(a.x - lensW * a.sx, hg.eyeY - lensH * 0.5);
-  ctx.lineTo(-hg.cheekW + turn * hg.W * 0.18, hg.eyeY + 2);
+  ctx.lineTo(lerp(-hg.cheekW + turn * hg.W * 0.18, -hg.W * 0.08, hg.pf), hg.eyeY + 2);
   ctx.stroke();
   ctx.restore();
 }

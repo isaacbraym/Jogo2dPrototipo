@@ -52,7 +52,11 @@ Quando atendido: troque `[ABERTO]` por `[FEITO 2026-xx-xx]` e cite o commit.
 - **Proposta:** modelar modificadores anuais comuns, determinísticos por ano e persistidos no save, para eventos genéricos sem referência a pessoas ou marcas reais.
 - **Conteúdo que depende disso:** crise econômica genérica e outros acontecimentos coletivos que influenciam escolhas e resultados de todos.
 
-### [ABERTO] Profundidade de desenho entre partes de personagens
+### [PARCIAL] Profundidade de desenho entre partes de personagens
+- **Atendido em 2026-09-24 (Claude):** camadas por parte para pares em contato (`DrawOpts.camada`: `tras` braço distante,
+  `corpo`, `frente` braço próximo, `maoN` só a mão) intercaladas em `scene.ts` via `Actor.enlace` — usado por abraço e beijo
+  (ver SPEC-07). **Falta:** fatiar as **pernas** (perna distante / perna próxima) para o chute atravessar entre as pernas da
+  vítima; o mecanismo é o mesmo, só precisa de fatias de perna e de um `TipoContato` de golpe.
 - **Quem pediu / quando:** Codex, a partir do teste de QA, 2026-09-24
 - **Problema:** `scene.ts` ordena atores inteiros por `z`/`y`; `character.ts` desenha todas as partes internas em uma ordem fixa. Não é possível desenhar o pé/perna do agressor entre a perna distante e a perna próxima da vítima, como o impacto do chute exige.
 - **Proposta:** permitir ordem de desenho por partes com pontos de camada controlados pela cena/pose (ao menos perna distante, tronco/cabeça, perna próxima e membros do agressor), mantendo ordenação determinística, sombras e objetos existentes. Expor no painel um identificador/campo de camada por parte para inspeção e comparação.

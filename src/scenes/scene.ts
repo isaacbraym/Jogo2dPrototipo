@@ -110,6 +110,8 @@ export class Scene {
   padBottom = 0; // px ocupados por UI sobre a base da tela (a câmera sobe a cena)
   private padCur = 0;
   onBeat?: (dt: number) => void;
+  /** Controladores de contato ativos (abraço, beijo...) — atualizados antes dos atores. */
+  contatos: { vivo: boolean; update(dt: number): void }[] = [];
 
   constructor(envId: string) {
     this.env = ENVS[envId] ?? ENVS.sala;
@@ -210,6 +212,10 @@ export class Scene {
         tw.resolve();
       }
     }
+    if (this.contatos.length) {
+      for (const c of this.contatos) c.update(dt);
+      this.contatos = this.contatos.filter((c) => c.vivo);
+    }
     for (const a of this.actors) a.update(dt);
     this.fx.update(dt);
     this.env.ambient?.(this.fx, dt, this.t, { x0: this.view.x0, x1: this.view.x1 });
@@ -283,7 +289,23 @@ export class Scene {
       if (!p.visible || p.front) continue;
       items.push({ z: p.z, y: p.y, draw: () => this.drawProp(ctx, p) });
     }
-    for (const a of this.actors) items.push({ z: a.z, y: a.y, draw: () => a.draw(ctx, this.t) });
+    for (const a of this.actors) {
+      const b = a.enlace;
+      if (b && b.visible && this.actors.includes(b)) {
+        // Contato (abraço/beijo). F = quem está na frente (maior z), T = quem está atrás.
+        // Ordem: [braços distantes] < corpo T < braço próximo de T < corpo F < mão próxima de T < braço próximo de F.
+        // Assim o braço de T passa POR TRÁS do corpo de F e só a mão reaparece sobre as costas dele.
+        const frente = a.z > b.z || (a.z === b.z && a.id > b.id);
+        const zMin = Math.min(a.z, b.z), zMax = Math.max(a.z, b.z), eps = frente ? 0.001 : 0;
+        items.push({ z: zMin - 0.2 + eps, y: a.y, draw: () => a.draw(ctx, this.t, 'tras') });
+        items.push({ z: a.z, y: a.y, draw: () => a.draw(ctx, this.t, 'corpo') });
+        if (frente) items.push({ z: zMax + 0.3, y: a.y, draw: () => a.draw(ctx, this.t, 'frente') });
+        else {
+          items.push({ z: a.z + 0.001, y: a.y, draw: () => a.draw(ctx, this.t, 'frente') });
+          items.push({ z: zMax + 0.1, y: a.y, draw: () => a.draw(ctx, this.t, 'maoN') });
+        }
+      } else items.push({ z: a.z, y: a.y, draw: () => a.draw(ctx, this.t) });
+    }
     items.sort((a, b) => a.z - b.z || a.y - b.y);
     for (const it of items) {
       const depth = (ctx as any).__depth;

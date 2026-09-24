@@ -6,6 +6,7 @@ import { legLength } from '../character/character';
 import { RNG, rng } from '../core/rng';
 import { Ease } from '../core/math';
 import { sfx } from '../core/audio';
+import { Contato } from './contato';
 
 export interface CastMember {
   ap: Appearance;
@@ -74,27 +75,48 @@ export async function physical(d: Director, a: Actor, b: Actor, action: string) 
   };
   switch (action) {
     case 'abracar': {
-      await close(Math.max(70, (a.d.headW + b.d.headW) * 0.4));
+      // contato real (scenes/contato.ts): corpos se encontram pelo peito, mãos nas costas por IK, braços intercalados
+      await close(Math.max(150, (a.d.chestW + b.d.chestW) * 0.95));
       a.z = 1; b.z = 0.5;
-      d.loop(a, 'abracar'); d.loop(b, 'abracarTras');
+      // diferença grande de altura (adulto × criança): o mais alto agacha para abraçar na altura do outro
+      const [alto, baixo] = a.d.total * a.scale >= b.d.total * b.scale ? [a, b] : [b, a];
+      const agacha = alto.d.total * alto.scale - baixo.d.total * baixo.scale > alto.d.total * alto.scale * 0.3;
+      d.loop(alto, agacha ? 'agachar' : 'parado'); d.loop(baixo, 'parado');
+      const c = new Contato(a, b, 'abraco');
+      d.sc.contatos.push(c);
+      d.expr(a, 'aconchego'); d.expr(b, 'aconchego');
+      d.focus((a.x + b.x) / 2, 330, 1.3);
       d.sfx('heart');
-      d.focus((a.x + b.x) / 2, 330, 1.25);
-      for (let i = 0; i < 3; i++) { d.hearts((a.x + b.x) / 2, a.headWorld().y - 20, 3); await d.wait(0.6); }
+      for (let i = 0; i < 4; i++) { await d.wait(0.6); d.hearts((a.x + b.x) / 2, Math.min(a.topWorld(), b.topWorld()) - 10, 2); }
+      c.soltar();
+      await d.wait(0.6);
+      d.expr(a, 'feliz'); d.expr(b, 'feliz');
       d.loop(a, 'feliz'); d.loop(b, 'feliz');
       d.resetCam();
       break;
     }
     case 'beijar': {
-      await close(Math.max(74, (a.d.headW + b.d.headW) * 0.42));
+      await close(Math.max(130, (a.d.chestW + b.d.chestW) * 0.85));
       a.z = 1; b.z = 0.5;
-      d.focus((a.x + b.x) / 2, 300, 1.45);
-      d.loop(a, 'beijar'); d.loop(b, 'beijarTras');
-      await d.wait(0.6);
+      d.loop(a, 'parado'); d.loop(b, 'parado');
+      // antecipação: se olham (olhar derretido), a mão vai ao rosto, giram de perfil e só então encostam os lábios
+      d.expr(a, 'aconchego'); d.expr(b, 'aconchego');
+      const c = new Contato(a, b, 'beijo');
+      d.sc.contatos.push(c);
+      d.focus((a.x + b.x) / 2, 300, 1.5);
+      await d.wait(0.7);
+      d.expr(a, 'beijo'); d.expr(b, 'beijo');
+      await d.wait(0.3);
       d.sfx('kiss');
-      d.hearts((a.x + b.x) / 2, a.headWorld().y - 10, 10);
-      await d.wait(1.6);
-      d.loop(a, 'feliz'); d.loop(b, 'feliz');
+      d.hearts((a.x + b.x) / 2, Math.min(a.topWorld(), b.topWorld()) - 10, 8);
+      await d.wait(1.9);
+      // saída: os rostos se afastam primeiro, olhos ainda fechados um instante; as mãos soltam por último
+      c.soltar();
+      await d.wait(0.3);
+      d.expr(a, 'aconchego'); d.expr(b, 'aconchego');
+      await d.wait(0.45);
       d.expr(a, 'apaixonado', 2); d.expr(b, 'apaixonado', 2);
+      d.loop(a, 'feliz'); d.loop(b, 'feliz');
       d.resetCam();
       break;
     }

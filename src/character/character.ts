@@ -3,12 +3,13 @@ import { Dims, Pose, Pt } from './rig';
 import { Face } from './expressions';
 import { makePalette } from './palette';
 import { RC, TOP_SPECS } from './rc';
-import { drawArm, drawLeg, drawTorsoSkin, drawNeck, drawTop, drawHood, drawSkirt, drawNecklace, torsoGeom } from './body';
+import { armPoints, drawArm, drawHand, drawLeg, drawTorsoSkin, drawNeck, drawTop, drawHood, drawSkirt, drawNecklace, torsoGeom } from './body';
 import { headGeom, drawEar, drawFaceBase, drawEye, drawBrow, drawNose, drawMouth, drawBeard, drawMustache, drawFaceExtras, drawGlasses } from './head';
 import { drawHairBack, drawHairFront, drawHat } from './hair';
 import { drawHeldProp } from '../render/props';
 import { Ctx } from '../render/draw';
 import { hashStr } from '../core/rng';
+import { clamp, lerp } from '../core/math';
 
 export interface DrawOpts {
   turn?: number;
@@ -25,6 +26,12 @@ export interface DrawOpts {
   lw?: number;
   shadow?: boolean;
   seedKey?: string;
+  /**
+   * Camada a desenhar (contato entre personagens): 'tras' = braço/objeto distantes; 'corpo' = pernas, tronco, cabeça;
+   * 'frente' = braço/objeto próximos; 'maoN' = só a mão próxima (a mão reaparece sobre as costas do outro depois
+   * que o braço passou por trás dele). Sem valor = tudo (comportamento normal).
+   */
+  camada?: 'tras' | 'corpo' | 'frente' | 'maoN';
 }
 
 export interface CharFrame {
@@ -163,10 +170,20 @@ export function drawCharacter(ctx: Ctx, apIn: Appearance, d: Dims, pose: Pose, f
     ctx.restore();
   };
 
-  // --- ordem de pintura
-  inHead(() => drawHairBack(rc, hg));
-  drawArm(rc, false);
-  if (rc.propF && rc.handF) drawHeldProp(ctx, rc.propF, rc.handF, rc.handAngF, rc.t, false);
+  // --- ordem de pintura (com camadas opcionais para contato entre dois personagens)
+  const cam = o.camada;
+  const tras = !cam || cam === 'tras', corpo = !cam || cam === 'corpo', frente = !cam || cam === 'frente';
+  if (!tras || !frente) {
+    // mãos precisam existir no quadro mesmo quando o braço não é desenhado nesta camada
+    const bN = armPoints(rc, rc.shoulderN, pose.armN, true), bF = armPoints(rc, rc.shoulderF, pose.armF, false);
+    rc.handN = bN.w; rc.handAngN = bN.fa; rc.handF = bF.w; rc.handAngF = bF.fa;
+  }
+  if (corpo) inHead(() => drawHairBack(rc, hg));
+  if (tras) {
+    drawArm(rc, false);
+    if (rc.propF && rc.handF) drawHeldProp(ctx, rc.propF, rc.handF, rc.handAngF, rc.t, false);
+  }
+  if (corpo) {
   drawLeg(rc, false);
   drawLeg(rc, true);
   inTorso(() => {
@@ -199,8 +216,12 @@ export function drawCharacter(ctx: Ctx, apIn: Appearance, d: Dims, pose: Pose, f
     drawHat(rc, hg);
     drawFaceExtras(rc, hg);
   });
-  drawArm(rc, true);
-  if (rc.propN && rc.handN) drawHeldProp(ctx, rc.propN, rc.handN, rc.handAngN, rc.t, true);
+  }
+  if (frente) {
+    drawArm(rc, true);
+    if (rc.propN && rc.handN) drawHeldProp(ctx, rc.propN, rc.handN, rc.handAngN, rc.t, true);
+  }
+  if (cam === 'maoN' && rc.handN) drawHand(rc, rc.handN, rc.handAngN + pose.wristN, pose.handN, false);
   ctx.restore();
 
   // coordenadas locais (aplicando squash e rotação do corpo)
@@ -250,7 +271,9 @@ export function skeleton(d: Dims, pose: Pose, turn: number): Skeleton {
   };
   const sy = yS + d.armW * 0.42;
   const neck = up(cx * 0.5, -T);
-  const shoulderN = up(-d.shoulderW * 0.43 * kL, sy - pose.shrugN * d.armW * 0.55);
+  // em perfil (turn > 1) o ombro próximo vem para o meio do tronco — senão o braço nasce nas costas
+  const pfO = clamp((turn - 1) / 0.45, 0, 1);
+  const shoulderN = up(lerp(-d.shoulderW * 0.43 * kL, -d.shoulderW * 0.14, pfO), sy - pose.shrugN * d.armW * 0.55);
   const shoulderF = up(d.shoulderW * 0.43 * kR - turn * d.shoulderW * 0.14, sy - pose.shrugF * d.armW * 0.55);
   const base = lean + pose.chest + pose.neck;
   const hAng = base + pose.head * 0.35;

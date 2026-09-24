@@ -79,6 +79,10 @@ export class Actor {
   // IK opcional para os braços (alvo no mundo)
   reachN: { x: number; y: number } | null = null;
   reachF: { x: number; y: number } | null = null;
+  /** Parceiro(a) de contato (abraço, beijo...): a cena desenha os dois em camadas intercaladas. */
+  enlace: Actor | null = null;
+  /** Ajuste ADITIVO sobre a pose do movimento (usado por controladores de contato; null = nenhum). */
+  ajuste: Partial<Record<'x' | 'y' | 'lean' | 'chest' | 'neck' | 'head' | 'hipTilt' | 'breath' | 'shrugN' | 'shrugF' | 'footN' | 'footF', number>> | null = null;
 
   bubble: Bubble | null = null;
   emote: Emote | null = null;
@@ -207,6 +211,10 @@ export class Actor {
     if (this.motion.grounded !== false && target.rot === 0) {
       target = { ...target, y: target.y + groundDrop(target, this.d.thigh, this.d.shin, this.d.hipW) };
     }
+    if (this.ajuste) {
+      target = { ...target };
+      for (const [k, v] of Object.entries(this.ajuste)) if (v) (target as any)[k] += v;
+    }
     if (this.fromPose && this.fade < 1) {
       this.fade = Math.min(1, this.fade + dt / this.fadeDur);
       this.pose = blendPose(this.fromPose, target, Ease.inOutQuad(this.fade));
@@ -290,7 +298,7 @@ export class Actor {
     }
   }
 
-  draw(ctx: Ctx, t: number) {
+  draw(ctx: Ctx, t: number, camada?: 'tras' | 'corpo' | 'frente' | 'maoN') {
     if (!this.visible || this.alpha <= 0) return;
     ctx.save();
     ctx.globalAlpha = this.alpha;
@@ -310,7 +318,8 @@ export class Actor {
       propF: this.propF ?? this.motion.propF,
       outfit: this.outfit,
       seedKey: this.ap.skin + this.ap.hairColor + this.id,
-      shadow: this.elev < 5 && Math.abs(this.pose.rot) < 0.4,
+      shadow: camada !== 'tras' && camada !== 'frente' && this.elev < 5 && Math.abs(this.pose.rot) < 0.4,
+      camada,
     });
     ctx.restore();
   }
