@@ -14,6 +14,11 @@ Ou, com `npm run dev` já rodando: **http://localhost:5199/painel.html**.
 No Windows: **duplo clique em `Painel.bat`** (raiz do projeto) — instala dependências se faltar, liga o servidor numa janela
 minimizada "VIVA - servidor do painel" (feche-a para desligar) e abre o painel no navegador padrão.
 
+- **Trava de gravação (padrão: TRAVADO).** Enquanto o cadeado mostrar "🔒 Travado · só testes", tudo o que você mexe é
+  só prévia (lado B, esteira, cenário em memória) e **nada é gravado no projeto** — o servidor recusa (HTTP 423) salvar
+  cenário/proposta, aplicar e reverter. Para gravar: clicar em aplicar/salvar → marcar "Sim, desejo aplicar…" → confirmar o
+  destravamento. Depois de cada aplicação ou reversão o painel **trava sozinho** de novo; reiniciar o servidor também trava.
+  "Exportar JSON" continua livre (baixa um arquivo, não toca no projeto).
 - Existe só no servidor de desenvolvimento. O `npm run build` empacota apenas `index.html` → o `dist/index.html` jogável e o
   GitHub Pages **não** contêm o painel (verificado: 0 ocorrências de código do painel no `dist`).
 - A API de gravação (`/__painel/api/*`) é um plugin do Vite com `apply: 'serve'`; aceita só origem `localhost`/`127.0.0.1`,
@@ -116,7 +121,7 @@ Nada disso muda o formato do save nem o comportamento do jogo.
 - Posição x dos atores, zoom/deslocamento da câmera (só no desenho).
 - Marcadores de expressão (lágrimas, suor...), tempos de roteiro, falas e posições nas cenas → exigem código.
 
-**Fluxo seguro:** editar em B (A = aplicado ou A = código) → desfazer/refazer → guardar variações nomeadas → salvar em
+**Fluxo seguro:** (com o painel travado, tudo abaixo até "Aplicar" é só teste) editar em B (A = aplicado ou A = código) → desfazer/refazer → guardar variações nomeadas → salvar em
 `qa/propostas` / exportar JSON → **Aplicar**: o servidor valida estrutura + limites + registros reais, mostra o **diff**,
 exige **motivo**, guarda cópia em `qa/historico/`, grava o arquivo normalizado e registra em `qa/auditoria.jsonl`.
 Reverter: aba Alterações. Sem `eval`, sem substituição textual em código: o único arquivo de jogo que o painel escreve é o

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-23 — Painel de QA: trava de gravação (Claude) · branch `claude/painel-qa`
+- O painel abre **travado** ("🔒 Travado · só testes"): ajustes são só prévia e nada é gravado no projeto. O servidor
+  recusa (423) salvar cenário/proposta, aplicar e reverter enquanto travado; destravar exige confirmação explícita
+  ("Sim, desejo destravar…"); aplicar exige ainda marcar "Sim, desejo aplicar esta alteração no jogo". Aplicar/reverter
+  trava de novo automaticamente; reiniciar o servidor também. `Painel.bat` abre o painel com duplo clique.
+- Verificado: aplicar/salvar travado → recusado; "Continuar só testando" mantém a proposta em B sem gravar;
+  destravar/travar pelo cadeado sem nenhuma escrita em arquivo.
+
 ## 2026-09-23 — Painel de QA local (Claude) · branch `claude/painel-qa`
 - **Novo:** `npm run painel` → http://localhost:5199/painel.html (só desenvolvimento; ausente do `dist`). Abas Catálogo,
   Esteira de eventos, Laboratório, Qualidade e Alterações. Documentação completa em `docs/PAINEL-QA.md`.

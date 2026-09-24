@@ -16,8 +16,10 @@ export const api = {
   ler: (tipo: 'cenarios' | 'propostas', nome: string) => req('GET', `arquivo?tipo=${tipo}&nome=${encodeURIComponent(nome)}`),
   salvar: (tipo: 'cenarios' | 'propostas', nome: string, conteudo: unknown) => req('POST', 'arquivo', { tipo, nome, conteudo, autor: 'painel' }),
   previa: (calibracao: unknown) => req('POST', 'calibracao/previa', { calibracao }),
-  aplicar: (calibracao: unknown, motivo: string, hashEsperado: string, origem: unknown) => req('POST', 'calibracao/aplicar', { calibracao, motivo, hashEsperado, origem, autor: 'painel' }),
-  reverter: (arquivo: string, motivo: string) => req('POST', 'calibracao/reverter', { arquivo, motivo, autor: 'painel' }),
+  aplicar: (calibracao: unknown, motivo: string, hashEsperado: string, origem: unknown) => req('POST', 'calibracao/aplicar', { calibracao, motivo, hashEsperado, origem, autor: 'painel', confirmacao: 'QUERO APLICAR' }),
+  reverter: (arquivo: string, motivo: string) => req('POST', 'calibracao/reverter', { arquivo, motivo, autor: 'painel', confirmacao: 'QUERO APLICAR' }),
+  trava: () => req('GET', 'trava'),
+  definirTrava: (liberado: boolean) => req('POST', 'trava', liberado ? { liberado: true, confirmacao: 'QUERO APLICAR' } : { liberado: false }),
 };
 
 export const nomeArquivo = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'sem-nome';

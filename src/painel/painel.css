@@ -122,6 +122,12 @@ pre.codigo { background: #0c0a18; border: 1px solid var(--linha); border-radius:
 .cartao { background: var(--bg2); border: 1px solid var(--linha); border-radius: 12px; padding: 12px 14px; margin: 10px 0; }
 .cartao h3 { margin: 0 0 8px; font-size: 15px; }
 
+/* trava de gravação */
+.btn.cadeado.fechado { border-color: #4f7a5f; color: #9ff0c3; }
+.btn.cadeado.liberado { border-color: var(--forcado); color: #231500; background: linear-gradient(180deg, #ffd08a, #ff9f1c); animation: pisca 1.6s ease-in-out infinite; }
+@keyframes pisca { 50% { box-shadow: 0 0 0 4px rgba(255,159,28,.25); } }
+body:not(.travado) .so-travado { display: none; }
+
 /* telas estreitas: empilha colunas */
 @media (max-width: 1150px) {
   .lab { flex-direction: column; overflow: auto; }

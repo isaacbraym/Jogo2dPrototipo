@@ -397,6 +397,7 @@ export function montar(el: HTMLElement, app: App, _p: Record<string, string>) {
     const erros = validarTudo(trab.atual);
     const nome = h('input.campo', { placeholder: 'nome da variação (ex.: V1 chute mais alto)', style: { width: '220px' } }) as HTMLInputElement;
     box.append(h('div.secao', null, 'Variações e persistência'),
+      h('div.aviso.so-travado', null, '🔒 Painel travado: tudo que você mexe aqui é só prévia (lado B) e some ao recarregar. Nada vai para o jogo até você clicar em aplicar, marcar "Sim, desejo aplicar" e destravar.'),
       h('div.nota', null, `Alterações pendentes (proposta × aplicado): ${[...alt.movimentos.map((x) => 'mov:' + x), ...alt.expressoes.map((x) => 'expr:' + x)].join(', ') || 'nenhuma'}`),
       erros.length ? h('div.aviso', null, 'Proposta inválida: ' + erros.join('; ')) : '',
       h('div.linha-form', null, nome, h('button.btn.mini', { onclick: () => { if (!nome.value.trim()) return toast('Dê um nome à variação.', 'erro'); trab.salvarVariacao(nome.value.trim()); toast('Variação guardada nesta sessão.', 'ok'); } }, 'Guardar variação')),
@@ -420,6 +421,7 @@ export function montar(el: HTMLElement, app: App, _p: Record<string, string>) {
   }
   function exportarProposta(alvo: string) { baixarJSON(`${nomeArquivo(alvo)}.proposta.json`, propostaArquivo(alvo)); }
   async function salvarProposta(alvo: string) {
+    if (!(await app.exigirLiberacao(`salvar a proposta de ${alvo} em qa/propostas`))) return toast('Nada foi gravado (painel travado). Use "Exportar proposta JSON" para guardar fora do projeto.', 'info');
     try { const r = await api.salvar('propostas', nomeArquivo(`${alvo}-${new Date().toISOString().slice(0, 10)}`), propostaArquivo(alvo)); toast(`Salvo em ${r.arquivo}`, 'ok'); } catch (e) { toast((e as Error).message + ((e as any).detalhes ? ': ' + JSON.stringify((e as any).detalhes) : ''), 'erro'); }
   }
   function aceitarProposta(p: any) {
@@ -449,12 +451,17 @@ export function montar(el: HTMLElement, app: App, _p: Record<string, string>) {
       const prev = await api.previa(alvo).catch((e: any) => e.dados);
       if (prev?.erros?.length) return modal('Proposta recusada pelo servidor', h('pre.codigo', { style: { whiteSpace: 'pre-wrap' } }, prev.erros.join('\n')));
       const motivo = h('input.campo', { placeholder: 'motivo (obrigatório): ex.: chute com mais peso no quadril' }) as HTMLInputElement;
+      const certeza = h('input', { type: 'checkbox' }) as HTMLInputElement;
       const diff = h('pre.codigo', { style: { maxHeight: '360px' } }, ...String(prev.diff).split('\n').map((l) => h('div', { style: { color: l.startsWith('+ ') ? '#4fd18b' : l.startsWith('- ') ? '#ff5c7a' : '' } }, l)));
       const m = modal(`Aplicar ${v ? 'variação "' + v.nome + '"' : 'proposta atual'} em src/data/calibracao.json`,
         h('div.nota', null, 'Diff do arquivo (linhas + entram, − saem). Depois de aplicar, o servidor recarrega os módulos e o painel reinicia com a nova calibração.'),
-        diff, h('div.linha-form', null, motivo,
+        diff,
+        h('label', { style: { display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0' } }, certeza, h('b', null, 'Sim, desejo aplicar esta alteração no jogo (grava src/data/calibracao.json).')),
+        h('div.linha-form', null, motivo,
           h('button.btn.pri', { onclick: async () => {
+            if (!certeza.checked) return toast('Marque "Sim, desejo aplicar" para confirmar. Sem isso nada é gravado.', 'erro');
             if (motivo.value.trim().length < 3) return toast('Informe o motivo.', 'erro');
+            if (!(await app.exigirLiberacao('aplicar a calibração no jogo'))) return;
             try { const r = await api.aplicar(alvo, motivo.value.trim(), est.hash, { cadeia: cadeiaBase(), variacao: v?.nome ?? null }); toast(`Aplicado. Cópia anterior: qa/historico/${r.copiaAnterior}`, 'ok'); m.fechar(); setTimeout(() => location.reload(), 700); }
             catch (e) { toast((e as Error).message, 'erro'); }
           } }, 'Confirmar e aplicar')));

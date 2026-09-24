@@ -30,6 +30,15 @@ function definirRaiz(raiz: string) {
   DIR.historico = path.join(raiz, 'qa/historico');
 }
 const NOME = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+
+/**
+ * TRAVA: o painel começa travado a cada vez que o servidor sobe. Travado = nenhuma gravação no projeto
+ * (tudo é só prévia/teste). Destravar exige confirmação explícita; aplicar/reverter trava de novo sozinho.
+ */
+let liberado = false;
+function exigirLiberado() {
+  if (!liberado) throw new Erro(423, 'Painel TRAVADO: nada é gravado no projeto. Clique no cadeado e confirme que deseja aplicar.');
+}
 const FORMATO: Record<'cenarios' | 'propostas', string> = { cenarios: 'viva-cenario', propostas: 'viva-proposta' };
 const MAX = 1_000_000;
 
@@ -136,7 +145,17 @@ export function painelApi(): Plugin {
             try {
               auditoria = (await fs.readFile(ARQ_AUDIT, 'utf8')).trim().split('\n').filter(Boolean).slice(-300).map((l) => JSON.parse(l)).reverse();
             } catch { /* ainda não existe */ }
-            return enviar(res, 200, { calibracao: JSON.parse(texto), hash: hash(texto), historico, auditoria });
+            return enviar(res, 200, { calibracao: JSON.parse(texto), hash: hash(texto), historico, auditoria, liberado });
+          }
+          if (req.method === 'GET' && rota === 'trava') return enviar(res, 200, { liberado });
+          if (req.method === 'POST' && rota === 'trava') {
+            const b = await lerCorpo(req);
+            if (b.liberado === true) {
+              if (b.confirmacao !== 'QUERO APLICAR') throw new Erro(400, 'para destravar envie a confirmação explícita');
+              liberado = true;
+            } else liberado = false;
+            // travar/destravar não grava nada no projeto (só as aplicações são auditadas)
+            return enviar(res, 200, { liberado });
           }
           if (req.method === 'GET' && rota === 'arquivos') {
             return enviar(res, 200, await listar(tipoValido(url.searchParams.get('tipo'))));
@@ -148,6 +167,7 @@ export function painelApi(): Plugin {
           }
           if (req.method === 'POST' && rota === 'arquivo') {
             const b = await lerCorpo(req);
+            exigirLiberado();
             const tipo = tipoValido(b.tipo);
             const nome = nomeValido(b.nome);
             const c = b.conteudo;
@@ -174,17 +194,22 @@ export function painelApi(): Plugin {
             const depois = erros.length ? antes : serializar(nova);
             const diff = diffTexto(antes.trimEnd(), depois.trimEnd());
             if (rota === 'calibracao/previa' || erros.length) return enviar(res, erros.length ? 422 : 200, { erros, diff, antes, depois });
+            exigirLiberado();
+            if (b.confirmacao !== 'QUERO APLICAR') throw new Erro(400, 'aplicação sem confirmação explícita');
             if (b.hashEsperado && b.hashEsperado !== hash(antes)) throw new Erro(409, 'src/data/calibracao.json mudou desde a prévia; gere a prévia de novo');
             if (typeof b.motivo !== 'string' || b.motivo.trim().length < 3) throw new Erro(400, 'informe o motivo da alteração');
             await fs.mkdir(DIR.historico, { recursive: true });
             const copia = `calibracao-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
             await fs.writeFile(path.join(DIR.historico, copia), antes, 'utf8');
             await fs.writeFile(ARQ_CALIB, depois, 'utf8');
+            liberado = false; // trava de novo depois de cada aplicação
             await auditar({ acao: 'aplicar-calibracao', arquivo: 'src/data/calibracao.json', copiaAnterior: `qa/historico/${copia}`, antes: hash(antes), depois: hash(depois), motivo: b.motivo.trim(), autor: b.autor ?? 'painel', origem: b.origem ?? null, diff: diff.split('\n').filter((l) => l.startsWith('+ ') || l.startsWith('- ')) });
             return enviar(res, 200, { ok: true, copiaAnterior: copia, diff, hash: hash(depois) });
           }
           if (req.method === 'POST' && rota === 'calibracao/reverter') {
             const b = await lerCorpo(req);
+            exigirLiberado();
+            if (b.confirmacao !== 'QUERO APLICAR') throw new Erro(400, 'reversão sem confirmação explícita');
             if (typeof b.arquivo !== 'string' || !/^calibracao-[0-9TZ-]+\.json$/.test(b.arquivo)) throw new Erro(400, 'arquivo de histórico inválido');
             const texto = await fs.readFile(path.join(DIR.historico, b.arquivo), 'utf8');
             const c = JSON.parse(texto);
@@ -195,6 +220,7 @@ export function painelApi(): Plugin {
             await fs.writeFile(path.join(DIR.historico, copia), antes, 'utf8');
             const depois = serializar(c);
             await fs.writeFile(ARQ_CALIB, depois, 'utf8');
+            liberado = false;
             await auditar({ acao: 'reverter-calibracao', para: `qa/historico/${b.arquivo}`, copiaAnterior: `qa/historico/${copia}`, antes: hash(antes), depois: hash(depois), autor: b.autor ?? 'painel', motivo: b.motivo ?? '' });
             return enviar(res, 200, { ok: true, diff: diffTexto(antes.trimEnd(), depois.trimEnd()) });
           }

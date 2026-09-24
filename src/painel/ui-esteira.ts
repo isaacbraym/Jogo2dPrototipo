@@ -127,6 +127,7 @@ export function montar(el: HTMLElement, app: App, _p: Record<string, string>) {
     esq.append(h('div.secao', null, 'Salvar / carregar / compartilhar'),
       h('div.linha-form', null, nome, h('button.btn.mini', { onclick: async () => {
         if (validarVida(cen.vida).erros.length) return toast('Corrija a vida antes de salvar.', 'erro');
+        if (!(await app.exigirLiberacao('salvar o cenário em qa/cenarios'))) return toast('Nada foi gravado (painel travado). Use "Exportar JSON" para guardar fora do projeto.', 'info');
         try { const r = await api.salvar('cenarios', nomeArquivo(nome.value), { ...cen, titulo: cen.titulo || nome.value }); toast(`Salvo em ${r.arquivo}`, 'ok'); carregarLista(); } catch (e) { toast((e as Error).message, 'erro'); }
       } }, 'Salvar em qa/cenarios')),
       h('div.linha-form', null,

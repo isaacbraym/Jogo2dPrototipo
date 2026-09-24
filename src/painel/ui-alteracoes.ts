@@ -24,6 +24,7 @@ export function montar(el: HTMLElement, app: App, _p: Record<string, string>) {
         h('td', null, h('button.btn.mini', { onclick: async () => {
           const motivo = prompt(`Reverter src/data/calibracao.json para ${arq}?\nInforme o motivo:`);
           if (!motivo || motivo.trim().length < 3) return;
+          if (!(await app.exigirLiberacao(`reverter a calibração para ${arq}`))) return;
           try { const r = await api.reverter(arq, motivo.trim()); modal('Revertido', h('pre.codigo', null, r.diff)); toast('Revertido. Recarregando…', 'ok'); setTimeout(() => location.reload(), 900); }
           catch (e) { toast((e as Error).message + ((e as any).detalhes ? ': ' + JSON.stringify((e as any).detalhes) : ''), 'erro'); }
         } }, 'reverter para esta'))))) : h('div.nota', null, 'Nenhuma aplicação feita ainda.')));
