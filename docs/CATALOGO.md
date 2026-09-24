@@ -210,7 +210,7 @@
 | `empresario` | 📈 Empreendedor(a) | `escritorio` | Investidor(a)-anjo |
 | `ator` | 🎬 Ator/Atriz | `palco` | Diretor(a) de elenco |
 
-## Cenas/situações — 73
+## Cenas/situações — 76
 
 | id | ambiente | chaves de `data` lidas |
 |---|---|---|
@@ -287,6 +287,9 @@
 | `assaltoOnibus` | `rodoviaria` | `acao`, `escapou`, `desmaio` |
 | `velorioCoxinha` | `cemiterio` | `nome` |
 | `bingoIdosos` | `sala` | `ganhou` |
+| `medicoV1` | `hospital` | `titulo`, `sub`, `good`, `fala` |
+| `medicoV2` | `hospital` | `titulo`, `sub`, `good`, `fala` |
+| `medicoV3` | `hospital` | `titulo`, `sub`, `good`, `fala` |
 
 Ações físicas de `physical()` (use em `interacao` com `data.action`): `abracar` · `beijar` · `highFive` · `apertoMao` · `soco` · `piada` · `fofocar` · `consolar` · `desculpas` · `massagem` · `serenata` · `tapa` · `empurrar` · `dancar` · `discutir` · `elogiar` · `presente` · `conversar` · `pedirDinheiro` · `brincar`
 
