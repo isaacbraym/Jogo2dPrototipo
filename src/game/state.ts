@@ -93,6 +93,10 @@ export interface Life {
 }
 
 let uid = Date.now() % 100000;
+/** Reinicia o contador de ids (usado só pelo painel de QA para reproduções determinísticas). */
+export function resetIds(start: number) {
+  uid = start;
+}
 export const newId = () => (++uid).toString(36) + Math.floor(Math.random() * 1e6).toString(36);
 
 export function randomName(r: RNG, sex: Sex) {

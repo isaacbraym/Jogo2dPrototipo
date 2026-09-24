@@ -13,6 +13,14 @@ export class RNG {
   constructor(seed: number = (Math.random() * 2 ** 32) >>> 0) {
     this.s = seed >>> 0;
   }
+  /** Reinicia a sequência (reprodução determinística: painel de QA). */
+  reseed(seed: number) {
+    this.s = seed >>> 0;
+  }
+  /** Estado interno atual (para salvar/restaurar a sequência). */
+  estado(): number {
+    return this.s;
+  }
   next(): number {
     let t = (this.s += 0x6d2b79f5);
     t = Math.imul(t ^ (t >>> 15), t | 1);

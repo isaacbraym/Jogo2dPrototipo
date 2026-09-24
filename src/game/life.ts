@@ -20,7 +20,7 @@ const MILESTONES: Record<number, string> = {
   70: 'Setenta anos de história', 80: 'Oitenta primaveras', 90: 'Noventa anos!', 100: 'CENTENÁRIO!',
 };
 
-function eligible(L: Life, ev: LifeEvent) {
+export function eligible(L: Life, ev: LifeEvent) {
   if (L.player.age < ev.min || L.player.age > ev.max) return 0;
   if (ev.once && L.flags['ev_' + ev.id]) return 0;
   if (ev.cond && !ev.cond(L)) return 0;
@@ -218,6 +218,16 @@ export function continueAsChild(L: Life, kid: Person): Life {
   for (const s of children(L)) if (s.id !== kid.id) nl.people.push({ ...s, rel: s.sex === 'f' ? 'irma' : 'irmao', bond: 60 });
   addLog(nl, `Após a morte de ${L.player.first}, herdei ${money(heranca)} e sigo em frente.`, 'especial', '🌳');
   return nl;
+}
+
+/**
+ * Efeitos de estado de APRESENTAR um resultado (diário + humor da próxima cena em casa).
+ * Fonte única usada pela tela do jogo (ui/game.ts) e pelo painel de QA, para que o painel
+ * reproduza exatamente o que o jogo faz.
+ */
+export function registrarResultado(L: Life, o: Outcome) {
+  if (o.log !== false) addLog(L, o.text, o.tone, o.icon ?? (o.tone === 'bom' ? '😊' : o.tone === 'ruim' ? '😣' : o.tone === 'especial' ? '⭐' : '•'));
+  if (o.mood) L.flags.moodNext = o.mood;
 }
 
 export function outcomeFromEvent(L: Life, pe: PendingEvent, choiceIdx: number | null): Outcome {

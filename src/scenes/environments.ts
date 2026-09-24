@@ -32,16 +32,18 @@ const P = (id: string, ctx: Ctx, x: number, y: number, t = 0, o: Record<string, 
   ctx.restore();
 };
 
-let acc = 0;
-const every = (dt: number, rate: number) => {
-  acc += dt * rate;
+// acumulador por sistema de partículas (antes era global e vazava entre cenas, quebrando replays determinísticos)
+const accs = new WeakMap<Particles, number>();
+const every = (p: Particles, dt: number, rate: number) => {
+  let acc = (accs.get(p) ?? 0) + dt * rate;
   const n = Math.floor(acc);
   acc -= n;
+  accs.set(p, acc);
   return n;
 };
 
 function rain(p: Particles, dt: number, view: { x0: number; x1: number }, rate = 90) {
-  const n = every(dt, rate);
+  const n = every(p, dt, rate);
   for (let i = 0; i < n; i++) p.spawn('chuva', view.x0 + Math.random() * (view.x1 - view.x0 + 200), -20, 1, { life: 0.8 });
 }
 
@@ -488,7 +490,7 @@ const parque: Env = {
       },
     },
   ],
-  ambient: (p, dt, _t, v) => { if (every(dt, 0.8)) p.spawn('folha', v.x0 + Math.random() * (v.x1 - v.x0), -10, 1, { size: 9, life: 9 }); },
+  ambient: (p, dt, _t, v) => { if (every(p, dt, 0.8)) p.spawn('folha', v.x0 + Math.random() * (v.x1 - v.x0), -10, 1, { size: 9, life: 9 }); },
 };
 
 const patio: Env = {
@@ -694,7 +696,7 @@ const casamento: Env = {
       },
     },
   ],
-  ambient: (p, dt, _t, v) => { if (every(dt, 1.5)) p.spawn('petala', v.x0 + Math.random() * (v.x1 - v.x0), -10, 1, { size: 9, life: 10 }); },
+  ambient: (p, dt, _t, v) => { if (every(p, dt, 1.5)) p.spawn('petala', v.x0 + Math.random() * (v.x1 - v.x0), -10, 1, { size: 9, life: 10 }); },
 };
 
 const acampamento: Env = {
@@ -714,7 +716,7 @@ const acampamento: Env = {
     },
   ],
   ambient: (p, dt, _t, v) => {
-    if (every(dt, 1.2)) p.spawn('vagalume', v.x0 + Math.random() * (v.x1 - v.x0), 300 + Math.random() * 300, 1, { size: 8, life: 6 });
+    if (every(p, dt, 1.2)) p.spawn('vagalume', v.x0 + Math.random() * (v.x1 - v.x0), 300 + Math.random() * 300, 1, { size: 8, life: 6 });
     if (Math.random() < dt * 6) p.spawn('faisca', 640 + Math.random() * 20 - 10, 600, 1, { speed: 60, dir: -Math.PI / 2, cone: 0.6, life: 1.5, size: 6 });
   },
   tint: { col: '#0a1030', a: 0.2 },
@@ -837,7 +839,7 @@ const zen: Env = {
       },
     },
   ],
-  ambient: (p, dt, _t, v) => { if (every(dt, 0.7)) p.spawn('petala', v.x0 + Math.random() * (v.x1 - v.x0), -10, 1, { size: 8, life: 11 }); },
+  ambient: (p, dt, _t, v) => { if (every(p, dt, 0.7)) p.spawn('petala', v.x0 + Math.random() * (v.x1 - v.x0), -10, 1, { size: 8, life: 11 }); },
   tint: { col: '#ffc0a0', a: 0.06 },
 };
 
@@ -877,7 +879,7 @@ const ceu: Env = {
       },
     },
   ],
-  ambient: (p, dt, _t, v) => { if (every(dt, 2)) p.spawn('brilho', v.x0 + Math.random() * (v.x1 - v.x0), 100 + Math.random() * 400, 1, { size: 10, life: 2, speed: 10 }); },
+  ambient: (p, dt, _t, v) => { if (every(p, dt, 2)) p.spawn('brilho', v.x0 + Math.random() * (v.x1 - v.x0), 100 + Math.random() * 400, 1, { size: 10, life: 2, speed: 10 }); },
 };
 
 const suburbio: Env = {
@@ -1018,7 +1020,7 @@ const estudio: Env = {
       ctx.restore();
     },
   }],
-  ambient: (p, dt, _t, v) => { if (every(dt, 1.5)) p.spawn('brilho', v.x0 + Math.random() * (v.x1 - v.x0), 120 + Math.random() * 400, 1, { size: 7, life: 2, speed: 8, color: '#ffe3b0' }); },
+  ambient: (p, dt, _t, v) => { if (every(p, dt, 1.5)) p.spawn('brilho', v.x0 + Math.random() * (v.x1 - v.x0), 120 + Math.random() * 400, 1, { size: 7, life: 2, speed: 8, color: '#ffe3b0' }); },
   vignette: 0.45,
 };
 

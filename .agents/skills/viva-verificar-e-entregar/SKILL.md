@@ -16,7 +16,11 @@ npm run build      # garante que o jogo empacota
 - Nunca "conserte" o validador (`scripts/` é zona vermelha). Se achar que ele está errado, registre em `docs/PEDIDOS-ENGINE.md`.
 
 ## 2. Verificação visual (se tiver navegador)
-Com `npm run dev` rodando:
+Melhor caminho: `npm run painel` → http://localhost:5199/painel.html — busque o id no Catálogo (prévia real),
+rode eventos/interações na Esteira (todas as escolhas, sementes) e veja cenas/movimentos no Laboratório (quadro a quadro,
+esqueleto). Rode Qualidade → varreduras para achar referências dinâmicas quebradas. Detalhes em `docs/PAINEL-QA.md`.
+
+Alternativa (harness antigo), com `npm run dev` rodando:
 - cada cena nova: `http://localhost:5199/?test&sit=<id>&age=30&at=<seg>` (2–3 instantes, 2 idades);
 - cada movimento novo: `http://localhost:5199/?test&env=sala&n=3&ages=8,30,75&m=<id>&def=1`;
 - cada ambiente novo: `http://localhost:5199/?test&env=<id>&n=3`;

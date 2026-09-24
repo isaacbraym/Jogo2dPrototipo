@@ -5,7 +5,7 @@ import { App } from './app';
 import {
   Life, STAT_KEYS, STAT_LABEL, StatKey, Person, money, fullName, REL_LABEL, playerCast, cast, partner, children, stat, addLog, byRel, Tone, newId,
 } from '../game/state';
-import { ageUp, resolveAction, isPending, outcomeFromEvent, evChoices, continueAsChild } from '../game/life';
+import { ageUp, resolveAction, isPending, outcomeFromEvent, evChoices, continueAsChild, registrarResultado } from '../game/life';
 import { ACTIONS, INTERACTIONS, jobOffers, workHard, askPromotion, quitJob } from '../game/activities';
 import { startInterview } from '../game/interviews';
 import { Outcome, PendingEvent, SceneReq, Action } from '../game/types';
@@ -434,8 +434,7 @@ export function gameScreen(app: App, L: Life) {
   }
 
   async function presentOutcome(o: Outcome, before: Snap) {
-    if (o.log !== false) addLog(L, o.text, o.tone, o.icon ?? (o.tone === 'bom' ? '😊' : o.tone === 'ruim' ? '😣' : o.tone === 'especial' ? '⭐' : '•'));
-    if (o.mood) L.flags.moodNext = o.mood;
+    registrarResultado(L, o);
     await playScene(o.scene);
     applyReact(o.react);
     refresh(before);

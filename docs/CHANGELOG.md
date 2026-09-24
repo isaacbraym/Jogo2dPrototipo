@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-09-23 — Painel de QA local (Claude) · branch `claude/painel-qa`
+- **Novo:** `npm run painel` → http://localhost:5199/painel.html (só desenvolvimento; ausente do `dist`). Abas Catálogo,
+  Esteira de eventos, Laboratório, Qualidade e Alterações. Documentação completa em `docs/PAINEL-QA.md`.
+- **Catálogo unificado** a partir dos registros reais (1076 itens: eventos, escolhas, ações, interações, agressões,
+  entrevistas, cenas, ações corporais, ambientes, movimentos, expressões, objetos, objetos de mão, parâmetros visuais, flags,
+  conquistas, emotes, partículas, sons), com arquivo:linha, trecho, prévia pelo renderizador real e vínculos
+  confirmados / inferidos / observados (com contexto).
+- **Esteira:** execução da lógica real com semente e caminho de escolhas; motivo exato de indisponibilidade; pré-requisitos
+  lidos do código e precursores (eventos que escrevem as flags); cenário isolado editável e validado; execuções forçadas
+  identificadas; todos os caminhos; exploração de sementes; diff antes/depois; cenários em `qa/cenarios/`.
+- **Laboratório:** replay determinístico com passo fixo (busca temporal por reexecução), linha do tempo do Director com ids de
+  trecho estáveis (`act:chute#1`), inspetor de cena/atores/pose por campo, esqueleto sobreposto, bonecos genéricos,
+  verificação de determinismo (73/73 cenas: tocado = buscado = repetido).
+- **Calibrador:** keyframes (instante, duração, campos da pose) e expressões dentro dos limites da SPEC-03; A/B (aplicado ou
+  código × proposta), desfazer/refazer, variações nomeadas, propostas em `qa/propostas/`, aplicação com diff + motivo +
+  cópia em `qa/historico/` + `qa/auditoria.jsonl`, reversão. Camada de dados `src/data/calibracao.json` aplicada por
+  `src/character/calibracao.ts`. Movimentos procedurais: só prévia exploratória + pedido de código.
+- **Pedido para Luna:** texto estruturado (tipo/id, cadeia, arquivo:linha, semente, cenário, instante/trecho, valores,
+  observação, melhoria, nº de variações). Skill nova `.agents/skills/viva-painel-qa`.
+- **Qualidade:** referências quebradas, varredura de eventos (alcance, precursores, todas as escolhas, inconsistências),
+  varredura de cenas headless, itens sem referência com status honesto, keyframes fora dos limites, falhas capturadas,
+  proteção de saves (bloqueio de `viva.*`).
+- **Validador:** `npm run check` agora também valida `src/data/calibracao.json`, `qa/propostas/*.json` e `qa/cenarios/*.json`.
+- **Motor (mudanças mínimas, justificadas em `docs/PAINEL-QA.md` §3.1):** `rng.reseed/estado`, `resetIds`, `resetActorIds`,
+  `keyframes()` exportada com `fn.kf`, `eligible` exportada, `registrarResultado()` (fonte única usada por `ui/game.ts`),
+  acumulador de partículas de ambiente por cena (antes global), `HELD` exportado. Save e comportamento do jogo inalterados.
+- **Achados do painel** (em `docs/BACKLOG.md` §I): `feiraCiencias` ignora `data.demonstrou/falhou`; agressão no trabalho do
+  caixa acontece em `ruaDia`.
+- **Verificação:** `npm run check` ✅, `npm run build` ✅ (0 código do painel no `dist`), casos de aceitação de
+  `docs/PAINEL-QA.md` §7 executados no navegador; a proposta de teste do chute foi aplicada e revertida (ver `qa/auditoria.jsonl`).
+
 ## 2026-09-23 — Lote 06: cenas, animações e ambientes (Codex)
 
 **Eventos novos:** 0. O lote ligou conteúdo existente às cenas; ampliou `assalto` para quatro escolhas com custo/risco e deu uma quarta escolha a `baileTerceiraIdade`.

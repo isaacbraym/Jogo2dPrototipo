@@ -26,10 +26,12 @@ function P(p: Partial<Pose> = {}): Pose {
 }
 
 /** Keyframes: lista de [tempo, pose parcial, easing]. */
-type KF = [number, Partial<Pose>, EaseFn?];
-function keyframes(frames: KF[]) {
+export type KF = [number, Partial<Pose>, EaseFn?];
+/** Função de pose feita com keyframes; `kf` expõe os dados (lidos pelo painel de QA e pela calibração). */
+export type KeyframeFn = ((t: number) => Pose) & { kf: KF[] };
+export function keyframes(frames: KF[]): KeyframeFn {
   const full = frames.map(([t, p, e]) => [t, P(p), e ?? Ease.inOutQuad] as const);
-  return (t: number): Pose => {
+  const fn = (t: number): Pose => {
     if (t <= full[0][0]) return full[0][1];
     for (let i = 0; i < full.length - 1; i++) {
       const [t0, p0] = full[i];
@@ -38,6 +40,7 @@ function keyframes(frames: KF[]) {
     }
     return full[full.length - 1][1];
   };
+  return Object.assign(fn, { kf: frames });
 }
 
 const breathe = (p: Pose, t: number, k = 1) => {

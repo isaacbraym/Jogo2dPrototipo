@@ -7,6 +7,7 @@ import { Ctx, roundRect, heartPath, starPath } from '../render/draw';
 import { clamp, damp, Ease, lerp } from '../core/math';
 import { rng } from '../core/rng';
 import { armPoints } from './body';
+import './calibracao'; // aplica src/data/calibracao.json sobre MOTIONS/EXPRESSIONS (uma vez)
 
 export type EmoteKind = 'coracao' | 'raiva' | 'exclamacao' | 'interrogacao' | 'reticencias' | 'zzz' | 'musica' | 'suor' | 'ideia' | 'estrela' | 'dinheiro' | 'caveira' | 'coracaoPartido' | 'lagrima';
 
@@ -14,6 +15,10 @@ interface Bubble { text: string; t: number; dur: number; kind: 'fala' | 'pensa' 
 interface Emote { kind: EmoteKind; t: number; dur: number }
 
 let ACTOR_ID = 0;
+/** Reinicia a numeração de atores (o id alimenta semente de movimento/olhar; usado pelo painel de QA para replays idênticos). */
+export function resetActorIds(start = 0) {
+  ACTOR_ID = start;
+}
 
 export class Actor {
   id = ++ACTOR_ID;

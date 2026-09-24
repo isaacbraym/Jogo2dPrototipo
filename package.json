@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "check": "tsc --noEmit && tsx scripts/check-content.ts",
     "check:quick": "tsx scripts/check-content.ts --quick",
-    "catalog": "tsx scripts/catalog.ts"
+    "catalog": "tsx scripts/catalog.ts",
+    "painel": "vite --port 5199 --open /painel.html"
   },
   "devDependencies": {
     "@types/node": "^24.13.6",

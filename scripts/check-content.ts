@@ -17,13 +17,18 @@
  *  6. Toda carreira tem entrevista e a taxa de contratação com respostas aleatórias fica num intervalo jogável.
  *  7. Simulação de vidas inteiras (0 → morte) com escolhas aleatórias sem exceções.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { validarCalibracao, validarContraRegistros } from '../src/qa/calibracao';
+import { KF_ORIGINAIS, keyframesDe } from '../src/character/calibracao';
+import { validarVida } from '../src/painel/vida';
 import { EVENTS } from '../src/game/events';
 import { ACTIONS, INTERACTIONS } from '../src/game/activities';
 import { CAREERS } from '../src/game/careers';
 import { INTERVIEWS, startInterview } from '../src/game/interviews';
 import { ageUp, outcomeFromEvent } from '../src/game/life';
-import { Life, Person, newLife, makePerson, hireStaff, enrollSchool, STAT_KEYS } from '../src/game/state';
+import { Life, Person, newLife, STAT_KEYS } from '../src/game/state';
+import { fixture, KINDS, Kind } from '../src/qa/fixtures';
+import { varrerReferencias, ARQUIVOS_VARRIDOS } from '../src/qa/referencias';
 import { Outcome, PendingEvent, LifeEvent, EvCtx } from '../src/game/types';
 import { SITUATIONS, Cast } from '../src/scenes/situations';
 import { ENVS } from '../src/scenes/environments';
@@ -33,6 +38,7 @@ import { PROPS, HELD } from '../src/render/props';
 import { randomAppearance, defaultAppearance } from '../src/character/appearance';
 import { RNG, rng } from '../src/core/rng';
 import { sfx } from '../src/core/audio';
+import { ESTADO_CALIBRACAO } from '../src/character/calibracao';
 
 const QUICK = process.argv.includes('--quick');
 const errors: string[] = [];
@@ -60,6 +66,39 @@ const REG = {
 const TONES = new Set(['bom', 'ruim', 'neutro', 'especial']);
 const MOODS = new Set(['tenso', 'triste', 'ferido', 'feliz']);
 
+// ------------------------------------------------------------ 0. calibração (src/data/calibracao.json)
+for (const e of ESTADO_CALIBRACAO.erros) err(`[calibração] ${e} — corrija src/data/calibracao.json pelo painel de QA`);
+
+// propostas (qa/propostas/*.json) e cenários (qa/cenarios/*.json) entregues por agentes/painel
+{
+  const regCalib = {
+    keyframes: (id: string) => { if (!MOTIONS[id]) return null; const k = KF_ORIGINAIS.get(id) ?? keyframesDe(id); return k ? k.map((f) => f[0]) : undefined; },
+    expressao: (id: string) => id in EXPRESSIONS,
+  };
+  const dirQa = (d: string) => { try { return readdirSync(new URL('../qa/' + d + '/', import.meta.url)).filter((f) => f.endsWith('.json')); } catch { return []; } };
+  for (const f of dirQa('propostas')) {
+    let j: any;
+    try { j = JSON.parse(src('qa/propostas/' + f)); } catch { err(`[proposta] qa/propostas/${f}: JSON inválido`); continue; }
+    if (j.formato !== 'viva-proposta' || !Array.isArray(j.variacoes)) { err(`[proposta] qa/propostas/${f}: precisa de "formato": "viva-proposta" e "variacoes": [...]`); continue; }
+    for (const v of j.variacoes) {
+      const e = validarCalibracao(v.calibracao);
+      const e2 = e.length ? [] : validarContraRegistros(v.calibracao, regCalib);
+      for (const x of [...e, ...e2]) err(`[proposta] qa/propostas/${f} variação "${v.nome}": ${x}`);
+    }
+  }
+  const alvosValidos: Record<string, (id: string) => boolean> = {
+    evento: (id) => EVENTS.some((e) => e.id === id), interacao: (id) => INTERACTIONS.some((i) => i.id === id), agressao: (id) => INTERACTIONS.some((i) => i.id === 'agg_' + id),
+    acao: (id) => ACTIONS.some((a) => a.id === id), entrevista: (id) => CAREERS.some((c) => c.id === id),
+  };
+  for (const f of dirQa('cenarios')) {
+    let j: any;
+    try { j = JSON.parse(src('qa/cenarios/' + f)); } catch { err(`[cenário] qa/cenarios/${f}: JSON inválido`); continue; }
+    if (j.formato !== 'viva-cenario') { err(`[cenário] qa/cenarios/${f}: "formato" deve ser "viva-cenario"`); continue; }
+    if (!alvosValidos[j.alvo?.tipo]?.(j.alvo?.id)) err(`[cenário] qa/cenarios/${f}: alvo ${j.alvo?.tipo}:${j.alvo?.id} não existe mais`);
+    for (const x of validarVida(j.vida).erros) err(`[cenário] qa/cenarios/${f}: vida inválida — ${x}`);
+  }
+}
+
 // ------------------------------------------------------------ 1. ids únicos
 function uniq(kind: string, ids: string[]) {
   const seen = new Set<string>();
@@ -79,42 +118,10 @@ uniq('carreira', CAREERS.map((a) => a.id));
 
 // ------------------------------------------------------------ 2. referências literais
 type RegKey = keyof typeof REG;
-const SCAN: [string, RegExp, RegKey][] = [
-  // [arquivo(s), regex com 1 grupo, registro]
-  ['*', /d\.(?:loop|act)\(\s*[\w.[\]]+\s*,\s*'(\w+)'/g, 'motion'],
-  ['*', /\bmotion:\s*'(\w+)'/g, 'motion'],
-  ['*', /\.play\(\s*'(\w+)'/g, 'motion'],
-  ['*', /d\.expr\(\s*[\w.[\]]+\s*,\s*'(\w+)'/g, 'expr'],
-  ['*', /\bexpr:\s*'(\w+)'/g, 'expr'],
-  ['*', /setExpr\(\s*'(\w+)'/g, 'expr'],
-  ['*', /d\.prop\(\s*'(\w+)'/g, 'prop'],
-  ['*', /\bprop[NF]\s*[=:]\s*'(\w+)'/g, 'held'],
-  ['*', /d\.fx\(\s*'(\w+)'/g, 'fx'],
-  ['*', /d\.emote\(\s*[\w.[\]]+\s*,\s*'(\w+)'/g, 'emote'],
-  ['*', /\bemote:\s*'(\w+)'/g, 'emote'],
-  ['*', /d\.sfx\(\s*'(\w+)'/g, 'sfx'],
-  ['*', /\bscene:\s*\{\s*id:\s*'(\w+)'/g, 'scene'],
-  ['*', /\bscene:\s*\([^)]*\)\s*=>\s*\(\{\s*id:\s*'(\w+)'/g, 'scene'],
-  ['*', /\bid:\s*'(\w+)',\s*(?:others|data):/g, 'scene'],
-  ['*', /\benv:\s*'(\w+)'/g, 'env'],
-];
-const FILES = [
-  'src/scenes/situations.ts', 'src/game/events.ts', 'src/game/activities.ts', 'src/game/aggression.ts',
-  'src/game/interviews.ts', 'src/game/life.ts', 'src/game/careers.ts', 'src/ui/game.ts',
-];
-let refCount = 0;
-for (const f of FILES) {
-  const text = src(f);
-  for (const [, re, reg] of SCAN) {
-    for (const m of text.matchAll(re)) {
-      refCount++;
-      if (!REG[reg].has(m[1])) {
-        const line = text.slice(0, m.index).split('\n').length;
-        err(`[ref] ${reg} "${m[1]}" não existe — ${f}:${line}`);
-      }
-    }
-  }
-}
+const fontes = Object.fromEntries(ARQUIVOS_VARRIDOS.map((f) => [f, src(f)]));
+const refs = varrerReferencias(fontes);
+const refCount = refs.length;
+for (const r of refs) if (!REG[r.registro as RegKey].has(r.id)) err(`[ref] ${r.registro} "${r.id}" não existe — ${r.arquivo}:${r.linha}`);
 
 // ------------------------------------------------------------ 3. movimentos e expressões numéricos
 const finiteDeep = (o: unknown, path: string, bad: string[]) => {
@@ -156,42 +163,6 @@ for (const s of Object.values(SITUATIONS)) {
 }
 
 // ------------------------------------------------------------ perfis de vida (fixtures)
-type Kind = 'bebe' | 'crianca' | 'teen' | 'universitario' | 'adultoSolteiro' | 'adultoNamorando' | 'casadoFilhos' | 'desempregadoPobre' | 'rico' | 'idoso';
-const KINDS: Kind[] = ['bebe', 'crianca', 'teen', 'universitario', 'adultoSolteiro', 'adultoNamorando', 'casadoFilhos', 'desempregadoPobre', 'rico', 'idoso'];
-const BASE_AGE: Record<Kind, number> = { bebe: 1, crianca: 9, teen: 15, universitario: 22, rico: 45, adultoSolteiro: 26, adultoNamorando: 30, casadoFilhos: 40, desempregadoPobre: 35, idoso: 72 };
-
-function fixture(kind: Kind, age = BASE_AGE[kind]): Life {
-  const r = new RNG(1000 + age * 7 + KINDS.indexOf(kind));
-  const sex = r.chance(0.5) ? 'f' : 'm';
-  const L = newLife(randomAppearance(r, sex), 'Teste', 'Silva', 'São Paulo', age);
-  if (age >= 6 && age < 18) { L.edu.stage = age < 14 ? 'fundamental' : 'medio'; enrollSchool(L); }
-  if (age >= 5) L.people.push(makePerson(r, { age: age + r.int(-1, 2), rel: sex === 'f' ? 'amiga' : 'amigo', bond: 70 }));
-  if (age >= 5 && kind !== 'desempregadoPobre') L.people.push(makePerson(r, { age: age + r.int(-2, 2), rel: 'amigo', bond: 60 }));
-  if (kind === 'teen') L.edu.nota = 50;
-  if (kind === 'universitario') { L.edu.stage = 'faculdade'; L.edu.curso = 'Computação'; L.edu.faculdade = true; L.flags.anosFacul = 4; }
-  if (age >= 18 && kind !== 'desempregadoPobre' && kind !== 'universitario') {
-    L.job = { id: 'caixa', title: 'Operador(a) de caixa', salary: 22000, perf: 55, years: 2, level: 0 };
-    hireStaff(L, L.job.title);
-    L.money = 25000;
-    L.licenca = true;
-  }
-  if (kind === 'teen' || kind === 'adultoNamorando') L.people.push(makePerson(r, { age, sex: sex === 'f' ? 'm' : 'f', rel: sex === 'f' ? 'namorado' : 'namorada', bond: 80 }));
-  const par = L.people.find((p) => p.rel === 'namorado' || p.rel === 'namorada');
-  if (par) par.metAt = age - 3;
-  if (kind === 'rico') { L.money = 2e6; L.fame = 40; }
-  if (kind === 'casadoFilhos' || kind === 'idoso') {
-    L.people.push(makePerson(r, { age: age + 1, sex: sex === 'f' ? 'm' : 'f', rel: 'conjuge', bond: 70 }));
-    L.people.push(makePerson(r, { age: kind === 'idoso' ? 45 : 10, rel: 'filho', bond: 70 }));
-    L.people.push(makePerson(r, { age: kind === 'idoso' ? 42 : 7, rel: 'filha', bond: 70 }));
-    L.assets.casa = { nome: 'Apartamento', valor: 300000 };
-    L.assets.carro = { nome: 'Popular', valor: 40000, cor: '#c2273d' };
-  }
-  if (kind === 'idoso') { L.retired = true; L.job = null; L.people.forEach((p) => { if (p.rel === 'mae' || p.rel === 'pai') p.alive = false; }); }
-  if (kind === 'desempregadoPobre') { L.money = 80; L.crime.ficha = 1; L.people.push(makePerson(r, { age: age + 3, rel: 'ex', bond: 20 })); }
-  if (age >= 8) L.pets.push({ id: 'pet1', name: 'Totó', kind: 'cachorro', color: '#c8843a', age: 3, bond: 70, alive: true });
-  return L;
-}
-
 // ------------------------------------------------------------ validação de Outcome
 const BAD_TEXT = /\bundefined\b|\bNaN\b|\[object |\bnull\b/;
 function checkText(where: string, t: unknown) {

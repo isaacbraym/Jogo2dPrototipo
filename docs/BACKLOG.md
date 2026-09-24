@@ -76,6 +76,10 @@ Itens marcados **[ENGINE]** precisam de mudança no motor → não implemente; c
 - [x] Objetos: `orelhao`, `carrinhoMercado`, `ventilador`, `vulcaoEscolar`, `marmita` (mão), `bilheteLoteria` (mão), `sacola` (mão), `guardaChuvaQuebrado` (mão)
 - [x] Cenas: `reuniaoZoom`, `furadeiraDomingo`, `ceiaNatal`, `festaJunina`, `feiraCiencias`, `enchente`, `assaltoOnibus`, `velorioCoxinha`, `bingoIdosos`
 
+## I. Achados do Painel de QA (conteúdo, P1)
+- [ ] Cena `feiraCiencias` ignora `data.demonstrou`/`data.falhou`: o desfecho "deu certo" mostra a animação do desastre (varredura de eventos).
+- [ ] Agressão/demissão no trabalho usa o ambiente da carreira: `caixa` → `ruaDia` (a entrevista é no `mercado`) e a demissão escoltada vai para `escritorio` — revisar `env` das carreiras (zona amarela).
+
 ## H. Sistemas (precisam do motor) **[ENGINE]**
 - [ ] Memória de NPC: rancor/gratidão por pessoa (hoje só `bond`) → NPC lembra de agressões e favores.
 - [ ] Vícios (aposta, álcool, cigarro) como estado persistente com recaídas.

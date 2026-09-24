@@ -95,7 +95,15 @@ executa **todo evento e toda escolha** em 10 perfis de vida; roda todas as açõ
 simula entrevistas de todas as carreiras; e simula 60 vidas completas. Qualquer texto com `undefined`/`NaN`, stat fora de 0–100
 ou exceção vira erro.
 
-## 8. Build e deploy
+## 8. Painel de QA e calibração
+
+`painel.html` + `src/painel/` (só desenvolvimento) reaproveitam lógica, Scene/Director/atores e roteiros reais para
+catálogo, esteira de eventos com semente, laboratório com busca temporal determinística e calibrador A/B. A calibração
+aprovada é um arquivo de dados (`src/data/calibracao.json`) aplicado sobre `MOTIONS`/`EXPRESSIONS` por
+`src/character/calibracao.ts`. Ganchos no motor para reprodução: `rng.reseed/estado`, `resetIds`, `resetActorIds`,
+`keyframes().kf`, `eligible`, `registrarResultado`. Detalhes em `docs/PAINEL-QA.md`.
+
+## 9. Build e deploy
 
 - `npm run build` → `dist/index.html` único (vite-plugin-singlefile), funciona via `file://` (`Jogar.bat`).
 - Push em `main` → GitHub Actions (`.github/workflows/pages.yml`: `check:quick` + build) → https://isaacbraym.github.io/Jogo2dPrototipo/

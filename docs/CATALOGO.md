@@ -361,7 +361,7 @@ Além destas, `ev_<id>` marca eventos `once` já ocorridos.
 | `irmaoEmprestimoPessoaId` | game/events.ts |
 | `irmaoEmprestimoValor` | game/events.ts |
 | `medalha` | game/events.ts |
-| `moodNext` | ui/game.ts |
+| `moodNext` | game/life.ts, ui/game.ts |
 | `musica` | game/events.ts, game/activities.ts, game/interviews.ts |
 | `neto` | game/events.ts |
 | `netoLembraConversaIdade` | game/events.ts |

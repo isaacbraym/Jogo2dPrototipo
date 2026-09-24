@@ -73,7 +73,15 @@ sarcastico: E({ asym: 0.7, smile: 0.2, lidTop: 0.35, browUp: 0.25, browIn: -0.1 
 ```
 Regra: expressões de sofrimento **nunca** têm `smile > 0`. O neutro já tem `smile: 0.04`.
 
-## 5. Checklist
+## 5. Calibração fina (sem editar código)
+
+Movimentos feitos com `keyframes([...])` e expressões podem ser ajustados **por dados** pelo Painel de QA
+(`docs/PAINEL-QA.md`): instante dos keyframes, `dur`, campos da tabela acima e campos contínuos da Face, sempre dentro dos
+limites desta spec. O resultado aprovado fica em `src/data/calibracao.json` e é aplicado no runtime por
+`src/character/calibracao.ts`. Agentes de conteúdo propõem variações em `qa/propostas/` (formato `viva-proposta`).
+Movimentos procedurais (fórmulas) só aceitam ajuste por código.
+
+## 6. Checklist
 
 - [ ] `npm run check:quick` (confere que a pose é finita do início ao fim).
 - [ ] Ver no harness: `?test&env=sala&n=3&m=<movimento>&def=1` (três personagens: criança/adulto/idoso com `ages=8,30,75`).

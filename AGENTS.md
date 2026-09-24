@@ -25,7 +25,13 @@ npm run check        # OBRIGATÓRIO antes de todo commit: typecheck + validador 
 npm run check:quick  # validador rápido (durante o trabalho)
 npm run catalog      # regenera docs/CATALOGO.md (rode após adicionar conteúdo)
 npm run build        # gera dist/index.html (arquivo único, abre via file://)
+npm run painel       # Painel de QA local: http://localhost:5199/painel.html (catálogo, esteira, laboratório, calibrador)
 ```
+
+**Painel de QA** (`docs/PAINEL-QA.md`): encontre qualquer id, execute eventos/interações sem sorteio (com semente), veja cenas
+e movimentos quadro a quadro com esqueleto, compare A/B e gere "pedidos para Luna". Agentes de conteúdo entregam ajustes
+numéricos de movimento/expressão como **propostas** em `qa/propostas/` (formato `viva-proposta`) e casos de reprodução em
+`qa/cenarios/` — nunca editando `src/data/calibracao.json` à mão (quem aplica é o usuário, pelo painel).
 
 Harness visual (com `npm run dev` rodando):
 - Cena: `http://localhost:5199/?test&sit=<idCena>&age=30&at=4&data=<json-url-encoded>` (congela no segundo `at`)
@@ -44,6 +50,7 @@ Harness visual (com `npm run dev` rodando):
 | `docs/BACKLOG.md` | Ideias priorizadas de conteúdo esperando alguém implementar. |
 | `docs/PEDIDOS-ENGINE.md` | Fila de pedidos de mudanças no motor (zona vermelha) para o agente de lógica. |
 | `docs/DELEGACAO-LUNA.md` | Divisão de trabalho entre agentes e o prompt de delegação. |
+| `docs/PAINEL-QA.md` | Painel de QA: uso, formatos de cenário/proposta/calibração, limites de edição, procedimento "localizar pelo ID". |
 
 ## 4. Zonas de edição
 
@@ -58,6 +65,7 @@ Harness visual (com `npm run dev` rodando):
 - `src/scenes/environments.ts` → novo `const x: Env` + registrar em `ENVS`
 - `src/render/props.ts` → novas entradas em `PROPS` (cenário) e `HELD` (objetos de mão)
 - `docs/**` (exceto `CATALOGO.md`, que é gerado)
+- `qa/propostas/*.json` (propostas de calibração) e `qa/cenarios/*.json` (casos de reprodução) — o `npm run check` valida
 
 **🟡 Amarela — pode alterar com cuidado e justificar no CHANGELOG:**
 - Textos e números de balanceamento de conteúdo já existente.
@@ -71,6 +79,8 @@ Harness visual (com `npm run dev` rodando):
 - `src/game/{state,types,life,storage}.ts` (formato do save, motor anual, tipos)
 - `src/ui/**`, `src/main.ts`, `src/test.ts`, `index.html`
 - `package.json`, `tsconfig.json`, `vite.config.ts`, `.github/**`, `scripts/**`
+- Painel de QA: `painel.html`, `src/painel/**`, `src/qa/**`, `src/character/calibracao.ts`
+- `src/data/calibracao.json` e `qa/auditoria.jsonl` — só o painel escreve (validado, com diff, motivo e auditoria)
 
 Mudar a zona vermelha pode quebrar saves de jogadores ou o desenho de todos os personagens.
 

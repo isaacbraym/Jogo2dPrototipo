@@ -1,0 +1,53 @@
+{
+  "formato": "viva-proposta",
+  "versao": 1,
+  "titulo": "EXEMPLO: chute mais alto no impacto (kf2 legN.a)",
+  "alvo": "movimento:chute",
+  "autor": "painel",
+  "criado": "2026-09-24T00:44:20.023Z",
+  "variacoes": [
+    {
+      "nome": "V1 chute alto",
+      "nota": "Criada no painel durante o teste de aceitação; serve de modelo do formato viva-proposta. NÃO aplicada.",
+      "calibracao": {
+        "formato": "viva-calibracao",
+        "versao": 1,
+        "movimentos": {
+          "chute": {
+            "keyframes": {
+              "2": {
+                "pose": {
+                  "legN.a": 1.65
+                }
+              }
+            }
+          }
+        },
+        "expressoes": {}
+      },
+      "autor": "painel"
+    },
+    {
+      "nome": "V2 chute alto com quadril",
+      "nota": "Exemplo com 2 campos no mesmo keyframe.",
+      "autor": "painel",
+      "calibracao": {
+        "formato": "viva-calibracao",
+        "versao": 1,
+        "movimentos": {
+          "chute": {
+            "keyframes": {
+              "2": {
+                "pose": {
+                  "legN.a": 1.6,
+                  "lean": -0.32
+                }
+              }
+            }
+          }
+        },
+        "expressoes": {}
+      }
+    }
+  ]
+}

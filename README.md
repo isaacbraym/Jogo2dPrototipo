@@ -33,6 +33,7 @@ https://github.com/isaacbraym/Jogo2dPrototipo/actions.
 | `npm run check` | **validação completa**: typecheck + validador de conteúdo (roda todos os eventos/escolhas/interações, entrevistas e 60 vidas simuladas) |
 | `npm run check:quick` | validador rápido |
 | `npm run catalog` | regenera `docs/CATALOGO.md` com tudo que existe no jogo |
+| `npm run painel` | **Painel de QA local** (http://localhost:5199/painel.html): catálogo, esteira de eventos, laboratório de cenas/animações, calibrador A/B — só desenvolvimento, nunca publicado |
 | `npm run build` | typecheck + build de arquivo único em `dist/index.html` |
 
 ## Documentação
@@ -46,6 +47,7 @@ https://github.com/isaacbraym/Jogo2dPrototipo/actions.
 | [`.agents/skills/`](.agents/skills) | receitas passo a passo (criar evento, cena, animação, ambiente, interação, humor, verificação) |
 | [`docs/BACKLOG.md`](docs/BACKLOG.md) | ideias priorizadas de conteúdo |
 | [`docs/PEDIDOS-ENGINE.md`](docs/PEDIDOS-ENGINE.md) | fila de mudanças de motor |
+| [`docs/PAINEL-QA.md`](docs/PAINEL-QA.md) | painel de QA: uso, formatos, limites de edição, colaboração por ID |
 | [`docs/DELEGACAO-LUNA.md`](docs/DELEGACAO-LUNA.md) | divisão de trabalho entre agentes + prompt para o GPT Luna |
 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | histórico de mudanças |
 
