@@ -11,6 +11,8 @@ arquitetura do VIVA!: sem banco, sem servidor próprio, sem assets externos.
 npm run painel        # abre http://localhost:5199/painel.html (o jogo continua em http://localhost:5199/)
 ```
 Ou, com `npm run dev` já rodando: **http://localhost:5199/painel.html**.
+No Windows: **duplo clique em `Painel.bat`** (raiz do projeto) — instala dependências se faltar, liga o servidor numa janela
+minimizada "VIVA - servidor do painel" (feche-a para desligar) e abre o painel no navegador padrão.
 
 - Existe só no servidor de desenvolvimento. O `npm run build` empacota apenas `index.html` → o `dist/index.html` jogável e o
   GitHub Pages **não** contêm o painel (verificado: 0 ocorrências de código do painel no `dist`).
