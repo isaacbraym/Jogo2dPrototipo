@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-23 — Cena `medico` finalizada com a V2 validada (Codex)
+- Promovida a implementação de `medicoV2` para a cena oficial `medico`, preservando o ID usado pelo jogo.
+- Removidas `medicoV1`, `medicoV2` e `medicoV3` do catálogo de conteúdo após a escolha da V2; mantidos os ajustes aprovados de exame, expressão da paciente e lágrimas com gravidade vertical.
+- **Verificação:** `npm run catalog`, `npm run check` e `npm run build`.
+
 ## 2026-09-23 — Propostas de QA para a cena `medico` (Codex)
 - Mantida a cena original `medico` sem alterações; adicionadas três alternativas comparáveis: `medicoV1` (consulta acolhedora), `medicoV2` (exame e contato visual) e `medicoV3` (explicação do cuidado).
 - As três variantes retiram o objeto `cobertor`, mantêm a paciente deitada sem o marcador facial de suor e emitem gotas a partir da região dos olhos com gravidade vertical.

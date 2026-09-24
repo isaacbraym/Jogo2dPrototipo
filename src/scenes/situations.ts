@@ -815,21 +815,41 @@ const S: Situation[] = [
     id: 'medico',
     env: 'hospital',
     run: async (d, c) => {
-      const doc = O(d, other(c, 0, 41, undefined, 45), 700, { facing: -1, outfit: { top: 'jaleco', topColor: '#5ec3e8' } });
+      const doc = O(d, other(c, 0, 41, undefined, 45), 760, { facing: -1, outfit: { top: 'jaleco', topColor: '#5ec3e8' } });
       const p = P(d, c, 380, { facing: 1, outfit: { top: 'camisola' }, motion: 'deitadoDoente', turn: 0.3, z: 1 });
       lieOn(p, 110);
-      d.prop('cobertor', 470, GROUND - 100, { z: 2 });
-      d.caption(c.data?.titulo ?? 'Consulta médica', c.data?.sub, 2.8);
-      await d.walk(doc, 560);
+      d.expr(p, 'triste');
+      d.caption(c.data?.titulo ?? 'Exame no hospital', c.data?.sub, 2.8);
+      await d.walk(doc, 545);
       doc.facing = -1;
-      doc.propN = 'lupa';
+      d.loop(doc, 'agachar');
+      d.expr(doc, 'concentrado');
+      doc.lookAt = p.handWorld();
+      await d.say(doc, 'Vou conferir seus sinais e entender onde dói.', 2);
       d.loop(doc, 'pensando');
+      doc.lookAt = p.headWorld();
+      for (let i = 0; i < 5; i++) {
+        const head = p.headWorld();
+        const angle = p.pose.rot + p.pose.lean + p.pose.chest + p.pose.neck + p.pose.head;
+        const eyeX = head.x + Math.cos(angle) * p.facing * 7;
+        const eyeY = head.y + Math.sin(angle) * p.facing * 7;
+        d.fx('lagrima', eyeX, eyeY, 1, { color: '#8fd0ff', speed: 35, dir: Math.PI / 2, cone: 0, size: 8, life: 1.3 });
+        await d.wait(0.42);
+      }
+      if (c.data?.good) {
+        d.loop(doc, 'joinha');
+        await d.say(doc, c.data?.fala ?? 'Os sinais estão melhores. Vamos seguir cuidando.', 2.2);
+        d.expr(p, 'aliviado');
+        d.sfx('chime');
+      } else {
+        d.loop(doc, 'apontar');
+        doc.lookAt = p.headWorld();
+        await d.say(doc, c.data?.fala ?? 'Vou pedir mais exames para ter certeza.', 2.2);
+        d.expr(doc, 'serio');
+        d.expr(p, 'triste');
+        d.sfx('heartbeat');
+      }
       await d.wait(1.2);
-      doc.propN = undefined;
-      await d.say(doc, c.data?.fala ?? 'Vamos cuidar de você.', 2);
-      if (c.data?.good) { d.loop(doc, 'joinha'); d.expr(p, 'feliz'); d.sfx('chime'); }
-      else { d.loop(doc, 'triste'); d.expr(p, 'triste'); d.sfx('heartbeat'); }
-      await d.wait(1.5);
     },
   },
   {
@@ -1950,130 +1970,6 @@ const S: Situation[] = [
       if (c.data?.ganhou === false) { d.expr(p, 'derrotado'); await d.say(p, 'Faltou só um número.', 1.6); }
       else { d.emote(p, 'estrela'); d.expr(p, 'feliz'); await d.say(p, 'Bingo! Uma rodada para a mesa.', 1.8); }
       await d.wait(1);
-    },
-  },
-  // Variação de QA 1: consulta acolhedora, médica na altura da paciente e lágrimas pela gravidade.
-  {
-    id: 'medicoV1',
-    env: 'hospital',
-    run: async (d, c) => {
-      const doc = O(d, other(c, 0, 41, undefined, 45), 700, { facing: -1, outfit: { top: 'jaleco', topColor: '#5ec3e8' } });
-      const p = P(d, c, 380, { facing: 1, outfit: { top: 'camisola' }, motion: 'deitadoDoente', turn: 0.3, z: 1 });
-      lieOn(p, 110);
-      d.expr(p, 'triste');
-      d.caption(c.data?.titulo ?? 'Consulta médica', c.data?.sub, 2.8);
-      await d.walk(doc, 560);
-      doc.facing = -1;
-      doc.lookAt = p;
-      d.loop(doc, 'agachar');
-      d.expr(doc, 'serio');
-      await d.say(doc, 'Vou examinar você com calma, combinado?', 2);
-      await d.say(p, 'Tá doendo bastante.', 1.8);
-      d.loop(doc, 'pensando');
-      doc.lookAt = p.headWorld();
-      for (let i = 0; i < 5; i++) {
-        const head = p.headWorld();
-        const angle = p.pose.rot + p.pose.lean + p.pose.chest + p.pose.neck + p.pose.head;
-        const eyeX = head.x + Math.cos(angle) * p.facing * 7;
-        const eyeY = head.y + Math.sin(angle) * p.facing * 7;
-        d.fx('lagrima', eyeX, eyeY, 1, { color: '#8fd0ff', speed: 35, dir: Math.PI / 2, cone: 0, size: 8, life: 1.3 });
-        await d.wait(0.42);
-      }
-      d.loop(doc, 'acenar');
-      if (c.data?.good) {
-        await d.say(doc, c.data?.fala ?? 'A gente vai cuidar de você.', 2);
-        d.expr(p, 'aliviado');
-        d.sfx('chime');
-      } else {
-        await d.say(doc, c.data?.fala ?? 'Vou acompanhar você de perto.', 2);
-        d.expr(doc, 'triste');
-        d.expr(p, 'triste');
-        d.sfx('heartbeat');
-      }
-      await d.wait(1.2);
-    },
-  },
-  // Variação de QA 2: exame focado nos sinais da paciente, seguido de contato visual e explicação.
-  {
-    id: 'medicoV2',
-    env: 'hospital',
-    run: async (d, c) => {
-      const doc = O(d, other(c, 0, 41, undefined, 45), 760, { facing: -1, outfit: { top: 'jaleco', topColor: '#5ec3e8' } });
-      const p = P(d, c, 380, { facing: 1, outfit: { top: 'camisola' }, motion: 'deitadoDoente', turn: 0.3, z: 1 });
-      lieOn(p, 110);
-      d.expr(p, 'triste');
-      d.caption(c.data?.titulo ?? 'Exame no hospital', c.data?.sub, 2.8);
-      await d.walk(doc, 545);
-      doc.facing = -1;
-      d.loop(doc, 'agachar');
-      d.expr(doc, 'concentrado');
-      doc.lookAt = p.handWorld();
-      await d.say(doc, 'Vou conferir seus sinais e entender onde dói.', 2);
-      d.loop(doc, 'pensando');
-      doc.lookAt = p.headWorld();
-      for (let i = 0; i < 5; i++) {
-        const head = p.headWorld();
-        const angle = p.pose.rot + p.pose.lean + p.pose.chest + p.pose.neck + p.pose.head;
-        const eyeX = head.x + Math.cos(angle) * p.facing * 7;
-        const eyeY = head.y + Math.sin(angle) * p.facing * 7;
-        d.fx('lagrima', eyeX, eyeY, 1, { color: '#8fd0ff', speed: 35, dir: Math.PI / 2, cone: 0, size: 8, life: 1.3 });
-        await d.wait(0.42);
-      }
-      if (c.data?.good) {
-        d.loop(doc, 'joinha');
-        await d.say(doc, c.data?.fala ?? 'Os sinais estão melhores. Vamos seguir cuidando.', 2.2);
-        d.expr(p, 'aliviado');
-        d.sfx('chime');
-      } else {
-        d.loop(doc, 'apontar');
-        doc.lookAt = p.headWorld();
-        await d.say(doc, c.data?.fala ?? 'Vou pedir mais exames para ter certeza.', 2.2);
-        d.expr(doc, 'serio');
-        d.expr(p, 'triste');
-        d.sfx('heartbeat');
-      }
-      await d.wait(1.2);
-    },
-  },
-  // Variação de QA 3: médica explica o plano olhando para a paciente e oferece acolhimento.
-  {
-    id: 'medicoV3',
-    env: 'hospital',
-    run: async (d, c) => {
-      const doc = O(d, other(c, 0, 41, undefined, 45), 720, { facing: -1, outfit: { top: 'jaleco', topColor: '#5ec3e8' } });
-      const p = P(d, c, 380, { facing: 1, outfit: { top: 'camisola' }, motion: 'deitadoDoente', turn: 0.3, z: 1 });
-      lieOn(p, 110);
-      d.expr(p, 'triste');
-      d.caption(c.data?.titulo ?? 'Plano de cuidado', c.data?.sub, 2.8);
-      await d.walk(doc, 555);
-      doc.facing = -1;
-      doc.lookAt = p;
-      d.loop(doc, 'agachar');
-      d.expr(doc, 'serio');
-      await d.say(doc, 'Eu vou explicar cada passo do tratamento.', 2);
-      d.loop(doc, 'apontar');
-      doc.lookAt = p.headWorld();
-      for (let i = 0; i < 5; i++) {
-        const head = p.headWorld();
-        const angle = p.pose.rot + p.pose.lean + p.pose.chest + p.pose.neck + p.pose.head;
-        const eyeX = head.x + Math.cos(angle) * p.facing * 7;
-        const eyeY = head.y + Math.sin(angle) * p.facing * 7;
-        d.fx('lagrima', eyeX, eyeY, 1, { color: '#8fd0ff', speed: 35, dir: Math.PI / 2, cone: 0, size: 8, life: 1.3 });
-        await d.wait(0.42);
-      }
-      if (c.data?.good) {
-        d.loop(doc, 'acenar');
-        await d.say(doc, c.data?.fala ?? 'Você não está sozinha. Vamos por partes.', 2.2);
-        d.expr(p, 'aliviado');
-        d.sfx('chime');
-      } else {
-        d.loop(doc, 'pensando');
-        doc.lookAt = p;
-        await d.say(doc, c.data?.fala ?? 'Vou ficar por perto enquanto avaliamos.', 2.2);
-        d.expr(p, 'triste');
-        d.sfx('heartbeat');
-      }
-      await d.wait(1.2);
     },
   },
 ];
