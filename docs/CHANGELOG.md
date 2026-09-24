@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-24 — Quatro novas trajetórias de QA para o chute (Codex)
+- Substituídos os testes anteriores de `agressaoChuteV1`–`agressaoChuteV3` por quatro sequências completas e distintas; incluída `agressaoChuteV4`. Todas sincronizam o impacto com o chute, mostram o salto/reação, a queda de joelhos e terminam de bruços.
+- Criados movimentos específicos `impactoChuteQA1`–`impactoChuteQA4` e poses finais `caidoChuteQA1`–`caidoChuteQA4`. A pose final desloca o eixo do corpo para baixo para aproximar tronco e cabeça da linha do chão; validar visualmente no painel, pois não há contato de chão calculado para poses rotacionadas.
+- Registradas duas necessidades do motor em `docs/PEDIDOS-ENGINE.md`: ordenação de desenho por partes para inserir o pé entre as pernas da vítima e âncora de contato com o chão para corpos caídos.
+- Os IDs `agressaoChuteV1`–`V3` foram mantidos para preservar os links do painel, mas suas animações de teste anteriores foram substituídas. Não alterada a agressão normal `chute`.
+- **Verificação:** `npm run catalog`, `npm run check` e `npm run build`; prévia visual pendente. O ordenamento por partes e a colisão/âncora física aguardam o trabalho de engine descrito acima.
+
 ## 2026-09-24 — Revisão das variantes da agressão `chute` (Codex)
 - Aplicado o feedback do teste: nas cenas `agressaoChuteV1`, `agressaoChuteV2` e `agressaoChuteV3`, a vítima fica no plano visual da frente e levanta a perna próxima no quadro sincronizado com o evento `hit` do chute.
 - A reação agora inclui salto pelo impacto, proteção do baixo ventre ajoelhada e queda para a frente; adicionados os movimentos `receberChuteBaixo`, `cairParaFrente` e `caidoParaFrente`.

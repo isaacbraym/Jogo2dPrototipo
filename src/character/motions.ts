@@ -1250,64 +1250,68 @@ Object.assign(MOTIONS, {
   gravarStory: { loop: true, expr: 'convencido', propN: 'camera', fn: (t: number) => { const k = S(t * 3.5); const p = breathe(P({ lean: 0.03, chest: -0.04, head: -0.04 }), t, 0.35); p.armN = L(2.15 + k * 0.04, 0.35); p.armF = L(0.45 + k * 0.35, 0.65); p.handN = 'segura'; p.handF = 'aberta'; p.wristF = k * 0.3; return p; } },
 } as Record<string, Motion>);
 
-// ---- reação às variantes de QA da agressão chute
+// ---- quatro trajetórias de QA para o chute entre as pernas
 Object.assign(MOTIONS, {
-  // Ajoelhar e proteger o baixo ventre após um impacto.
-  protegerBaixoVentre: {
-    loop: true,
-    grounded: false,
-    expr: 'dor',
-    fn: (t: number) => {
-      const tremor = S(t * 5) * 0.025;
-      const p = P({ y: 22, lean: 0.24 + tremor, chest: 0.28, neck: 0.12, head: 0.16, breath: 0.4 + Math.abs(S(t * 3)) * 0.25 });
-      p.legN = L(0.08, 1.58);
-      p.legF = L(1.25, 1.42);
-      p.armN = L(1.05, 0.55); p.armF = L(0.75, 0.8);
-      p.handN = 'segura'; p.handF = 'segura';
-      return p;
-    },
+  // Salto de susto, joelho cedendo e queda frontal apoiada nos antebraços.
+  impactoChuteQA1: {
+    loop: false, dur: 2.1, grounded: false, expr: 'dor', events: [{ t: 0.32, name: 'hit' }],
+    fn: keyframes([
+      [0, { legN: L(0.08, 0.18), legF: L(-0.08, 0.18) }],
+      [0.2, { y: -12, sy: 1.04, lean: -0.12, chest: -0.08, legN: L(0.55, 0.95), legF: L(-0.28, 0.38), armN: L(2.65, 0.25), armF: L(-0.55, 0.35), handN: 'aberta', handF: 'aberta' }, Ease.outQuad],
+      [0.32, { y: -28, sy: 1.1, sx: 0.94, lean: -0.18, head: -0.1, legN: L(0.75, 1.45), legF: L(-0.38, 0.4), armN: L(2.8, 0.3), armF: L(-0.65, 0.4), handN: 'aberta', handF: 'aberta' }, Ease.inQuad],
+      [0.65, { y: 12, sy: 0.96, lean: 0.42, chest: 0.34, head: 0.18, legN: L(0.22, 1.35), legF: L(-0.18, 1.05), armN: L(0.8, 0.65), armF: L(0.95, 0.6), handN: 'segura', handF: 'segura' }, Ease.inOutQuad],
+      [1.05, { y: 54, lean: 0.35, chest: 0.28, head: 0.2, legN: L(0.12, 1.65), legF: L(-0.1, 1.58), armN: L(1.25, 0.65), armF: L(0.9, 0.6), handN: 'segura', handF: 'segura' }, Ease.outQuad],
+      [1.48, { y: 98, rot: 0.72, lean: 0.18, chest: 0.18, head: 0.1, legN: L(0.25, 0.85), legF: L(-0.18, 0.7), armN: L(2.15, 0.22), armF: L(2.35, 0.28), handN: 'aberta', handF: 'aberta' }, Ease.inQuad],
+      [2.1, { y: 145, rot: 1.52, head: 0.06, chest: 0.08, armN: L(2.3, 0.28), armF: L(2.05, 0.32), legN: L(0.25, 0.5), legF: L(-0.15, 0.42) }],
+    ]),
   },
-  // Saltar involuntariamente e levantar o joelho próximo da câmera no instante do contato.
-  receberChuteBaixo: {
-    loop: false,
-    dur: 0.9,
-    grounded: false,
-    expr: 'surpreso',
-    events: [{ t: 0.32, name: 'hit' }],
+  // Recuo para trás, tentativa de se segurar e mergulho frontal mais lento.
+  impactoChuteQA2: {
+    loop: false, dur: 2.35, grounded: false, expr: 'dor', events: [{ t: 0.32, name: 'hit' }],
     fn: keyframes([
       [0, {}],
-      [0.18, { y: -10, sy: 1.04, sx: 0.96, lean: -0.12, chest: -0.08, armN: L(2.3, 0.45), armF: L(-0.45, 0.5), handN: 'aberta', handF: 'aberta', legN: L(0.45, 0.85), legF: L(-0.15, 0.3) }, Ease.outQuad],
-      [0.32, { y: -28, sy: 1.1, sx: 0.94, lean: -0.22, chest: -0.14, head: -0.12, armN: L(2.45, 0.35), armF: L(-0.55, 0.5), handN: 'aberta', handF: 'aberta', legN: L(1.1, 1.65), legF: L(0.35, 0.35), footN: 0.25 }, Ease.inQuad],
-      [0.52, { y: -14, sy: 1.03, sx: 0.98, lean: 0.25, chest: 0.28, head: 0.15, armN: L(0.9, 0.8), armF: L(0.65, 0.85), handN: 'segura', handF: 'segura', legN: L(0.5, 1.35), legF: L(0.4, 0.8) }, Ease.inOutQuad],
-      [0.9, { y: 22, lean: 0.24, chest: 0.28, neck: 0.12, head: 0.16, armN: L(1.05, 0.55), armF: L(0.75, 0.8), handN: 'segura', handF: 'segura', legN: L(0.08, 1.58), legF: L(1.25, 1.42) }],
+      [0.2, { y: -8, lean: -0.22, chest: -0.1, armN: L(2.55, 0.32), armF: L(-0.4, 0.35), legN: L(0.45, 1.0), legF: L(-0.3, 0.42) }, Ease.outQuad],
+      [0.32, { y: -23, sy: 1.08, sx: 0.96, lean: -0.28, head: -0.16, armN: L(2.75, 0.25), armF: L(-0.5, 0.38), legN: L(0.68, 1.48), legF: L(-0.4, 0.45), handN: 'aberta', handF: 'aberta' }, Ease.inQuad],
+      [0.8, { y: 18, lean: 0.35, chest: 0.3, head: 0.2, legN: L(0.18, 1.5), legF: L(-0.12, 1.3), armN: L(0.55, 0.48), armF: L(1.2, 0.55), handN: 'segura', handF: 'segura' }, Ease.outQuad],
+      [1.25, { y: 58, lean: 0.5, chest: 0.36, head: 0.25, legN: L(0.1, 1.75), legF: L(-0.08, 1.68), armN: L(1.7, 0.35), armF: L(1.2, 0.5), handN: 'aberta', handF: 'aberta' }, Ease.inOutQuad],
+      [1.7, { y: 105, rot: 0.8, lean: 0.15, head: 0.12, armN: L(2.45, 0.18), armF: L(2.1, 0.25), legN: L(0.35, 0.68), legF: L(-0.25, 0.6) }, Ease.inQuad],
+      [2.35, { y: 145, rot: 1.52, head: 0.08, armN: L(2.5, 0.18), armF: L(2.15, 0.25), legN: L(0.32, 0.45), legF: L(-0.18, 0.38) }],
     ]),
   },
-  // Cair de joelhos para a frente depois do golpe, protegendo o rosto no chão.
-  cairParaFrente: {
-    loop: false,
-    dur: 1.0,
-    grounded: false,
-    expr: 'dor',
+  // Abalo vertical forte, joelho próximo desaba e os braços batem no chão.
+  impactoChuteQA3: {
+    loop: false, dur: 1.95, grounded: false, expr: 'dor', events: [{ t: 0.32, name: 'hit' }],
     fn: keyframes([
-      [0, { y: 22, lean: 0.24, chest: 0.28, neck: 0.12, head: 0.16, armN: L(1.05, 0.55), armF: L(0.75, 0.8), handN: 'segura', handF: 'segura', legN: L(0.08, 1.58), legF: L(1.25, 1.42) }],
-      [0.22, { y: 28, lean: 0.58, chest: 0.42, head: 0.22, rot: 0.18, armN: L(1.9, 0.35), armF: L(1.8, 0.4), handN: 'aberta', handF: 'aberta', legN: L(0.25, 1.35), legF: L(1.0, 1.2) }, Ease.inQuad],
-      [0.58, { y: 42, rot: 1.12, lean: 0.3, chest: 0.2, head: 0.1, armN: L(2.2, 0.3), armF: L(2.4, 0.35), legN: L(0.35, 0.65), legF: L(-0.15, 0.55) }, Ease.inQuad],
-      [0.8, { y: 47, rot: 1.5, lean: 0.08, head: 0.06, armN: L(2.45, 0.25), armF: L(2.2, 0.3), legN: L(0.28, 0.5), legF: L(-0.2, 0.45) }, Ease.outBounce],
-      [1.0, { y: 46, rot: 1.52, lean: 0.05, head: 0.04, armN: L(2.35, 0.25), armF: L(2.15, 0.3), legN: L(0.25, 0.48), legF: L(-0.18, 0.42) }],
+      [0, { legN: L(0.12, 0.2), legF: L(-0.1, 0.2) }],
+      [0.18, { y: -16, sy: 1.06, chest: -0.12, lean: -0.1, armN: L(2.8, 0.24), armF: L(-0.7, 0.35), legN: L(0.7, 1.2), legF: L(-0.32, 0.4) }, Ease.outQuad],
+      [0.32, { y: -34, sy: 1.12, sx: 0.92, chest: -0.16, lean: -0.2, head: -0.18, armN: L(2.95, 0.2), armF: L(-0.75, 0.32), legN: L(0.88, 1.65), legF: L(-0.4, 0.4) }, Ease.inQuad],
+      [0.55, { y: 4, sy: 0.92, lean: 0.5, chest: 0.4, head: 0.25, armN: L(0.65, 0.8), armF: L(0.55, 0.8), legN: L(0.22, 1.55), legF: L(-0.15, 1.3), handN: 'segura', handF: 'segura' }, Ease.inOutQuad],
+      [0.9, { y: 50, lean: 0.42, chest: 0.34, head: 0.2, legN: L(0.12, 1.7), legF: L(-0.1, 1.55), armN: L(1.7, 0.35), armF: L(1.5, 0.4), handN: 'aberta', handF: 'aberta' }, Ease.outQuad],
+      [1.35, { y: 96, rot: 0.85, lean: 0.12, head: 0.1, armN: L(2.7, 0.12), armF: L(2.55, 0.18), legN: L(0.4, 0.65), legF: L(-0.2, 0.55) }, Ease.inQuad],
+      [1.95, { y: 145, rot: 1.52, head: 0.06, armN: L(2.72, 0.12), armF: L(2.5, 0.18), legN: L(0.36, 0.42), legF: L(-0.2, 0.34) }],
     ]),
   },
-  // Manter a pose de bruços após completar a queda para a frente.
-  caidoParaFrente: {
-    loop: true,
-    grounded: false,
-    expr: 'dor',
-    fn: (t: number) => {
-      const p = P({ y: 46, rot: 1.52, head: 0.04 + S(t * 3) * 0.025, chest: 0.08 });
-      p.armN = L(2.35, 0.25); p.armF = L(2.15, 0.3);
-      p.legN = L(0.25, 0.48); p.legF = L(-0.18, 0.42);
-      return p;
-    },
+  // A torção desvia o tronco, a perna falha e a vítima cai de bruços.
+  impactoChuteQA4: {
+    loop: false, dur: 2.45, grounded: false, expr: 'dor', events: [{ t: 0.32, name: 'hit' }],
+    fn: keyframes([
+      [0, {}],
+      [0.22, { y: -10, lean: -0.16, hipTilt: 0.2, chest: -0.1, armN: L(2.5, 0.3), armF: L(-0.45, 0.4), legN: L(0.5, 1.05), legF: L(-0.25, 0.4) }, Ease.outQuad],
+      [0.32, { y: -25, sy: 1.07, sx: 0.95, lean: -0.22, hipTilt: -0.3, chest: -0.12, head: -0.12, armN: L(2.75, 0.25), armF: L(-0.5, 0.35), legN: L(0.82, 1.5), legF: L(-0.4, 0.45) }, Ease.inQuad],
+      [0.82, { y: 20, lean: 0.25, hipTilt: -0.35, chest: 0.3, head: 0.2, legN: L(0.18, 1.35), legF: L(-0.22, 1.15), armN: L(0.65, 0.5), armF: L(1.25, 0.62), handN: 'segura', handF: 'segura' }, Ease.inOutQuad],
+      [1.28, { y: 54, lean: 0.48, hipTilt: 0.22, chest: 0.35, head: 0.22, legN: L(0.1, 1.72), legF: L(-0.1, 1.6), armN: L(1.3, 0.7), armF: L(0.85, 0.7), handN: 'aberta', handF: 'segura' }, Ease.outQuad],
+      [1.8, { y: 105, rot: 0.7, hipTilt: 0.1, lean: 0.12, head: 0.12, armN: L(2.4, 0.2), armF: L(2.1, 0.26), legN: L(0.35, 0.72), legF: L(-0.22, 0.58) }, Ease.inQuad],
+      [2.45, { y: 145, rot: 1.52, head: 0.06, armN: L(2.42, 0.2), armF: L(2.08, 0.26), legN: L(0.3, 0.46), legF: L(-0.18, 0.36) }],
+    ]),
   },
+  // Segurar o corpo apoiado no chão; pose de repouso elevada até a linha da cena.
+  caidoChuteQA1: { loop: true, grounded: false, expr: 'dor', fn: (t: number) => { const p = P({ y: 145, rot: 1.52, head: 0.06 + S(t * 3) * 0.015, chest: 0.08 }); p.armN = L(2.3, 0.28); p.armF = L(2.05, 0.32); p.legN = L(0.25, 0.5); p.legF = L(-0.15, 0.42); return p; } },
+  // Repouso frontal com a tentativa frustrada de apoiar as mãos.
+  caidoChuteQA2: { loop: true, grounded: false, expr: 'dor', fn: (t: number) => { const p = P({ y: 145, rot: 1.52, head: 0.08 + S(t * 2.5) * 0.015, chest: 0.05 }); p.armN = L(2.5, 0.18); p.armF = L(2.15, 0.25); p.legN = L(0.32, 0.45); p.legF = L(-0.18, 0.38); return p; } },
+  // Repouso após o impacto mais seco, com braços estendidos à frente.
+  caidoChuteQA3: { loop: true, grounded: false, expr: 'dor', fn: (t: number) => { const p = P({ y: 145, rot: 1.52, head: 0.06 + S(t * 3.5) * 0.02, chest: 0.04 }); p.armN = L(2.72, 0.12); p.armF = L(2.5, 0.18); p.legN = L(0.36, 0.42); p.legF = L(-0.2, 0.34); return p; } },
+  // Repouso frontal após perder o equilíbrio com torção.
+  caidoChuteQA4: { loop: true, grounded: false, expr: 'dor', fn: (t: number) => { const p = P({ y: 145, rot: 1.52, head: 0.06 + S(t * 2.8) * 0.02, chest: 0.06 }); p.armN = L(2.42, 0.2); p.armF = L(2.08, 0.26); p.legN = L(0.3, 0.46); p.legF = L(-0.18, 0.36); return p; } },
 } as Record<string, Motion>);
 
 export type MotionName = keyof typeof MOTIONS;

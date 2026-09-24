@@ -49,6 +49,29 @@ function faceEach(a: Actor, b: Actor) {
   b.lookAt = a;
 }
 
+function chuteQARun(seed: number, motion: string, finalPose: string, style: { gap: number; zoom: number; hold: number }): Situation['run'] {
+  return async (d, c) => {
+      const p = P(d, c, 460, { facing: 1, z: 0.25 });
+      const v = O(d, other(c, 0, seed), 820, { facing: -1, z: 0.55 });
+      faceEach(p, v);
+      d.expr(p, 'bravo'); d.expr(v, 'assustado');
+      d.caption('Chute entre as pernas', 'O golpe acerta; a vítima perde o equilíbrio, ajoelha e cai para a frente.', 2.6);
+      const meio = (p.x + v.x) / 2;
+      await Promise.all([d.walk(p, meio - style.gap / 2), d.walk(v, meio + style.gap / 2)]);
+      faceEach(p, v);
+      d.focus(meio, 350, style.zoom);
+      const golpe = d.act(p, 'chute');
+      const reação = d.act(v, motion);
+      await d.wait(0.32);
+      d.shake(7); d.sfx('thud');
+      await Promise.all([golpe, reação]);
+      d.loop(v, finalPose);
+      d.loop(p, 'ofegante'); d.expr(p, 'serio');
+      d.resetCam();
+      await d.wait(style.hold);
+  };
+}
+
 function crowd(d: Director, n: number, x0: number, x1: number, seed: number, motion = 'aplaudir', opts: { outfit?: Partial<Appearance>; age?: number; scale?: number; y?: number; z?: number } = {}) {
   const r = new RNG(seed);
   const list: Actor[] = [];
@@ -1972,92 +1995,29 @@ const S: Situation[] = [
       await d.wait(1);
     },
   },
-  // Variação de QA do chute: impacto imediato, surpresa, ajoelhamento e queda.
+  // V1: o impacto abre a base, dobra a vítima e termina com joelhos e peito no chão.
   {
     id: 'agressaoChuteV1',
     env: (c) => c.data?.env ?? 'ruaDia',
-    run: async (d, c) => {
-      const p = P(d, c, 460, { facing: 1, z: 0.4 });
-      const v = O(d, other(c, 0, 421), 820, { facing: -1, z: 0.9 });
-      faceEach(p, v);
-      d.expr(p, 'bravo'); d.expr(v, 'serio');
-      d.caption('Chute entre as pernas', 'O impacto tira a vítima do chão.', 2.2);
-      const meio = (p.x + v.x) / 2;
-      await Promise.all([d.walk(p, meio - 42), d.walk(v, meio + 42)]);
-      faceEach(p, v);
-      d.focus(meio, 350, 1.42);
-      const golpe = d.act(p, 'chute');
-      const reação = d.act(v, 'receberChuteBaixo');
-      await d.wait(0.32);
-      d.shake(6); d.sfx('thud');
-      await Promise.all([golpe, reação]);
-      d.loop(v, 'protegerBaixoVentre');
-      await d.wait(0.48);
-      d.shake(3);
-      await d.act(v, 'cairParaFrente');
-      d.loop(v, 'caidoParaFrente');
-      d.loop(p, 'ofegante'); d.expr(p, 'serio');
-      d.resetCam();
-      await d.wait(1);
-    },
+    run: chuteQARun(431, 'impactoChuteQA1', 'caidoChuteQA1', { gap: 72, zoom: 1.62, hold: 1.25 }),
   },
-  // Variação de QA do chute: recuo cambaleante antes de a vítima ceder aos joelhos.
+  // V2: recuo curto e queda mais lenta, com os braços tentando amortecer o rosto.
   {
     id: 'agressaoChuteV2',
     env: (c) => c.data?.env ?? 'ruaDia',
-    run: async (d, c) => {
-      const p = P(d, c, 460, { facing: 1, z: 0.4 });
-      const v = O(d, other(c, 0, 422), 820, { facing: -1, z: 0.9 });
-      faceEach(p, v);
-      d.expr(p, 'bravo'); d.expr(v, 'serio');
-      d.caption('Chute entre as pernas', 'A vítima salta, tenta firmar o joelho e tomba para a frente.', 2.5);
-      const meio = (p.x + v.x) / 2;
-      await Promise.all([d.walk(p, meio - 36), d.walk(v, meio + 36)]);
-      faceEach(p, v);
-      d.focus(meio, 350, 1.5);
-      const golpe = d.act(p, 'chute');
-      const reação = d.act(v, 'receberChuteBaixo');
-      await d.wait(0.32);
-      d.shake(5); d.sfx('thud');
-      await Promise.all([golpe, reação]);
-      d.loop(v, 'protegerBaixoVentre');
-      await d.wait(0.82);
-      d.shake(3.5);
-      await d.act(v, 'cairParaFrente');
-      d.loop(v, 'caidoParaFrente');
-      d.loop(p, 'ofegante'); d.expr(p, 'serio');
-      d.resetCam();
-      await d.wait(1);
-    },
+    run: chuteQARun(432, 'impactoChuteQA2', 'caidoChuteQA2', { gap: 84, zoom: 1.55, hold: 1.55 }),
   },
-  // Variação de QA do chute: dobra o corpo, ajoelha e tomba após uma pausa curta.
+  // V3: reação mais explosiva, joelho cede primeiro e o corpo acompanha para a frente.
   {
     id: 'agressaoChuteV3',
     env: (c) => c.data?.env ?? 'ruaDia',
-    run: async (d, c) => {
-      const p = P(d, c, 460, { facing: 1, z: 0.4 });
-      const v = O(d, other(c, 0, 423), 820, { facing: -1, z: 0.9 });
-      faceEach(p, v);
-      d.expr(p, 'bravo'); d.expr(v, 'serio');
-      d.caption('Chute entre as pernas', 'O impacto lança o corpo para cima antes da queda.', 2.4);
-      const meio = (p.x + v.x) / 2;
-      await Promise.all([d.walk(p, meio - 40), d.walk(v, meio + 40)]);
-      faceEach(p, v);
-      d.focus(meio, 345, 1.55);
-      const golpe = d.act(p, 'chute');
-      const reação = d.act(v, 'receberChuteBaixo');
-      await d.wait(0.32);
-      d.shake(8); d.sfx('thud');
-      await Promise.all([golpe, reação]);
-      d.loop(v, 'protegerBaixoVentre');
-      await d.wait(0.52);
-      d.shake(5);
-      await d.act(v, 'cairParaFrente');
-      d.loop(v, 'caidoParaFrente');
-      d.loop(p, 'ofegante'); d.expr(p, 'serio');
-      d.resetCam();
-      await d.wait(1.1);
-    },
+    run: chuteQARun(433, 'impactoChuteQA3', 'caidoChuteQA3', { gap: 68, zoom: 1.68, hold: 1.12 }),
+  },
+  // V4: torção lateral na perda de equilíbrio antes da queda frontal.
+  {
+    id: 'agressaoChuteV4',
+    env: (c) => c.data?.env ?? 'ruaDia',
+    run: chuteQARun(434, 'impactoChuteQA4', 'caidoChuteQA4', { gap: 92, zoom: 1.52, hold: 1.72 }),
   },
 ];
 
