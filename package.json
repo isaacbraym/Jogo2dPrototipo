@@ -12,7 +12,8 @@
     "check": "tsc --noEmit && tsx scripts/check-content.ts",
     "check:quick": "tsx scripts/check-content.ts --quick",
     "catalog": "tsx scripts/catalog.ts",
-    "painel": "vite --port 5199 --open /painel.html"
+    "painel": "vite --port 5199 --open /painel.html",
+    "capturar": "tsx scripts/capturar.ts"
   },
   "devDependencies": {
     "@types/node": "^24.13.6",

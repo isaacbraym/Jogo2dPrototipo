@@ -7,3 +7,6 @@ Thumbs.db
 
 # painel de QA: cópias locais automáticas antes de aplicar/reverter calibração
 qa/historico/
+
+# capturas de tela geradas por `npm run capturar` (locais, não versionar)
+qa/capturas/

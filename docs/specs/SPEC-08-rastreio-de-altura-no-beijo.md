@@ -92,6 +92,10 @@ Diferença de altura resolvida: **55% pelo mais alto, 45% pelo mais baixo**. Se 
 
 Com `npm run dev` rodando:
 
+**6.0 Jeito mais fácil:** `npm run capturar -- --roteiro qa/roteiros/beijo-alturas.json` gera as 9 capturas abaixo de
+uma vez (Edge/Chrome headless com tempo virtual — sai no instante certo, sem depender de navegador da IA) e imprime
+`![nome](caminho)` para mostrar no chat. Detalhes em `docs/PROMPT-CODEX.md`.
+
 **6.1 Capturas (3 casais × 3 momentos).** `&alt=<jogador>,<outro>` fixa as alturas (0 = mais baixo, 1 = mais alto):
 
 | Caso | URL (troque `at` por 2.2, 3.6 e 5.3) |

@@ -11,6 +11,9 @@
   no alvo; agora para no alvo.
 - Medido: erro vertical entre as bocas < 1 px (alturas 334×374, 383×327 e iguais); excesso na chegada ≤ 3,4 px.
 - Harness: `&alt=<jogador>,<outro>` fixa as alturas nas cenas de teste.
+- **`npm run capturar`** (`scripts/capturar.ts`): capturas de tela por linha de comando (Edge/Chrome headless com tempo
+  virtual), individuais ou por roteiro (`qa/roteiros/beijo-alturas.json`), saída em `qa/capturas/` (fora do git) com linhas
+  `![nome](caminho)` para mostrar no chat. `docs/PROMPT-CODEX.md`: prompt modelo com a regra de mostrar a tela a cada passo.
 - **Docs:** nova `docs/specs/SPEC-08-rastreio-de-altura-no-beijo.md` (passo a passo, parâmetros com faixas seguras, roteiro
   de verificação com critérios numéricos, tabela sintoma → causa → ajuste), SPEC-07 §4, AGENTS.md.
 

@@ -26,6 +26,8 @@ npm run check:quick  # validador rápido (durante o trabalho)
 npm run catalog      # regenera docs/CATALOGO.md (rode após adicionar conteúdo)
 npm run build        # gera dist/index.html (arquivo único, abre via file://)
 npm run painel       # Painel de QA local: http://localhost:5199/painel.html (catálogo, esteira, laboratório, calibrador)
+npm run capturar -- <nome> "<url>"   # captura de tela da cena (com npm run dev rodando) — ver docs/PROMPT-CODEX.md
+npm run capturar -- --roteiro qa/roteiros/<arquivo>.json   # várias capturas de uma vez
 ```
 
 **Painel de QA** (`docs/PAINEL-QA.md`): encontre qualquer id, execute eventos/interações sem sorteio (com semente), veja cenas
@@ -56,6 +58,7 @@ Harness visual (com `npm run dev` rodando):
 | `docs/DELEGACAO-LUNA.md` | Divisão de trabalho entre agentes e o prompt de delegação. |
 | `docs/RELACIONAMENTOS.md` | Mapa do sistema de relacionamentos (memória, namoro, casamento, divórcio): feito × falta × analisar, e regras para conteúdo. |
 | `docs/specs/SPEC-07` e `SPEC-08` | Contato entre personagens (abraço, beijo, mãos) e rastreio de altura no beijo — leia antes de mexer em qualquer animação com dois personagens. |
+| `docs/PROMPT-CODEX.md` | Prompt modelo para delegar animação ao Codex e como **mostrar a tela no chat** (`npm run capturar`). |
 | `docs/PAINEL-QA.md` | Painel de QA: uso, formatos de cenário/proposta/calibração, limites de edição, procedimento "localizar pelo ID". |
 
 ## 4. Zonas de edição

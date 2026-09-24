@@ -1,0 +1,15 @@
+{
+  "descricao": "SPEC-08 §6.1 — beijo com 3 casais (alturas extremas e iguais) em 3 momentos: chegada, sustentação, saída.",
+  "tam": "1280x720",
+  "capturas": [
+    { "nome": "01-baixa-alto-chegada", "url": "/?test&sit=interacao&age=28&oage=30&sex=f&alt=0,1&at=2.2&data={\"action\":\"beijar\",\"env\":\"parque\"}" },
+    { "nome": "02-baixa-alto-beijo", "url": "/?test&sit=interacao&age=28&oage=30&sex=f&alt=0,1&at=3.6&data={\"action\":\"beijar\",\"env\":\"parque\"}" },
+    { "nome": "03-baixa-alto-saida", "url": "/?test&sit=interacao&age=28&oage=30&sex=f&alt=0,1&at=5.3&data={\"action\":\"beijar\",\"env\":\"parque\"}" },
+    { "nome": "04-alta-baixo-chegada", "url": "/?test&sit=interacao&age=28&oage=30&sex=f&alt=1,0&at=2.2&data={\"action\":\"beijar\",\"env\":\"parque\"}" },
+    { "nome": "05-alta-baixo-beijo", "url": "/?test&sit=interacao&age=28&oage=30&sex=f&alt=1,0&at=3.6&data={\"action\":\"beijar\",\"env\":\"parque\"}" },
+    { "nome": "06-alta-baixo-saida", "url": "/?test&sit=interacao&age=28&oage=30&sex=f&alt=1,0&at=5.3&data={\"action\":\"beijar\",\"env\":\"parque\"}" },
+    { "nome": "07-iguais-chegada", "url": "/?test&sit=interacao&age=28&oage=30&sex=m&alt=0.5,0.5&at=2.2&data={\"action\":\"beijar\",\"env\":\"parque\"}" },
+    { "nome": "08-iguais-beijo", "url": "/?test&sit=interacao&age=28&oage=30&sex=m&alt=0.5,0.5&at=3.6&data={\"action\":\"beijar\",\"env\":\"parque\"}" },
+    { "nome": "09-iguais-saida", "url": "/?test&sit=interacao&age=28&oage=30&sex=m&alt=0.5,0.5&at=5.3&data={\"action\":\"beijar\",\"env\":\"parque\"}" }
+  ]
+}
