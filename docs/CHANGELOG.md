@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-24 — Correção das vitrines com contato pós abraço/beijo (Codex)
+- Corrigida a soltura após abraço e beijo para aguardar a finalização do controlador de contato antes do próximo movimento.
+- Adicionado seletor `?vitrine=` para reproduzir vitrines específicas da tela de título durante QA.
+- Ajustada a vitrine de casamento para controlar mãos dadas e retorno de expressão após o beijo.
+
 ## 2026-09-24 — Contato de mão em todas as interações, cabelo corrigido e corpo caído no chão (Claude) · branch `claude/animacoes-contato`
 - **Bug do cabelo (trancas):** a trança do lado de lá era desenhada sobre o rosto (o elástico atravessava o nariz). Agora fica na
   camada de trás, nascendo na silhueta. Em perfil, cabelo comprido cai pelas costas e a trança próxima fica atrás da orelha.

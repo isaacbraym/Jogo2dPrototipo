@@ -36,6 +36,7 @@ numéricos de movimento/expressão como **propostas** em `qa/propostas/` (format
 Harness visual (com `npm run dev` rodando):
 - Cena: `http://localhost:5199/?test&sit=<idCena>&age=30&at=4&data=<json-url-encoded>` (congela no segundo `at`)
 - Galeria/movimento: `http://localhost:5199/?test&env=<idAmbiente>&n=3&m=<movimento>&expr=<expressao>`
+- Vitrines da tela de título: `http://localhost:5199/?vitrine=casamento`, `?vitrine=parque`, `?vitrine=praia`, `?vitrine=balada`, `?vitrine=acampamento` (força uma vitrine específica para QA)
 - Jogo rápido com personagem aleatório de 25 anos: `http://localhost:5199/#demo`
 
 ## 3. Mapa da documentação

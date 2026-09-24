@@ -7,7 +7,8 @@ import { sfx } from '../core/audio';
 import { listSaves, loadLife, deleteLife, lastLifeId, pickJSON, saveLife } from '../game/storage';
 import { portraitImg } from './portrait';
 import { App } from './app';
-import { physical } from '../scenes/situations';
+import { maoAte, physical } from '../scenes/situations';
+import { marcos } from '../scenes/contato';
 import { GROUND } from '../render/bg';
 import { Life } from '../game/state';
 
@@ -66,10 +67,43 @@ const SHOWCASE: { env: string; run: (d: Director, r: RNG) => Promise<void> }[] =
       for (let i = 0; i < 4; i++) d.add(randomAppearance(r), 30 + i * 8, { x: [250, 400, 880, 1030][i], facing: i < 2 ? 1 : -1, motion: 'aplaudir', y: GROUND - 30, z: -1, scale: 0.86 });
       await d.wait(1.2);
       await physical(d, a, b, 'beijar');
+
+      // Pós-beijo: voltam para os convidados e comemoram com as mãos internas realmente unidas.
+      a.turn = 0.3; b.turn = 0.3;
+      a.lookAt = null; b.lookAt = null;
+      d.loop(a, 'feliz'); d.loop(b, 'feliz');
+      d.expr(a, 'apaixonado', 1.1); d.expr(b, 'apaixonado', 1.1);
+
+      const encontro = (alto: boolean) => {
+        const ma = marcos(a), mb = marcos(b);
+        const x = (a.x + b.x) / 2;
+        const cintura = (ma.costasBaixo.y + mb.costasBaixo.y) / 2 + 10;
+        if (!alto) return { x, y: cintura };
+        // A mão sobe só até a linha dos ombros: comemora sem varrer olhos/boca.
+        const ombros = Math.min(ma.ombroF.y, mb.ombroF.y) - 6;
+        return { x, y: Math.max(ombros, cintura - 95) };
+      };
+      const alvo = (x: typeof a, alto: boolean) => {
+        const p = encontro(alto);
+        return { x: p.x - x.facing * 2, y: p.y };
+      };
+      const maosDadas = (x: typeof a) => maoAte(d, x, 'F', [
+        { t: 0, p: null, forma: 'aberta' },
+        { t: 0.6, p: () => alvo(x, false), forma: 'segura' },
+        { t: 0.95, p: () => alvo(x, false), forma: 'segura' },
+        { t: 1.75, p: () => alvo(x, true), forma: 'segura' },
+        { t: 2.55, p: () => alvo(x, true), forma: 'segura' },
+        { t: 3.0, p: null, forma: 'aberta' },
+      ]);
+      const gesto = maosDadas(a);
+      maosDadas(b);
+
+      await d.wait(0.85);
       d.fx('arroz', 640, 180, 40, { w: 400, speed: 80, dir: Math.PI / 2, cone: 1.2, life: 2.5, ground: GROUND + 20 });
       d.confetti(80);
-      d.loop(a, 'comemorar'); d.loop(b, 'comemorar');
-      await d.wait(3);
+      d.expr(a, 'feliz'); d.expr(b, 'feliz');
+      await gesto.feito;
+      await d.wait(0.5);
     },
   },
   {
@@ -87,12 +121,14 @@ export function titleScreen(app: App) {
   const host = h('div.stage-host');
   const stage = new Stage(host);
   let alive = true;
-  let idx = Math.floor(Math.random() * SHOWCASE.length);
+  const vitrine = new URLSearchParams(location.search).get('vitrine');
+  const vitrineFixa = vitrine ? SHOWCASE.findIndex((s) => s.env === vitrine) : -1;
+  let idx = vitrineFixa >= 0 ? vitrineFixa : Math.floor(Math.random() * SHOWCASE.length);
   const r = new RNG((Math.random() * 1e9) | 0);
   const cycle = async () => {
     while (alive) {
-      const s = SHOWCASE[idx % SHOWCASE.length];
-      idx++;
+      const s = SHOWCASE[vitrineFixa >= 0 ? vitrineFixa : idx % SHOWCASE.length];
+      if (vitrineFixa < 0) idx++;
       const sc = new Scene(s.env);
       if (stage.h > stage.w) sc.minViewW = 430;
       sc.fadeA = 1;

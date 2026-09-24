@@ -169,9 +169,11 @@ export async function physical(d: Director, a: Actor, b: Actor, action: string) 
       d.sfx('heart');
       for (let i = 0; i < 4; i++) { await d.wait(0.6); d.hearts((a.x + b.x) / 2, Math.min(a.topWorld(), b.topWorld()) - 10, 2); }
       c.soltar();
-      await d.wait(0.6);
+      // Espera o controlador devolver braços/turn/camadas antes de iniciar o passo para trás.
+      while (c.vivo) await d.wait(0.05);
       d.expr(a, 'feliz'); d.expr(b, 'feliz');
       d.loop(a, 'feliz'); d.loop(b, 'feliz');
+      await close(Math.max(130, (a.d.chestW + b.d.chestW) * 0.95));
       d.resetCam();
       break;
     }
@@ -195,8 +197,10 @@ export async function physical(d: Director, a: Actor, b: Actor, action: string) 
       await d.wait(0.3);
       d.expr(a, 'aconchego'); d.expr(b, 'aconchego');
       await d.wait(0.45);
+      while (c.vivo) await d.wait(0.05);
       d.expr(a, 'apaixonado', 2); d.expr(b, 'apaixonado', 2);
       d.loop(a, 'feliz'); d.loop(b, 'feliz');
+      await close(Math.max(130, (a.d.chestW + b.d.chestW) * 0.95));
       d.resetCam();
       break;
     }
