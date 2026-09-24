@@ -245,7 +245,7 @@ export class Scene {
     const halfW = viewW / 2;
     const camX = clamp(c.x, X0 + halfW, X0 + WW - halfW);
     this.padCur += (this.padBottom - this.padCur) * 0.12;
-    const padW = this.padCur / scale; // em unidades de mundo
+    const padW = (h < 760 ? this.padCur : 0) / scale; // em unidades de mundo
     const camY = (viewH >= 720 ? 720 - viewH / 2 : clamp(c.y, viewH / 2, 720 - viewH / 2)) + padW * 0.85;
     this.view = { x0: camX - halfW, x1: camX + halfW, scale, w, h, y0: camY - viewH / 2 };
     const res = Math.min(2, Math.max(1, dpr * baseScale * 1.15));
@@ -459,3 +459,4 @@ export class Director {
     if (typeof f === 'function') f.call(sfx);
   }
 }
+
