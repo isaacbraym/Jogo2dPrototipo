@@ -1977,25 +1977,25 @@ const S: Situation[] = [
     id: 'agressaoChuteV1',
     env: (c) => c.data?.env ?? 'ruaDia',
     run: async (d, c) => {
-      const p = P(d, c, 460, { facing: 1, z: 1 });
-      const v = O(d, other(c, 0, 421), 820, { facing: -1, z: 0.5 });
+      const p = P(d, c, 460, { facing: 1, z: 0.4 });
+      const v = O(d, other(c, 0, 421), 820, { facing: -1, z: 0.9 });
       faceEach(p, v);
       d.expr(p, 'bravo'); d.expr(v, 'serio');
-      d.caption('Chute baixo', 'O impacto interrompe a reação.', 2.2);
+      d.caption('Chute entre as pernas', 'O impacto tira a vítima do chão.', 2.2);
       const meio = (p.x + v.x) / 2;
-      await Promise.all([d.walk(p, meio - 48), d.walk(v, meio + 48)]);
+      await Promise.all([d.walk(p, meio - 42), d.walk(v, meio + 42)]);
       faceEach(p, v);
-      d.focus(meio, 355, 1.3);
+      d.focus(meio, 350, 1.42);
       const golpe = d.act(p, 'chute');
+      const reação = d.act(v, 'receberChuteBaixo');
       await d.wait(0.32);
-      d.shake(5); d.sfx('thud');
-      d.loop(v, 'susto'); d.expr(v, 'surpreso');
-      const recuo = d.moveActor(v, v.x - v.facing * 24, GROUND, 0.22, Ease.outQuad);
-      await Promise.all([golpe, recuo]);
+      d.shake(6); d.sfx('thud');
+      await Promise.all([golpe, reação]);
       d.loop(v, 'protegerBaixoVentre');
-      await d.wait(0.55);
-      await d.act(v, 'cair');
-      d.loop(v, 'caidoChao');
+      await d.wait(0.48);
+      d.shake(3);
+      await d.act(v, 'cairParaFrente');
+      d.loop(v, 'caidoParaFrente');
       d.loop(p, 'ofegante'); d.expr(p, 'serio');
       d.resetCam();
       await d.wait(1);
@@ -2006,28 +2006,25 @@ const S: Situation[] = [
     id: 'agressaoChuteV2',
     env: (c) => c.data?.env ?? 'ruaDia',
     run: async (d, c) => {
-      const p = P(d, c, 460, { facing: 1, z: 1 });
-      const v = O(d, other(c, 0, 422), 820, { facing: -1, z: 0.5 });
+      const p = P(d, c, 460, { facing: 1, z: 0.4 });
+      const v = O(d, other(c, 0, 422), 820, { facing: -1, z: 0.9 });
       faceEach(p, v);
       d.expr(p, 'bravo'); d.expr(v, 'serio');
-      d.caption('Chute baixo', 'O susto vira dor e desequilíbrio.', 2.2);
+      d.caption('Chute entre as pernas', 'A vítima salta, tenta firmar o joelho e tomba para a frente.', 2.5);
       const meio = (p.x + v.x) / 2;
-      await Promise.all([d.walk(p, meio - 50), d.walk(v, meio + 50)]);
+      await Promise.all([d.walk(p, meio - 36), d.walk(v, meio + 36)]);
       faceEach(p, v);
-      d.focus(meio, 355, 1.35);
+      d.focus(meio, 350, 1.5);
       const golpe = d.act(p, 'chute');
+      const reação = d.act(v, 'receberChuteBaixo');
       await d.wait(0.32);
-      d.shake(4); d.sfx('thud');
-      d.loop(v, 'susto'); d.expr(v, 'surpreso');
-      const recuo = d.moveActor(v, v.x - v.facing * 48, GROUND, 0.42, Ease.outBack);
-      await Promise.all([golpe, recuo]);
-      d.loop(v, 'dor'); d.expr(v, 'dor');
-      await d.wait(0.3);
+      d.shake(5); d.sfx('thud');
+      await Promise.all([golpe, reação]);
       d.loop(v, 'protegerBaixoVentre');
-      await d.wait(0.72);
-      d.shake(2.5);
-      await d.act(v, 'cair');
-      d.loop(v, 'caidoChao');
+      await d.wait(0.82);
+      d.shake(3.5);
+      await d.act(v, 'cairParaFrente');
+      d.loop(v, 'caidoParaFrente');
       d.loop(p, 'ofegante'); d.expr(p, 'serio');
       d.resetCam();
       await d.wait(1);
@@ -2038,28 +2035,25 @@ const S: Situation[] = [
     id: 'agressaoChuteV3',
     env: (c) => c.data?.env ?? 'ruaDia',
     run: async (d, c) => {
-      const p = P(d, c, 460, { facing: 1, z: 1 });
-      const v = O(d, other(c, 0, 423), 820, { facing: -1, z: 0.5 });
+      const p = P(d, c, 460, { facing: 1, z: 0.4 });
+      const v = O(d, other(c, 0, 423), 820, { facing: -1, z: 0.9 });
       faceEach(p, v);
       d.expr(p, 'bravo'); d.expr(v, 'serio');
-      d.caption('Chute baixo', 'A vítima tenta se manter em pé, mas não consegue.', 2.4);
+      d.caption('Chute entre as pernas', 'O impacto lança o corpo para cima antes da queda.', 2.4);
       const meio = (p.x + v.x) / 2;
-      await Promise.all([d.walk(p, meio - 44), d.walk(v, meio + 44)]);
+      await Promise.all([d.walk(p, meio - 40), d.walk(v, meio + 40)]);
       faceEach(p, v);
-      d.focus(meio, 350, 1.4);
+      d.focus(meio, 345, 1.55);
       const golpe = d.act(p, 'chute');
+      const reação = d.act(v, 'receberChuteBaixo');
       await d.wait(0.32);
-      d.shake(7); d.sfx('thud');
-      d.loop(v, 'susto'); d.expr(v, 'surpreso');
-      const recuo = d.moveActor(v, v.x - v.facing * 35, GROUND, 0.28, Ease.outQuad);
-      await Promise.all([golpe, recuo]);
-      d.loop(v, 'agachar'); d.expr(v, 'dor');
-      await d.wait(0.38);
+      d.shake(8); d.sfx('thud');
+      await Promise.all([golpe, reação]);
       d.loop(v, 'protegerBaixoVentre');
-      await d.wait(0.42);
-      d.shake(4);
-      await d.act(v, 'cair');
-      d.loop(v, 'caidoChao');
+      await d.wait(0.52);
+      d.shake(5);
+      await d.act(v, 'cairParaFrente');
+      d.loop(v, 'caidoParaFrente');
       d.loop(p, 'ofegante'); d.expr(p, 'serio');
       d.resetCam();
       await d.wait(1.1);

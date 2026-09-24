@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-24 — Revisão das variantes da agressão `chute` (Codex)
+- Aplicado o feedback do teste: nas cenas `agressaoChuteV1`, `agressaoChuteV2` e `agressaoChuteV3`, a vítima fica no plano visual da frente e levanta a perna próxima no quadro sincronizado com o evento `hit` do chute.
+- A reação agora inclui salto pelo impacto, proteção do baixo ventre ajoelhada e queda para a frente; adicionados os movimentos `receberChuteBaixo`, `cairParaFrente` e `caidoParaFrente`.
+- **Verificação:** `npm run check` ✅ · `npm run build` ✅. Avisos de cobertura: as três cenas comparativas só rodam pelo Laboratório; `herancaBriga` tem um caminho que os perfis automáticos não exercem. Verificação visual pendente: Computer Use não conseguiu identificar com confiança a URL ativa do Chrome.
+
 ## 2026-09-23 — Variações de QA para agressão `chute` (Codex)
 - Pedido do painel: agressão `chute` → cenas de comparação `agressaoChuteV1`, `agressaoChuteV2` e `agressaoChuteV3`.
 - As três mostram o impacto na região baixa, reação de surpresa, ajoelhamento por dor e queda, com ritmos/recuos de câmera e corpo diferentes. A pose ajoelhada usa o movimento `protegerBaixoVentre`.

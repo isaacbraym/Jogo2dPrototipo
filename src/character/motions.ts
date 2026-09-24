@@ -1255,6 +1255,7 @@ Object.assign(MOTIONS, {
   // Ajoelhar e proteger o baixo ventre após um impacto.
   protegerBaixoVentre: {
     loop: true,
+    grounded: false,
     expr: 'dor',
     fn: (t: number) => {
       const tremor = S(t * 5) * 0.025;
@@ -1263,6 +1264,47 @@ Object.assign(MOTIONS, {
       p.legF = L(1.25, 1.42);
       p.armN = L(1.05, 0.55); p.armF = L(0.75, 0.8);
       p.handN = 'segura'; p.handF = 'segura';
+      return p;
+    },
+  },
+  // Saltar involuntariamente e levantar o joelho próximo da câmera no instante do contato.
+  receberChuteBaixo: {
+    loop: false,
+    dur: 0.9,
+    grounded: false,
+    expr: 'surpreso',
+    events: [{ t: 0.32, name: 'hit' }],
+    fn: keyframes([
+      [0, {}],
+      [0.18, { y: -10, sy: 1.04, sx: 0.96, lean: -0.12, chest: -0.08, armN: L(2.3, 0.45), armF: L(-0.45, 0.5), handN: 'aberta', handF: 'aberta', legN: L(0.45, 0.85), legF: L(-0.15, 0.3) }, Ease.outQuad],
+      [0.32, { y: -28, sy: 1.1, sx: 0.94, lean: -0.22, chest: -0.14, head: -0.12, armN: L(2.45, 0.35), armF: L(-0.55, 0.5), handN: 'aberta', handF: 'aberta', legN: L(1.1, 1.65), legF: L(0.35, 0.35), footN: 0.25 }, Ease.inQuad],
+      [0.52, { y: -14, sy: 1.03, sx: 0.98, lean: 0.25, chest: 0.28, head: 0.15, armN: L(0.9, 0.8), armF: L(0.65, 0.85), handN: 'segura', handF: 'segura', legN: L(0.5, 1.35), legF: L(0.4, 0.8) }, Ease.inOutQuad],
+      [0.9, { y: 22, lean: 0.24, chest: 0.28, neck: 0.12, head: 0.16, armN: L(1.05, 0.55), armF: L(0.75, 0.8), handN: 'segura', handF: 'segura', legN: L(0.08, 1.58), legF: L(1.25, 1.42) }],
+    ]),
+  },
+  // Cair de joelhos para a frente depois do golpe, protegendo o rosto no chão.
+  cairParaFrente: {
+    loop: false,
+    dur: 1.0,
+    grounded: false,
+    expr: 'dor',
+    fn: keyframes([
+      [0, { y: 22, lean: 0.24, chest: 0.28, neck: 0.12, head: 0.16, armN: L(1.05, 0.55), armF: L(0.75, 0.8), handN: 'segura', handF: 'segura', legN: L(0.08, 1.58), legF: L(1.25, 1.42) }],
+      [0.22, { y: 28, lean: 0.58, chest: 0.42, head: 0.22, rot: 0.18, armN: L(1.9, 0.35), armF: L(1.8, 0.4), handN: 'aberta', handF: 'aberta', legN: L(0.25, 1.35), legF: L(1.0, 1.2) }, Ease.inQuad],
+      [0.58, { y: 42, rot: 1.12, lean: 0.3, chest: 0.2, head: 0.1, armN: L(2.2, 0.3), armF: L(2.4, 0.35), legN: L(0.35, 0.65), legF: L(-0.15, 0.55) }, Ease.inQuad],
+      [0.8, { y: 47, rot: 1.5, lean: 0.08, head: 0.06, armN: L(2.45, 0.25), armF: L(2.2, 0.3), legN: L(0.28, 0.5), legF: L(-0.2, 0.45) }, Ease.outBounce],
+      [1.0, { y: 46, rot: 1.52, lean: 0.05, head: 0.04, armN: L(2.35, 0.25), armF: L(2.15, 0.3), legN: L(0.25, 0.48), legF: L(-0.18, 0.42) }],
+    ]),
+  },
+  // Manter a pose de bruços após completar a queda para a frente.
+  caidoParaFrente: {
+    loop: true,
+    grounded: false,
+    expr: 'dor',
+    fn: (t: number) => {
+      const p = P({ y: 46, rot: 1.52, head: 0.04 + S(t * 3) * 0.025, chest: 0.08 });
+      p.armN = L(2.35, 0.25); p.armF = L(2.15, 0.3);
+      p.legN = L(0.25, 0.48); p.legF = L(-0.18, 0.42);
       return p;
     },
   },
