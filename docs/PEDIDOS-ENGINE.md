@@ -55,10 +55,10 @@ Quando atendido: troque `[ABERTO]` por `[FEITO 2026-xx-xx]` e cite o commit.
 - **Quem pediu / quando:** Codex, a partir do teste de QA, 2026-09-24
 - **Problema:** `scene.ts` ordena atores inteiros por `z`/`y`; `character.ts` desenha todas as partes internas em uma ordem fixa. Não é possível desenhar o pé/perna do agressor entre a perna distante e a perna próxima da vítima, como o impacto do chute exige.
 - **Proposta:** permitir ordem de desenho por partes com pontos de camada controlados pela cena/pose (ao menos perna distante, tronco/cabeça, perna próxima e membros do agressor), mantendo ordenação determinística, sombras e objetos existentes. Expor no painel um identificador/campo de camada por parte para inspeção e comparação.
-- **Conteúdo que depende disso:** `agressaoChuteV1`, `agressaoChuteV2`, `agressaoChuteV3` e `agressaoChuteV4`.
+- **Conteúdo que depende disso:** ramo `kind === 'chute'` da cena oficial `agressao`.
 
 ### [ABERTO] Contato do corpo caído com o chão
 - **Quem pediu / quando:** Codex, a partir do teste de QA, 2026-09-24
 - **Problema:** movimentos com `grounded: false` e rotação do corpo não têm ancoragem automática do ponto de contato; valores fixos de `y` podem deixar cabeça/tronco suspensos ou afundados conforme idade e proporções do personagem.
 - **Proposta:** adicionar âncora de contato no chão para poses rotacionadas, calculada a partir dos pontos inferiores do corpo/rig e das dimensões do ator, permitindo manter o corpo apoiado durante animação e loop final sem deslocamentos bruscos.
-- **Conteúdo que depende disso:** movimentos `impactoChuteQA1`–`impactoChuteQA4` e `caidoChuteQA1`–`caidoChuteQA4`.
+- **Conteúdo que depende disso:** movimentos `impactoChuteQA4` e `caidoChuteQA4` usados pela cena oficial `agressao`.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-24 — V4 do chute promovida para a cena oficial (Codex)
+- Aplicada a trajetória escolhida ao ramo `kind === 'chute'` da cena `agressao`: impacto sincronizado, reação com salto, queda ajoelhada para a frente e pose no chão.
+- A vítima se levanta da pose frontal antes de revidar ou voltar à discussão. Preservado o caminho de esquiva e os demais tipos de agressão.
+- Removidas as cenas comparativas `agressaoChuteV1`–`agressaoChuteV4` e as animações de teste não escolhidas. Mantidos os IDs da V4 (`impactoChuteQA4`, `caidoChuteQA4`) e adicionada `levantarChuteFrenteQA4` para a retomada da vítima.
+- Permanecem abertos em `docs/PEDIDOS-ENGINE.md` o desenho por camadas de partes do corpo e o apoio calculado no chão.
+- **Verificação:** `npm run catalog`, `npm run check` e `npm run build`; verificação visual pendente.
+
 ## 2026-09-24 — Quatro novas trajetórias de QA para o chute (Codex)
 - Substituídos os testes anteriores de `agressaoChuteV1`–`agressaoChuteV3` por quatro sequências completas e distintas; incluída `agressaoChuteV4`. Todas sincronizam o impacto com o chute, mostram o salto/reação, a queda de joelhos e terminam de bruços.
 - Criados movimentos específicos `impactoChuteQA1`–`impactoChuteQA4` e poses finais `caidoChuteQA1`–`caidoChuteQA4`. A pose final desloca o eixo do corpo para baixo para aproximar tronco e cabeça da linha do chão; validar visualmente no painel, pois não há contato de chão calculado para poses rotacionadas.

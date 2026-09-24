@@ -49,29 +49,6 @@ function faceEach(a: Actor, b: Actor) {
   b.lookAt = a;
 }
 
-function chuteQARun(seed: number, motion: string, finalPose: string, style: { gap: number; zoom: number; hold: number }): Situation['run'] {
-  return async (d, c) => {
-      const p = P(d, c, 460, { facing: 1, z: 0.25 });
-      const v = O(d, other(c, 0, seed), 820, { facing: -1, z: 0.55 });
-      faceEach(p, v);
-      d.expr(p, 'bravo'); d.expr(v, 'assustado');
-      d.caption('Chute entre as pernas', 'O golpe acerta; a vítima perde o equilíbrio, ajoelha e cai para a frente.', 2.6);
-      const meio = (p.x + v.x) / 2;
-      await Promise.all([d.walk(p, meio - style.gap / 2), d.walk(v, meio + style.gap / 2)]);
-      faceEach(p, v);
-      d.focus(meio, 350, style.zoom);
-      const golpe = d.act(p, 'chute');
-      const reação = d.act(v, motion);
-      await d.wait(0.32);
-      d.shake(7); d.sfx('thud');
-      await Promise.all([golpe, reação]);
-      d.loop(v, finalPose);
-      d.loop(p, 'ofegante'); d.expr(p, 'serio');
-      d.resetCam();
-      await d.wait(style.hold);
-  };
-}
-
 function crowd(d: Director, n: number, x0: number, x1: number, seed: number, motion = 'aplaudir', opts: { outfit?: Partial<Appearance>; age?: number; scale?: number; y?: number; z?: number } = {}) {
   const r = new RNG(seed);
   const list: Actor[] = [];
@@ -1322,7 +1299,8 @@ const S: Situation[] = [
         }
         default: {
           // soco / chute / cabeçada
-          await close(k === 'cabecada' ? 92 : 125);
+          await close(k === 'cabecada' || k === 'chute' ? 92 : 125);
+          if (k === 'chute') { p.z = 0.25; v.z = 0.55; }
           d.loop(v, 'lutar');
           d.focus((p.x + v.x) / 2, 360, 1.2);
           if (c.data?.dodged) {
@@ -1338,6 +1316,15 @@ const S: Situation[] = [
             await d.wait(1.4);
             await d.act(p, 'levantarChao');
             d.loop(p, 'humilhado');
+          } else if (k === 'chute') {
+            d.caption('Chute entre as pernas', 'O golpe acerta; a vítima salta, ajoelha e cai para a frente.', 2.6);
+            const golpe = d.act(p, 'chute');
+            const reação = d.act(v, 'impactoChuteQA4');
+            await d.wait(0.32);
+            d.shake(7); d.sfx('thud');
+            await Promise.all([golpe, reação]);
+            d.loop(v, 'caidoChuteQA4');
+            onGround = true;
           } else {
             await d.act(p, k === 'chute' ? 'chute' : k === 'cabecada' ? 'cabecada' : 'socoForte');
             if (c.data?.injured || !c.data?.retaliate) {
@@ -1354,7 +1341,7 @@ const S: Situation[] = [
       }
       // ------------------------ desfecho
       if (c.data?.retaliate) {
-        if (onGround) await d.act(v, 'levantarChao');
+        if (onGround) await d.act(v, k === 'chute' ? 'levantarChuteFrenteQA4' : 'levantarChao');
         d.loop(v, 'lutar');
         d.expr(v, 'furioso');
         faceEach(p, v);
@@ -1378,6 +1365,11 @@ const S: Situation[] = [
         d.expr(p, 'chocado');
         await d.say(p, 'Eita... acho que exagerei.', 1.8, 'pensa');
       } else if (k !== 'roubar' && k !== 'pegadinha' && !c.data?.dodged) {
+        if (onGround && k === 'chute') {
+          await d.wait(0.8);
+          await d.act(v, 'levantarChuteFrenteQA4');
+          onGround = false;
+        }
         d.loop(p, 'bracosCruzados');
         d.expr(p, 'serio');
         if (k === 'humilhar') { d.loop(p, 'rirDe'); d.expr(v, 'humilhado'); }
@@ -1994,30 +1986,6 @@ const S: Situation[] = [
       else { d.emote(p, 'estrela'); d.expr(p, 'feliz'); await d.say(p, 'Bingo! Uma rodada para a mesa.', 1.8); }
       await d.wait(1);
     },
-  },
-  // V1: o impacto abre a base, dobra a vítima e termina com joelhos e peito no chão.
-  {
-    id: 'agressaoChuteV1',
-    env: (c) => c.data?.env ?? 'ruaDia',
-    run: chuteQARun(431, 'impactoChuteQA1', 'caidoChuteQA1', { gap: 72, zoom: 1.62, hold: 1.25 }),
-  },
-  // V2: recuo curto e queda mais lenta, com os braços tentando amortecer o rosto.
-  {
-    id: 'agressaoChuteV2',
-    env: (c) => c.data?.env ?? 'ruaDia',
-    run: chuteQARun(432, 'impactoChuteQA2', 'caidoChuteQA2', { gap: 84, zoom: 1.55, hold: 1.55 }),
-  },
-  // V3: reação mais explosiva, joelho cede primeiro e o corpo acompanha para a frente.
-  {
-    id: 'agressaoChuteV3',
-    env: (c) => c.data?.env ?? 'ruaDia',
-    run: chuteQARun(433, 'impactoChuteQA3', 'caidoChuteQA3', { gap: 68, zoom: 1.68, hold: 1.12 }),
-  },
-  // V4: torção lateral na perda de equilíbrio antes da queda frontal.
-  {
-    id: 'agressaoChuteV4',
-    env: (c) => c.data?.env ?? 'ruaDia',
-    run: chuteQARun(434, 'impactoChuteQA4', 'caidoChuteQA4', { gap: 92, zoom: 1.52, hold: 1.72 }),
   },
 ];
 
