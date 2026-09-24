@@ -210,7 +210,7 @@
 | `empresario` | 📈 Empreendedor(a) | `escritorio` | Investidor(a)-anjo |
 | `ator` | 🎬 Ator/Atriz | `palco` | Diretor(a) de elenco |
 
-## Cenas/situações — 73
+## Cenas/situações — 76
 
 | id | ambiente | chaves de `data` lidas |
 |---|---|---|
@@ -287,6 +287,9 @@
 | `assaltoOnibus` | `rodoviaria` | `acao`, `escapou`, `desmaio` |
 | `velorioCoxinha` | `cemiterio` | `nome` |
 | `bingoIdosos` | `sala` | `ganhou` |
+| `agressaoChuteV1` | (dinâmico) | `env` |
+| `agressaoChuteV2` | (dinâmico) | `env` |
+| `agressaoChuteV3` | (dinâmico) | `env` |
 
 Ações físicas de `physical()` (use em `interacao` com `data.action`): `abracar` · `beijar` · `highFive` · `apertoMao` · `soco` · `piada` · `fofocar` · `consolar` · `desculpas` · `massagem` · `serenata` · `tapa` · `empurrar` · `dancar` · `discutir` · `elogiar` · `presente` · `conversar` · `pedirDinheiro` · `brincar`
 
@@ -294,9 +297,9 @@ Ações físicas de `physical()` (use em `interacao` com `data.action`): `abraca
 
 `quartoBebe` · `quarto` · `sala` · `cozinha` · `maternidade` · `hospital` · `escola` · `biblioteca` · `escritorio` · `academia` · `restaurante` · `balada` · `tribunal` · `prisao` · `cassino` · `aeroporto` · `parque` · `patio` · `praia` · `ruaNoite` · `ruaChuva` · `ruaDia` · `casamento` · `acampamento` · `cemiterio` · `palco` · `zen` · `ceu` · `suburbio` · `cinema` · `universidade` · `concessionaria` · `delegacia` · `estudio` · `mercado` · `boteco` · `cafeteria` · `delegaciaInterna` · `diretoria` · `loterica` · `rodoviaria` · `feiraLivre` · `pontoOnibus` · `upa` · `cartorio` · `salaoBeleza` · `lanHouse` · `quadraVarzea` · `postoGasolina`
 
-## Movimentos — 114
+## Movimentos — 115
 
-**Em loop (estados):** `parado` · `feliz` · `triste` · `bracosCruzados` · `pensando` · `nervoso` · `maosNaCintura` · `andar` · `correr` · `esteira` · `dancar` · `dancar2` · `dancar3` · `comemorar` · `acenar` · `aplaudir` · `chorar` · `rir` · `furia` · `susto` · `darOmbros` · `facepalm` · `rezar` · `vitoria` · `joinha` · `apontar` · `lutar` · `sentar` · `sentarFeliz` · `digitar` · `estudar` · `deitado` · `deitadoDoente` · `sentarChao` · `engatinhar` · `meditar` · `ajoelhar` · `agachar` · `levantarPeso` · `rosca` · `telefone` · `mexerCelular` · `ler` · `lerSentado` · `beber` · `cafe` · `comer` · `cantar` · `tocarViolao` · `cozinhar` · `pintar` · `segurarBebe` · `varrer` · `dirigir` · `jogarVideogame` · `dormirEmPe` · `empurrarCarrinho` · `abracar` · `abracarTras` · `beijarTras` · `beijar` · `apertoMao` · `dor` · `olhoRoxo` · `caidoChao` · `ofegante` · `molhado` · `cochichar` · `rirDe` · `humilhado` · `consolar` · `massagem` · `desculpas` · `contarPiada` · `roubar` · `escoltado` · `escreverQuadro` · `sentarCabisbaixo` · `apontarBronca` · `seguranca` · `torcerFutebol` · `entrevistado` · `entrevistador` · `digitarFurioso` · `carregarCaixa` · `abanar` · `dancarQuadrilha` · `ajoelharImplorar` · `contarDinheiro` · `gravarStory`
+**Em loop (estados):** `parado` · `feliz` · `triste` · `bracosCruzados` · `pensando` · `nervoso` · `maosNaCintura` · `andar` · `correr` · `esteira` · `dancar` · `dancar2` · `dancar3` · `comemorar` · `acenar` · `aplaudir` · `chorar` · `rir` · `furia` · `susto` · `darOmbros` · `facepalm` · `rezar` · `vitoria` · `joinha` · `apontar` · `lutar` · `sentar` · `sentarFeliz` · `digitar` · `estudar` · `deitado` · `deitadoDoente` · `sentarChao` · `engatinhar` · `meditar` · `ajoelhar` · `agachar` · `levantarPeso` · `rosca` · `telefone` · `mexerCelular` · `ler` · `lerSentado` · `beber` · `cafe` · `comer` · `cantar` · `tocarViolao` · `cozinhar` · `pintar` · `segurarBebe` · `varrer` · `dirigir` · `jogarVideogame` · `dormirEmPe` · `empurrarCarrinho` · `abracar` · `abracarTras` · `beijarTras` · `beijar` · `apertoMao` · `dor` · `olhoRoxo` · `caidoChao` · `ofegante` · `molhado` · `cochichar` · `rirDe` · `humilhado` · `consolar` · `massagem` · `desculpas` · `contarPiada` · `roubar` · `escoltado` · `escreverQuadro` · `sentarCabisbaixo` · `apontarBronca` · `seguranca` · `torcerFutebol` · `entrevistado` · `entrevistador` · `digitarFurioso` · `carregarCaixa` · `abanar` · `dancarQuadrilha` · `ajoelharImplorar` · `contarDinheiro` · `gravarStory` · `protegerBaixoVentre`
 
 **Ações (duração fixa):** `soco (0.8s)` · `tapa (0.75s)` · `chute (0.8s)` · `empurrar (0.8s)` · `highFive (1s)` · `cair (1.2s)` · `pular (0.9s)` · `reverencia (1.4s)` · `jogarChapeu (1s)` · `soprar (1.2s)` · `bater (0.6s)` · `estremecer (0.6s)` · `entregar (1s)` · `levantarChao (1.4s)` · `cabecada (0.9s)` · `socoForte (1s)` · `jogarBebida (1s)` · `espreguicar (1.6s)` · `bocejar (1.4s)` · `limparSuor (1.1s)` · `tropecarEscada (0.9s)` · `escorregar (0.9s)` · `desmaiar (1.2s)` · `selfie (1.3s)`
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-23 — Variações de QA para agressão `chute` (Codex)
+- Pedido do painel: agressão `chute` → cenas de comparação `agressaoChuteV1`, `agressaoChuteV2` e `agressaoChuteV3`.
+- As três mostram o impacto na região baixa, reação de surpresa, ajoelhamento por dor e queda, com ritmos/recuos de câmera e corpo diferentes. A pose ajoelhada usa o movimento `protegerBaixoVentre`.
+- As variantes forçam o acerto para reproduzir o caso no QA sem depender do sorteio de esquiva.
+- Mantidos intactos `AGGRO.chute` e a cena normal `agressao`; as variantes são abertas diretamente no Laboratório para escolha antes de qualquer promoção.
+- Atualizado o catálogo. **Verificação:** `npm run check` e `npm run build`; cenas comparativas não chamadas pela partida normal podem aparecer como não alcançadas.
+
 ## 2026-09-23 — Cena `medico` finalizada com a V2 validada (Codex)
 - Promovida a implementação de `medicoV2` para a cena oficial `medico`, preservando o ID usado pelo jogo.
 - Removidas `medicoV1`, `medicoV2` e `medicoV3` do catálogo de conteúdo após a escolha da V2; mantidos os ajustes aprovados de exame, expressão da paciente e lágrimas com gravidade vertical.

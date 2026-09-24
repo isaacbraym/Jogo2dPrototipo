@@ -1250,6 +1250,24 @@ Object.assign(MOTIONS, {
   gravarStory: { loop: true, expr: 'convencido', propN: 'camera', fn: (t: number) => { const k = S(t * 3.5); const p = breathe(P({ lean: 0.03, chest: -0.04, head: -0.04 }), t, 0.35); p.armN = L(2.15 + k * 0.04, 0.35); p.armF = L(0.45 + k * 0.35, 0.65); p.handN = 'segura'; p.handF = 'aberta'; p.wristF = k * 0.3; return p; } },
 } as Record<string, Motion>);
 
+// ---- reação às variantes de QA da agressão chute
+Object.assign(MOTIONS, {
+  // Ajoelhar e proteger o baixo ventre após um impacto.
+  protegerBaixoVentre: {
+    loop: true,
+    expr: 'dor',
+    fn: (t: number) => {
+      const tremor = S(t * 5) * 0.025;
+      const p = P({ y: 22, lean: 0.24 + tremor, chest: 0.28, neck: 0.12, head: 0.16, breath: 0.4 + Math.abs(S(t * 3)) * 0.25 });
+      p.legN = L(0.08, 1.58);
+      p.legF = L(1.25, 1.42);
+      p.armN = L(1.05, 0.55); p.armF = L(0.75, 0.8);
+      p.handN = 'segura'; p.handF = 'segura';
+      return p;
+    },
+  },
+} as Record<string, Motion>);
+
 export type MotionName = keyof typeof MOTIONS;
 
 /** Ajusta a altura da pelve para manter o pé mais baixo no chão. */

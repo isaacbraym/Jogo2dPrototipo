@@ -1972,6 +1972,99 @@ const S: Situation[] = [
       await d.wait(1);
     },
   },
+  // Variação de QA do chute: impacto imediato, surpresa, ajoelhamento e queda.
+  {
+    id: 'agressaoChuteV1',
+    env: (c) => c.data?.env ?? 'ruaDia',
+    run: async (d, c) => {
+      const p = P(d, c, 460, { facing: 1, z: 1 });
+      const v = O(d, other(c, 0, 421), 820, { facing: -1, z: 0.5 });
+      faceEach(p, v);
+      d.expr(p, 'bravo'); d.expr(v, 'serio');
+      d.caption('Chute baixo', 'O impacto interrompe a reação.', 2.2);
+      const meio = (p.x + v.x) / 2;
+      await Promise.all([d.walk(p, meio - 48), d.walk(v, meio + 48)]);
+      faceEach(p, v);
+      d.focus(meio, 355, 1.3);
+      const golpe = d.act(p, 'chute');
+      await d.wait(0.32);
+      d.shake(5); d.sfx('thud');
+      d.loop(v, 'susto'); d.expr(v, 'surpreso');
+      const recuo = d.moveActor(v, v.x - v.facing * 24, GROUND, 0.22, Ease.outQuad);
+      await Promise.all([golpe, recuo]);
+      d.loop(v, 'protegerBaixoVentre');
+      await d.wait(0.55);
+      await d.act(v, 'cair');
+      d.loop(v, 'caidoChao');
+      d.loop(p, 'ofegante'); d.expr(p, 'serio');
+      d.resetCam();
+      await d.wait(1);
+    },
+  },
+  // Variação de QA do chute: recuo cambaleante antes de a vítima ceder aos joelhos.
+  {
+    id: 'agressaoChuteV2',
+    env: (c) => c.data?.env ?? 'ruaDia',
+    run: async (d, c) => {
+      const p = P(d, c, 460, { facing: 1, z: 1 });
+      const v = O(d, other(c, 0, 422), 820, { facing: -1, z: 0.5 });
+      faceEach(p, v);
+      d.expr(p, 'bravo'); d.expr(v, 'serio');
+      d.caption('Chute baixo', 'O susto vira dor e desequilíbrio.', 2.2);
+      const meio = (p.x + v.x) / 2;
+      await Promise.all([d.walk(p, meio - 50), d.walk(v, meio + 50)]);
+      faceEach(p, v);
+      d.focus(meio, 355, 1.35);
+      const golpe = d.act(p, 'chute');
+      await d.wait(0.32);
+      d.shake(4); d.sfx('thud');
+      d.loop(v, 'susto'); d.expr(v, 'surpreso');
+      const recuo = d.moveActor(v, v.x - v.facing * 48, GROUND, 0.42, Ease.outBack);
+      await Promise.all([golpe, recuo]);
+      d.loop(v, 'dor'); d.expr(v, 'dor');
+      await d.wait(0.3);
+      d.loop(v, 'protegerBaixoVentre');
+      await d.wait(0.72);
+      d.shake(2.5);
+      await d.act(v, 'cair');
+      d.loop(v, 'caidoChao');
+      d.loop(p, 'ofegante'); d.expr(p, 'serio');
+      d.resetCam();
+      await d.wait(1);
+    },
+  },
+  // Variação de QA do chute: dobra o corpo, ajoelha e tomba após uma pausa curta.
+  {
+    id: 'agressaoChuteV3',
+    env: (c) => c.data?.env ?? 'ruaDia',
+    run: async (d, c) => {
+      const p = P(d, c, 460, { facing: 1, z: 1 });
+      const v = O(d, other(c, 0, 423), 820, { facing: -1, z: 0.5 });
+      faceEach(p, v);
+      d.expr(p, 'bravo'); d.expr(v, 'serio');
+      d.caption('Chute baixo', 'A vítima tenta se manter em pé, mas não consegue.', 2.4);
+      const meio = (p.x + v.x) / 2;
+      await Promise.all([d.walk(p, meio - 44), d.walk(v, meio + 44)]);
+      faceEach(p, v);
+      d.focus(meio, 350, 1.4);
+      const golpe = d.act(p, 'chute');
+      await d.wait(0.32);
+      d.shake(7); d.sfx('thud');
+      d.loop(v, 'susto'); d.expr(v, 'surpreso');
+      const recuo = d.moveActor(v, v.x - v.facing * 35, GROUND, 0.28, Ease.outQuad);
+      await Promise.all([golpe, recuo]);
+      d.loop(v, 'agachar'); d.expr(v, 'dor');
+      await d.wait(0.38);
+      d.loop(v, 'protegerBaixoVentre');
+      await d.wait(0.42);
+      d.shake(4);
+      await d.act(v, 'cair');
+      d.loop(v, 'caidoChao');
+      d.loop(p, 'ofegante'); d.expr(p, 'serio');
+      d.resetCam();
+      await d.wait(1.1);
+    },
+  },
 ];
 
 export const SITUATIONS: Record<string, Situation> = Object.fromEntries(S.map((s) => [s.id, s]));
