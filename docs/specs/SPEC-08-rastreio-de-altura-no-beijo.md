@@ -60,7 +60,8 @@ Diferença de altura resolvida: **55% pelo mais alto, 45% pelo mais baixo**. Se 
 7. **Estágios:** `distribuirAltura(ator, 'desce' | 'sobe', px)` enche os estágios na ordem da tabela e devolve os
    ângulos (`head`, `neck`, `chest`, `lean`, `joelhos`) e os px de ponta dos pés (`pontas`).
 8. **Aplicar:** soma as inclinações de base (narizes se cruzando) + a "pressão" do beijo e escreve em `Actor.ajuste`
-   (suavizado em `aplicar()`). Ponta dos pés = `y` negativo + giro dos pés (`footN/F = pontas × peRadPorPx`).
+   (suavizado em `aplicar()`). Ponta dos pés = campo `ajuste.pontas` (px): o `Actor` sobe o corpo e gira o pé em volta
+   dos dedos na medida exata (`asin(pontas / (0,8 × comprimento do pé))`), então os dedos continuam no chão.
    Joelhos = `ajuste.joelhos`: a coxa vai `joelhos/2` para a frente e a canela dobra `joelhos`; o apoio no chão desce
    o quadril sozinho, então **os pés continuam plantados**.
 
@@ -78,7 +79,6 @@ Diferença de altura resolvida: **55% pelo mais alto, 45% pelo mais baixo**. Se 
 | `desce[i].max` | ver código | cabeça ≤ 0,25; pescoço ≤ 0,2; peito ≤ 0,15; lombar ≤ 0,12; joelhos ≤ 1,0 | aquele estágio faz mais antes do próximo entrar | o próximo estágio entra mais cedo |
 | `sobe[i].max` | ver código | cabeça ≤ 0,25; pescoço ≤ 0,15; pontas ≤ 0,09 (fração da perna); peito ≤ 0,08 | idem | idem |
 | `desce/sobe[i].eficiencia` | ver código | 0,3 – 1,0 | (estimativa de px por rad × largura da cabeça) — **não precisa ser exata** | — |
-| `peRadPorPx` | 0,045 | 0,03 – 0,06 | calcanhar sobe mais por px de ponta dos pés | menos |
 
 **Regras de ouro para ajustar:**
 - Mude **um número por vez** e verifique com a seção 6.
@@ -154,14 +154,15 @@ Cada item é `tempo:peso/erro`. O `diagnostico` também traz `alta` e `baixa` (q
 | Rosto do mais alto inclinado demais | `head`/`neck` com `max` alto | diminua esses `max` |
 | Mais alto parece "corcunda" | `chest`/`lean` com `max` alto | diminua esses `max`; joelhos assumem |
 | Pés afundando no chão | alguém usou `y` positivo para descer | use **`joelhos`**, nunca `y` positivo, para abaixar |
-| Pé do mais baixo virado para cima | `peRadPorPx` com sinal/valor errado | valor entre 0,03 e 0,06, positivo |
+| Dedos do pé flutuando ou afundando na ponta dos pés | alguém usou `y`/`footN` à mão | use **`ajuste.pontas`** (px); o `Actor` calcula o giro do pé |
 | Pose treme de leve em todo contato | `peso` oscilando | confira o bloco que move `peso` em direção a `alvo` (não pode descer quando `peso == alvo`) |
 
 ## 8. O que NÃO fazer
 
 - Não recalcule `alta`/`baixa` por quadro.
 - Não troque o controle integral por uma fórmula fixa ("diferença × 0,3"): é exatamente o que errava.
-- Não use `y` positivo para abaixar alguém em pé (afunda os pés) — use `joelhos`.
+- Não use `y` positivo para abaixar alguém em pé (afunda os pés) — use `joelhos`. Para subir, use `pontas`, nunca `y` negativo solto.
+- Os pés dos dois ficam no **mesmo nível de chão** durante o contato (SPEC-07 §11): não compense altura mudando a faixa `y` de um deles.
 - Não mude a posição da boca em `marcos()` para "acertar" um caso: ela precisa bater com o desenho de `head.ts`.
 - Não edite `head.ts`, `character.ts` ou o formato do save para esta tarefa.
 

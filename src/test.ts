@@ -31,6 +31,17 @@ export function testHarness(root: HTMLElement) {
       if (Number.isFinite(alt[0])) cast.player.ap.height = alt[0];
       if (Number.isFinite(alt[1])) cast.others[0].ap.height = alt[1];
     }
+    // &dy=<px>: o 2º personagem da cena começa em outra faixa de profundidade (y) — testa o nivelamento do chão nas interações
+    const dy = Number(q.get('dy') ?? 0);
+    if (dy) {
+      const orig = Scene.prototype.addActor;
+      let n = 0;
+      Scene.prototype.addActor = function (this: Scene, ...args: Parameters<Scene['addActor']>) {
+        const a = orig.apply(this, args);
+        if (++n === 2) a.y += dy;
+        return a;
+      };
+    }
     stage.play(sit, cast);
     // &hit=<seg>: congela <seg> depois do primeiro evento de contato (tapa, soco, toca-aqui...) — instante exato do impacto
     const hit = q.get('hit');

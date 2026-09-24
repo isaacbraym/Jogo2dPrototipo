@@ -50,6 +50,9 @@ lábios estão encostando, `aconchego` ao afastar e `apaixonado` depois.
 - Mãos de quem está na frente: cintura/costas baixas do outro, **nunca acima do próprio ombro** (o braço cruzaria o rosto).
 - Mãos de quem está atrás: costas altas do outro; o braço passa por trás e a mão reaparece.
 - Diferença de altura > 30% (adulto × criança): o mais alto agacha (`agachar`) antes de abraçar.
+- **Quem está na frente desce dobrando os joelhos** (`ajuste.joelhos`, até `ABRACO_JOELHOS_MAX` = 1,25 rad, pés plantados);
+  o que faltar vira inclinação do tronco (a cabeça se endireita). **Nunca** com `y` positivo: isso afundava os pés abaixo
+  do chão do outro. Quem está atrás sobe com `ajuste.pontas` (ponta dos pés exata), até 15 px.
 
 ## 4. Regras do beijo
 
@@ -149,3 +152,19 @@ em qualquer idade. O `y` escrito no movimento vira só um ponto de partida; não
 7. **QA obrigatório:** capture o instante do contato com `&hit=0.02` (congela logo após o primeiro evento de um `Trajeto`) e o
    meio/fim com `&at=`. Espere ~1 s depois de congelar antes da captura (o painel repinta com atraso). Penteados:
    `?test&env=parque&n=4&turn=0.9&hair=trancas,longo,...&span=560&zoom=1.6` em `turn` 0,72, 0,9 e 1,45.
+
+## 11. Mesmo nível de chão em interações diretas (2,5D)
+
+Cada ator tem a sua **faixa de chão** (`actor.y`): fora de interação, personagens andam em profundidades diferentes (2,5D)
+e isso deve continuar livre. Mas numa **interação direta** (abraço, beijo, aperto de mão, tapa, empurrão, presente...) os
+pés dos dois precisam estar no **mesmo nível** — senão um parece flutuar ou estar em outro plano.
+
+- `physical()` (e a cena `agressao`): enquanto os dois se aproximam (`close`), deslizam em 0,5 s para a **linha média**
+  entre as duas faixas. Depois continuam nela (estão juntos).
+- `Contato` (abraço/beijo): garante o mesmo nível durante o contato — os dois vão para a linha média junto com a
+  aproximação (`wM`) e, ao soltar, voltam suavemente para as faixas de origem. Se `physical` já nivelou, não faz nada.
+- Descer/subir o corpo **nunca** muda a faixa: use `ajuste.joelhos` (dobrar pernas, pés plantados) e `ajuste.pontas`
+  (ponta dos pés). `y` positivo em pé afunda os pés; `y` negativo solto faz flutuar.
+- Teste: `&dy=<px>` nas cenas de teste põe o 2º personagem em outra faixa. Ex.:
+  `?test&sit=interacao&sex=f&dy=45&at=3.0&data={"action":"abracar","env":"parque"}` → ao congelar, `actors[0].y` e
+  `actors[1].y` devem ser iguais (linha média) e os pés dos dois na mesma altura na captura.

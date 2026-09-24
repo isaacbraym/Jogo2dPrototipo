@@ -146,7 +146,12 @@ export async function physical(d: Director, a: Actor, b: Actor, action: string) 
     const mid = (a.x + b.x) / 2;
     const ax = mid - (a.facing * gap) / 2;
     const bx = mid + (a.facing * gap) / 2;
-    await Promise.all([d.walk(a, ax), d.walk(b, bx)]);
+    // interação direta: enquanto se aproximam, os dois deslizam para o mesmo nível de chão (linha média).
+    // Fora das interações cada um segue na própria faixa de profundidade (2,5D).
+    const chao = (a.y + b.y) / 2;
+    const ya = a.y, yb = b.y;
+    const nivela = Math.abs(ya - chao) > 0.5 ? d.sc.tween(0.5, (k) => { a.y = lerp(ya, chao, k); b.y = lerp(yb, chao, k); }) : null;
+    await Promise.all([d.walk(a, ax), d.walk(b, bx), nivela]);
     faceEach(a, b);
   };
   const mao = (x: Actor, qual: 'N' | 'F', chaves: ChaveMao[], o?: ConstructorParameters<typeof Trajeto>[3]) => maoAte(d, x, qual, chaves, o);
@@ -1389,7 +1394,10 @@ const S: Situation[] = [
       d.expr(v, 'serio');
       const close = async (gap: number) => {
         const mid = (p.x + v.x) / 2;
-        await Promise.all([d.walk(p, mid - gap / 2), d.walk(v, mid + gap / 2)]);
+        // interação direta: os dois vão para o mesmo nível de chão enquanto se aproximam (ver physical/close)
+        const chao = (p.y + v.y) / 2, yp = p.y, yv = v.y;
+        const nivela = Math.abs(yp - chao) > 0.5 ? d.sc.tween(0.5, (k) => { p.y = lerp(yp, chao, k); v.y = lerp(yv, chao, k); }) : null;
+        await Promise.all([d.walk(p, mid - gap / 2), d.walk(v, mid + gap / 2), nivela]);
         faceEach(p, v);
       };
       let onGround = false;

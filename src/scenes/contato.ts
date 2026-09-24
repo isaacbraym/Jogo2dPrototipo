@@ -78,7 +78,7 @@ export function perfil(turn: number) {
   return perfilDe(turn);
 }
 
-interface Estado { turn0: number; x0: number; z0: number }
+interface Estado { turn0: number; x0: number; z0: number; y0: number }
 
 export class Contato {
   vivo = true;
@@ -99,7 +99,7 @@ export class Contato {
   /** onde cada mão estava (relativa ao corpo) antes do contato — início do arco de alcance */
   private maoIni = new Map<Actor, { n: Pt; f: Pt }>();
   constructor(public a: Actor, public b: Actor, public tipo: TipoContato, public o: { aperto?: number; turn?: number } = {}) {
-    for (const x of [a, b]) this.ini.set(x, { turn0: x.turn, x0: x.x, z0: x.z });
+    for (const x of [a, b]) this.ini.set(x, { turn0: x.turn, x0: x.x, z0: x.z, y0: x.y });
     a.enlace = b;
     b.enlace = a;
     if (tipo === 'abraco') {
@@ -142,6 +142,13 @@ export class Contato {
       const alvoX = this.tipo === 'abraco' && this.o.turn === undefined && x === this.frente ? 0.8 : turnAlvo;
       x.turn = lerp(this.ini.get(x)!.turn0, alvoX, wM);
     }
+
+    // ---- 0. mesmo nível de chão: fora de interação cada um anda na sua "faixa" (2,5D); em contato direto os dois deslizam
+    // para a linha média e, ao soltar, voltam suavemente para a própria faixa
+    const ia = this.ini.get(a)!, ib = this.ini.get(b)!;
+    const chao = (ia.y0 + ib.y0) / 2;
+    a.y = lerp(ia.y0, chao, wM);
+    b.y = lerp(ib.y0, chao, wM);
 
     const ma = marcos(a), mb = marcos(b);
     const aperto = this.o.aperto ?? 0.6;
@@ -187,11 +194,18 @@ export class Contato {
       // a altura sai dos joelhos e da lombar; a cabeça só encosta (inclinação pequena — rosto deitado de lado lê como "torto")
       // o rosto não pode somar toda a curvatura da coluna (lombar + peito + pescoço): a cabeça compensa e fica só
       // levemente deitada (≈ 0,22 rad) — bochecha encostada, não "rosto de lado"
-      const lf = 0.12 + f * 0.1 + ap * 0.05, cf = 0.06 + f * 0.07, nf = 0.05 + f * 0.03;
-      aplicar(frente, { lean: lf * w, chest: cf * w, neck: nf * w, head: (0.3 + ap * 0.05 - lf - cf - nf) * w, y: (f * 40 - ap * 3) * w, hipTilt: sway * 4, breath: respira * 0.6 * w, x: sway * 30, shrugN: (0.3 + ap * 0.25) * w, shrugF: (0.3 + ap * 0.25) * w }, dt);
+      // descer SEM afundar os pés: primeiro dobra os joelhos (pés plantados), o que faltar vira inclinação do tronco.
+      // (antes era `y` positivo: o corpo inteiro descia e os pés ficavam abaixo do chão do outro)
+      const desce = Math.max(0, f * 40 - ap * 3);
+      const Lp = (frente.d.thigh + frente.d.shin) * frente.scale;
+      const pxJ = Math.min(desce, Lp * (1 - Math.cos(ABRACO_JOELHOS_MAX / 2)));
+      const joelhos = 2 * Math.acos(clamp(1 - pxJ / Lp, -1, 1));
+      const resto = desce - pxJ;
+      const lf = 0.12 + f * 0.06 + ap * 0.05 + Math.min(0.3, resto / 80), cf = 0.06 + f * 0.05 + Math.min(0.16, resto / 160), nf = 0.05 + f * 0.03;
+      aplicar(frente, { lean: lf * w, chest: cf * w, neck: nf * w, head: (0.3 + ap * 0.05 - lf - cf - nf) * w, joelhos: joelhos * w, hipTilt: sway * 4, breath: respira * 0.6 * w, x: sway * 30, shrugN: (0.3 + ap * 0.25) * w, shrugF: (0.3 + ap * 0.25) * w }, dt);
       // quem está atrás: ereto, na ponta dos pés quando precisa, queixo um pouco erguido "por cima do ombro"
-      const pt = Math.min(12, f * 9) + ap * 4;
-      aplicar(tras, { lean: (0.04 + ap * 0.04) * w, chest: -0.04 * w, neck: 0.02 * w, head: (-0.04 - ap * 0.06) * w, y: -pt * w, footN: pt * 0.04 * w, footF: pt * 0.04 * w, hipTilt: -sway * 4, breath: respira * 0.6 * w, x: sway * 30, shrugN: (0.22 + ap * 0.2) * w, shrugF: (0.18 + ap * 0.2) * w }, dt);
+      const pt = Math.min(15, f * 11) + ap * 4;
+      aplicar(tras, { lean: (0.04 + ap * 0.04) * w, chest: -0.04 * w, neck: 0.02 * w, head: (-0.04 - ap * 0.06) * w, pontas: pt * w, hipTilt: -sway * 4, breath: respira * 0.6 * w, x: sway * 30, shrugN: (0.22 + ap * 0.2) * w, shrugF: (0.18 + ap * 0.2) * w }, dt);
       void alta; void baixa; void dif;
     } else {
       // beijo: RASTREIO DE ALTURA (SPEC-08). Mede as duas bocas a cada quadro e acumula a correção até elas se encontrarem;
@@ -221,7 +235,7 @@ export class Contato {
       }, dt);
       aplicar(baixa, {
         head: (ba.cabecaMaisBaixo - dB.head) * wH - pressao, neck: -dB.neck * wH, chest: (ba.peito - dB.chest) * wH, lean: ba.lombar * wH,
-        y: -dB.pontas * wH, footN: dB.pontas * RASTREIO_BEIJO.peRadPorPx * wH, footF: dB.pontas * RASTREIO_BEIJO.peRadPorPx * wH,
+        pontas: dB.pontas * wH,
         breath: respira * 0.4 * w, hipTilt: -sway * 2,
       }, dt);
       this.diagnostico = { erro: erroY, c, alta: dA, baixa: dB };
@@ -301,6 +315,7 @@ export class Contato {
       x.reachN = null; x.reachF = null; x.enlace = null; x.ajuste = null;
       x.turn = this.ini.get(x)!.turn0;
       x.z = this.ini.get(x)!.z0;
+      x.y = this.ini.get(x)!.y0;
     }
     this.vivo = false;
   }
@@ -326,8 +341,8 @@ function aplicar(a: Actor, alvo: Partial<Record<AjusteCampo, number>>, dt: numbe
     atual[c] = lerp(atual[c] ?? 0, v, k);
   }
 }
-export type AjusteCampo = 'x' | 'y' | 'lean' | 'chest' | 'neck' | 'head' | 'hipTilt' | 'breath' | 'shrugN' | 'shrugF' | 'footN' | 'footF' | 'joelhos';
-const CAMPOS: AjusteCampo[] = ['x', 'y', 'lean', 'chest', 'neck', 'head', 'hipTilt', 'breath', 'shrugN', 'shrugF', 'footN', 'footF', 'joelhos'];
+export type AjusteCampo = 'x' | 'y' | 'lean' | 'chest' | 'neck' | 'head' | 'hipTilt' | 'breath' | 'shrugN' | 'shrugF' | 'footN' | 'footF' | 'joelhos' | 'pontas';
+const CAMPOS: AjusteCampo[] = ['x', 'y', 'lean', 'chest', 'neck', 'head', 'hipTilt', 'breath', 'shrugN', 'shrugF', 'footN', 'footF', 'joelhos', 'pontas'];
 
 // =====================================================================================================================
 // Rastreio de altura do beijo (SPEC-08). Os números abaixo são os ÚNICOS que se deve ajustar para mudar o comportamento.
@@ -363,9 +378,10 @@ export const RASTREIO_BEIJO = {
     { campo: 'pontas', max: 0.075, eficiencia: 0 }, // ponta dos pés: max em fração do comprimento da perna; 1 px = 1 px
     { campo: 'chest', max: 0.06, eficiencia: 0.5 },
   ],
-  /** giro do pé por px de ponta dos pés (calcanhar sobe) */
-  peRadPorPx: 0.045,
 };
+
+/** Abraço: quanto quem está na frente pode dobrar os joelhos (rad) antes de o resto da descida virar inclinação do tronco. */
+export const ABRACO_JOELHOS_MAX = 1.25;
 
 type Sentido = 'desce' | 'sobe';
 type Estagio = { campo: string; max: number; eficiencia: number };

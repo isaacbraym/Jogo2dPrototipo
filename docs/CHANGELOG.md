@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-24 — Pés no mesmo nível em interações diretas (Claude) · branch `claude/rastreio-beijo`
+- **Nivelamento de chão (2,5D preservado):** em interação direta os dois deslizam para a linha média entre as faixas de
+  profundidade (`close()` de `physical` e da cena `agressao`; `Contato` durante abraço/beijo, voltando às faixas ao soltar).
+  Fora de interação cada um continua na sua faixa. SPEC-07 §11.
+- **Abraço sem pés afundados:** quem está na frente descia com `y` positivo (pés até 52 px abaixo do chão do outro). Agora
+  desce dobrando os joelhos (`ajuste.joelhos`, até 1,25 rad) e inclinando o tronco; quem está atrás sobe com a ponta dos pés.
+- **`ajuste.pontas`** (px) no `Actor`: ponta dos pés exata (corpo sobe e o pé gira em volta dos dedos). Usado no beijo e no
+  abraço; sai o parâmetro manual `peRadPorPx`.
+- Harness: `&dy=<px>` põe o 2º personagem em outra faixa. Docs: SPEC-07 §3 e §11, SPEC-08 §4/§5/§7/§8, AGENTS.md.
+
 ## 2026-09-24 — Rastreio de altura no beijo (Claude) · branch `codex/vitrine-titulo`
 - **Boca encontra boca em qualquer altura** (`src/scenes/contato.ts`): o beijo mede as duas bocas a cada quadro e acumula a
   correção (controle integral) até elas ficarem na mesma altura. A correção é distribuída em estágios, na ordem do corpo

@@ -41,7 +41,7 @@ Harness visual (com `npm run dev` rodando):
 - Vitrines da tela de título: `http://localhost:5199/?vitrine=casamento`, `?vitrine=parque`, `?vitrine=praia`, `?vitrine=balada`, `?vitrine=acampamento` (força uma vitrine específica para QA)
 - Jogo rápido com personagem aleatório de 25 anos: `http://localhost:5199/#demo`
 - Parâmetros extras das cenas de teste: `&alt=<jogador>,<outro>` (altura 0..1 de cada um — beijo/abraço com alturas diferentes),
-  `&hit=<s>` (congela <s> depois do primeiro contato de mão), `&oage=`, `&sex=`, `&seed=`. Galeria: `&hair=a,b,...&span=`.
+  `&hit=<s>` (congela <s> depois do primeiro contato de mão), `&dy=<px>` (2º personagem em outra faixa de profundidade — testa o nivelamento do chão), `&oage=`, `&sex=`, `&seed=`. Galeria: `&hair=a,b,...&span=`.
   Espere `window.frozen === true` **e mais ~1 s** antes de capturar a tela (o painel repinta com atraso).
 
 ## 3. Mapa da documentação

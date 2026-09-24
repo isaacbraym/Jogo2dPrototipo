@@ -83,7 +83,7 @@ export class Actor {
   enlace: Actor | null = null;
   /** Ajuste ADITIVO sobre a pose do movimento (usado por controladores de contato; null = nenhum). */
   /** `joelhos` (rad) dobra as duas pernas ANTES do apoio no chão: o quadril desce com os pés plantados (agachar de leve) */
-  ajuste: Partial<Record<'x' | 'y' | 'lean' | 'chest' | 'neck' | 'head' | 'hipTilt' | 'breath' | 'shrugN' | 'shrugF' | 'footN' | 'footF' | 'joelhos', number>> | null = null;
+  ajuste: Partial<Record<'x' | 'y' | 'lean' | 'chest' | 'neck' | 'head' | 'hipTilt' | 'breath' | 'shrugN' | 'shrugF' | 'footN' | 'footF' | 'joelhos' | 'pontas', number>> | null = null;
   /** reação física passageira (tapa, soco, empurrão), somada como o ajuste — escrita por Impacto (scenes/contato.ts) */
   impulso: Actor['ajuste'] = null;
   /** forma da mão imposta por um controlador (Trajeto) por cima do movimento */
@@ -223,8 +223,16 @@ export class Actor {
     }
     if (this.ajuste || this.impulso || this.maoForma) {
       target = { ...target };
-      if (this.ajuste) for (const [k, v] of Object.entries(this.ajuste)) if (v && k !== 'joelhos') (target as any)[k] += v;
-      if (this.impulso) for (const [k, v] of Object.entries(this.impulso)) if (v && k !== 'joelhos') (target as any)[k] += v;
+      if (this.ajuste) for (const [k, v] of Object.entries(this.ajuste)) if (v && k !== 'joelhos' && k !== 'pontas') (target as any)[k] += v;
+      if (this.impulso) for (const [k, v] of Object.entries(this.impulso)) if (v && k !== 'joelhos' && k !== 'pontas') (target as any)[k] += v;
+      // ponta dos pés (px): o corpo sobe `pontas` e o pé gira em volta dos dedos na medida exata — os dedos ficam no chão
+      const pontas = (this.ajuste?.pontas ?? 0) + (this.impulso?.pontas ?? 0);
+      if (pontas > 0) {
+        const giro = Math.asin(Math.min(0.95, pontas / (this.d.footL * 0.8)));
+        target.y -= pontas;
+        target.footN += giro;
+        target.footF += giro;
+      }
       if (this.maoForma?.N) target.handN = this.maoForma.N;
       if (this.maoForma?.F) target.handF = this.maoForma.F;
     }
