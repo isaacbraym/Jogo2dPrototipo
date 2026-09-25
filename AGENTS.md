@@ -60,6 +60,7 @@ Harness visual (com `npm run dev` rodando):
 | `docs/specs/SPEC-07` e `SPEC-08` | Contato entre personagens (abraço, beijo, mãos) e rastreio de altura no beijo — leia antes de mexer em qualquer animação com dois personagens. |
 | `docs/PROMPT-CODEX.md` | Prompt modelo para delegar animação ao Codex e como **mostrar a tela no chat** (`npm run capturar`). |
 | `docs/PAINEL-QA.md` | Painel de QA: uso, formatos de cenário/proposta/calibração, limites de edição, procedimento "localizar pelo ID". |
+| `docs/ARSENAL-IA.md` | Ferramentas auxiliares disponíveis (Serena, Hindsight, Graphify, Superpowers, Context Mode etc.) e quando vale usar cada uma. |
 
 ## 4. Zonas de edição
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-24 — Arsenal de ferramentas documentado para o Claude Code (Codex)
+- **Descoberta automática:** `CLAUDE.md` agora aponta para o arsenal e foi adicionada a skill de projeto
+  `.claude/skills/viva-arsenal/SKILL.md`, permitindo que o Claude associe tarefas de engenharia às ferramentas disponíveis.
+- **Guia novo:** `docs/ARSENAL-IA.md` documenta rotas práticas para Serena, Hindsight, Graphify, Superpowers, Context Mode,
+  Improve, DrawIO, CLI-Anything, Beads, RTK e a skill global Arsenal, com exemplos específicos do VIVA!.
+- **Estado verificado:** `claude plugin list` confirmou Superpowers 6.4.1 e Context Mode 1.0.169 habilitados; `claude mcp list`
+  confirmou Context Mode, Serena e Hindsight conectados. Graphify, Beads e RTK também estão instalados localmente.
+- **Beads:** o CLI está instalado, porém `bd where` confirmou que este repositório não possui workspace Beads ativo; o guia
+  orienta a não inicializá-lo por rotina.
+- **Escopo:** somente documentação/configuração de descoberta do Claude; nenhum arquivo de código do jogo foi alterado por
+  este lote.
+
 ## 2026-09-24 — Pés no mesmo nível em interações diretas (Claude) · branch `claude/rastreio-beijo`
 - **Nivelamento de chão (2,5D preservado):** em interação direta os dois deslizam para a linha média entre as faixas de
   profundidade (`close()` de `physical` e da cena `agressao`; `Contato` durante abraço/beijo, voltando às faixas ao soltar).
