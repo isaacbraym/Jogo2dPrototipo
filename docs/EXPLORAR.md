@@ -94,17 +94,21 @@ Uma rua contínua vista de frente, com **profundidade de verdade** (eixo y do mu
 | Papel | Quem | De onde vem |
 |---|---|---|
 | Frequentador | 7 pessoas fixas da academia (5 aparecem por dia, pela `assiduidade`) | `L.explorar.frequentadores.academia` |
+| Morador do bairro | cerca de 10 pessoas persistentes da rua; parte aparece por dia, senta nos bancos, olha o chafariz ou passeia pela praça/calçada | `L.explorar.frequentadores.rua` |
 | Família | quem mora com você (menor de 18: pais e irmãos; adulto: cônjuge e filhos) | `L.people` |
 | Pet | seus pets vivos | `L.pets` |
-| Passante | gente de passagem **na calçada**, de ponta a ponta da rua (nunca entra nas casas; não fica salva). Menu: cumprimentar e perguntar as horas | gerado na hora |
+| Passante | gente anônima de passagem **na calçada**, de ponta a ponta da rua (nunca entra nas casas; não fica salva). Continua existindo, mas em menor quantidade que antes | gerado na hora |
 
-A IA dos NPCs: usar um equipamento livre (preferem o favorito), beber água, ir ao espelho, conversar entre si (balões
-`PAPO_AMBIENTE`), passear. De vez em quando um frequentador **vem puxar conversa com você**.
+A IA dos NPCs da academia continua usando equipamentos livres, bebendo água, indo ao espelho e conversando. Moradores
+do bairro têm rotina própria de praça/calçada; ao serem abordados durante uma caminhada, param para conversar e depois
+retomam o destino. Frequentadores da academia e moradores podem **puxar conversa com você** por iniciativa própria.
 
 ### Caminho da amizade
 ```
 Desconhecido(a) ─(fam 15)→ Rosto conhecido ─(fam 35)→ Colega de academia ─(pedir o contato)→ Contato ─(vínculo 55)→ Amigo(a) ─(80)→ Melhor amigo(a)
 ```
+- Na rua, a mesma faixa de familiaridade usa o nome **Conhecido(a) do bairro** no nível 2; a lógica 15/35 e o caminho até
+  virar contato permanecem os mesmos.
 - Antes do contato: **familiaridade** (`Frequentador.fam`, 0–100). Interações: cumprimentar, se apresentar (aprende o nome),
   puxar papo sobre o treino, elogiar, pedir dica, piada, toca aqui. Personalidade importa (`tímido`, `rabugento`,
   `engraçado`, `gentil`...). Repetir o mesmo gesto no dia pode **piorar** (elogio duas vezes vira esquisito).

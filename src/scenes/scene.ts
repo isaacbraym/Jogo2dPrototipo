@@ -112,6 +112,8 @@ export class Scene {
   padBottom = 0; // px ocupados por UI sobre a base da tela (a câmera sobe a cena)
   private padCur = 0;
   onBeat?: (dt: number) => void;
+  // Mundo contínuo pode reduzir overlays quando uma fachada opaca está entre o ator e a câmera.
+  actorOverlayAlpha?: (actor: Actor) => number;
   /** Controladores de contato ativos (abraço, beijo...) — atualizados antes dos atores. */
   contatos: { vivo: boolean; update(dt: number): void }[] = [];
   /**
@@ -347,7 +349,14 @@ export class Scene {
     for (const p of this.props) if (p.visible && p.front) this.drawProp(ctx, p);
     if (this.mundo) this.mundo.frente?.(ctx, { x0: this.view.x0, x1: this.view.x1 }, this.t);
     else this.env.layers.forEach((L, i) => { if (L.front) drawLayer(i); });
-    for (const a of this.actors) a.drawOverlay(ctx, this.t);
+    for (const a of this.actors) {
+      const alpha = this.actorOverlayAlpha?.(a) ?? 1;
+      if (alpha <= 0.01) continue;
+      ctx.save();
+      ctx.globalAlpha *= alpha;
+      a.drawOverlay(ctx, this.t);
+      ctx.restore();
+    }
     ctx.restore();
 
     // pós-processamento em espaço de tela

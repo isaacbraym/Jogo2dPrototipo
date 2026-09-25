@@ -1,0 +1,21 @@
+{
+  "tempo": 3500,
+  "tam": "1280x720",
+  "capturas": [
+    { "nome": "01-chafariz-centro", "url": "/?ex=4650,724&zoom=0.9&hora=16#explorar" },
+    { "nome": "02-chafariz-esquerda", "url": "/?ex=4475,720&zoom=1.1&hora=10#explorar" },
+    { "nome": "03-chafariz-direita-noite", "url": "/?ex=4825,720&zoom=1.1&hora=21#explorar" },
+    { "nome": "04-banco-1", "url": "/?ex=4180,698&zoom=1.1&hora=16#explorar" },
+    { "nome": "05-banco-2", "url": "/?ex=5160,698&zoom=1.1&hora=16#explorar" },
+    { "nome": "06-banco-1-noite", "url": "/?ex=4180,698&zoom=0.75&hora=21#explorar" },
+    { "nome": "07-poste-praca-1", "url": "/?ex=3950,800&zoom=1.2&hora=10#explorar" },
+    { "nome": "08-poste-praca-2", "url": "/?ex=5300,800&zoom=1.2&hora=21#explorar" },
+    { "nome": "09-poste-calcada", "url": "/?ex=6700,818&zoom=1.0&hora=10#explorar" },
+    { "nome": "10-lixeira-praca", "url": "/?ex=4400,790&zoom=1.2&hora=10#explorar" },
+    { "nome": "11-lixeira-comercio", "url": "/?ex=9400,822&zoom=1.0&hora=16#explorar" },
+    { "nome": "12-lixeira-praca-noite", "url": "/?ex=4400,790&zoom=0.8&hora=21#explorar" },
+    { "nome": "13-arvore-praca-1", "url": "/?ex=4420,646&zoom=1.15&hora=10#explorar" },
+    { "nome": "14-arvore-praca-2", "url": "/?ex=5500,652&zoom=1.15&hora=16#explorar" },
+    { "nome": "15-arvore-calcada", "url": "/?ex=7300,816&zoom=1.0&hora=21#explorar" }
+  ]
+}

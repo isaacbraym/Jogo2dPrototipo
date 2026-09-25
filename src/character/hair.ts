@@ -213,23 +213,21 @@ function frontCap(rc: RC, g: HG, fringe: Pt[], sideY: number, extra = 0, wMul = 
   return p;
 }
 
-function sidesLocks(rc: RC, g: HG, len: number, wavy = false) {
-  // mechas que emolduram o rosto (na frente dos ombros)
+function sideLock(rc: RC, g: HG, len: number, wavy: boolean, s: -1 | 1) {
+  // Lado distante fica no back para nunca atravessar bochecha/olhos em frente ou ¾.
   const { W, H } = g;
-  for (const s of [-1, 1]) {
-    if (s > 0 && g.turn > 0.75) continue;
-    const x0 = s * W * 0.5 - (s < 0 ? g.turn * W * 0.02 : g.turn * W * 0.12);
-    const p = new Path2D();
-    const sw = g.sway * H * 0.6;
-    const wv = (k: number) => (wavy ? Math.sin(k * 7 + g.t * 1.6 + s) * W * 0.03 : 0);
-    p.moveTo(x0 - s * W * 0.02, -H * 0.3);
-    p.bezierCurveTo(x0 + s * W * 0.14, -H * 0.05, x0 + s * W * 0.14 + wv(0.5) + sw * 0.5, H * len * 0.5, x0 + s * W * 0.07 + wv(1) + sw, H * len);
-    p.quadraticCurveTo(x0 - s * W * 0.02 + sw, H * len * 0.9, x0 - s * W * 0.07 + wv(0.9) + sw * 0.9, H * len * 0.8);
-    p.bezierCurveTo(x0 - s * W * 0.05 + wv(0.6), H * len * 0.4, x0 - s * W * 0.07, H * 0.0, x0 - s * W * 0.1, -H * 0.2);
-    p.closePath();
-    paint(rc, p, H);
-    strands(rc, p, [[{ x: x0, y: -H * 0.1 }, { x: x0 + s * W * 0.05 + sw * 0.4, y: H * len * 0.5 }, { x: x0 + s * W * 0.02 + sw, y: H * len * 0.95 }]], 0.5);
-  }
+  if (s > 0 && g.turn > 1.35) return;
+  const x0 = s * W * 0.5 - (s < 0 ? g.turn * W * 0.02 : g.turn * W * 0.12);
+  const p = new Path2D();
+  const sw = g.sway * H * 0.6;
+  const wv = (k: number) => (wavy ? Math.sin(k * 7 + g.t * 1.6 + s) * W * 0.03 : 0);
+  p.moveTo(x0 - s * W * 0.02, -H * 0.3);
+  p.bezierCurveTo(x0 + s * W * 0.14, -H * 0.05, x0 + s * W * 0.14 + wv(0.5) + sw * 0.5, H * len * 0.5, x0 + s * W * 0.07 + wv(1) + sw, H * len);
+  p.quadraticCurveTo(x0 - s * W * 0.02 + sw, H * len * 0.9, x0 - s * W * 0.07 + wv(0.9) + sw * 0.9, H * len * 0.8);
+  p.bezierCurveTo(x0 - s * W * 0.05 + wv(0.6), H * len * 0.4, x0 - s * W * 0.07, H * 0.0, x0 - s * W * 0.1, -H * 0.2);
+  p.closePath();
+  paint(rc, p, H);
+  strands(rc, p, [[{ x: x0, y: -H * 0.1 }, { x: x0 + s * W * 0.05 + sw * 0.4, y: H * len * 0.5 }, { x: x0 + s * W * 0.02 + sw, y: H * len * 0.95 }]], 0.5);
 }
 
 const STYLES: Record<string, Style> = {
@@ -519,25 +517,25 @@ const STYLES: Record<string, Style> = {
     },
   },
   longo: {
-    back: (rc, g) => longBack(rc, g, 1.45, false),
+    back: (rc, g) => { longBack(rc, g, 1.45, false); sideLock(rc, g, 1.25, false, 1); },
     front: (rc, g) => {
       frontCap(rc, g, F.center(g.W, g.H), H0(g), 0, 1.02);
-      sidesLocks(rc, g, 1.25);
+      sideLock(rc, g, 1.25, false, -1);
     },
   },
   ondulado: {
-    back: (rc, g) => longBack(rc, g, 1.35, true, 1.1),
+    back: (rc, g) => { longBack(rc, g, 1.35, true, 1.1); sideLock(rc, g, 1.15, true, 1); },
     front: (rc, g) => {
       frontCap(rc, g, F.side(g.W, g.H), H0(g), g.H * 0.02, 1.05);
-      sidesLocks(rc, g, 1.15, true);
+      sideLock(rc, g, 1.15, true, -1);
     },
   },
   franja: {
-    back: (rc, g) => longBack(rc, g, 1.4, false),
+    back: (rc, g) => { longBack(rc, g, 1.4, false); sideLock(rc, g, 1.2, false, 1); },
     front: (rc, g) => {
       const p = frontCap(rc, g, F.bangs(g.W, g.H), H0(g), 0, 1.02, false);
       strands(rc, p, [-0.3, -0.15, 0, 0.15, 0.3].map((k) => [{ x: k * g.W, y: -g.H * 0.4 }, { x: k * g.W * 1.1, y: -g.H * 0.13 }]), 0.45);
-      sidesLocks(rc, g, 1.2);
+      sideLock(rc, g, 1.2, false, -1);
     },
   },
 };

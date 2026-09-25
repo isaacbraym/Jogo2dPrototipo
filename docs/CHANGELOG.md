@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-25 — Correções visuais e moradores do bairro (Codex)
+- **Cabelo em ¾/frente:** nos estilos `longo`, `ondulado` e `franja`, a mecha lateral do lado distante passou para a camada de trás da cabeça; deixa de atravessar bochecha, olho e boca.
+- **Fachadas respeitadas por overlays:** barra do supino, vidro/água/vapor do banho, partículas, nomes, balões e emotes de atores internos agora acompanham a transparência da fachada e não vazam para a calçada.
+- **Praça/calçada com obstáculos físicos:** `pontoAndavel()` tira o destino de dentro do chafariz, bancos, postes, lixeiras, hidrante e árvores; bancos da praça também passaram a reservar a vaga ocupada.
+- **Moradores persistentes do bairro:** `L.explorar.frequentadores.rua` agora recebe cerca de 10 moradores com idades e assiduidade variadas; parte senta nos bancos, observa o chafariz ou passeia pela praça/calçada. Passantes anônimos continuam existindo em menor quantidade.
+- **Progressão social da rua:** o nível 2 aparece como **Conhecido(a) do bairro** e o morador abordado durante uma caminhada para para conversar e depois retoma o destino.
+- **Interações novas de rua:** `papoBairro`, `comentarTempo`, `horasConhecido`, `pedirInformacaoBairro`, `elogiarLookBairro`, `moraPorAqui`, `cafePadaria`, `sentarBancoPraca` e `caminharJuntos`; todas têm consequência real e limite/contexto próprio.
+- **Iniciativa social:** moradores também puxam conversa na rua/praça, com falas próprias do bairro; interações genéricas de desconhecidos e pedido de contato foram adaptados para academia ou rua sem mudar ids existentes.
+- **QA:** adicionados `qa/roteiros/bugs-visuais.json` e `qa/roteiros/obstaculos-visuais.json` para regressão visual de casa, banheiro, praça, calçada e academia.
+
 ## 2026-09-25 — Acesso ao modo Explorar e fim da "versão antiga" (Claude)
 - **Tela de título: botão "Explorar o mundo" (NOVO)** — entra direto no mundo point-and-click com a última vida salva
   (se tiver 4+ anos) ou cria uma vida de 20 anos. Antes o modo só aparecia no botão VIVER O DIA da tela da vida, e uma
