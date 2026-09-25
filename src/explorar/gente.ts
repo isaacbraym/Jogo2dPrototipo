@@ -1,0 +1,292 @@
+/**
+ * Modo Explorar — GENTE: frequentadores que você reencontra, níveis de relação e as interações de cada nível.
+ *
+ * Caminho de uma amizade (ver docs/EXPLORAR.md):
+ *   Desconhecido(a) → Rosto conhecido → Colega de academia → (pegar o contato) → Contato → Amigo(a) → Melhor amigo(a)
+ * Antes do contato a relação vive em `Frequentador.fam` (familiaridade). Ao pegar o contato, a pessoa entra em `L.people`
+ * (aparece na aba Relações) e passa a usar o sistema normal de vínculo e memória (`bond`, `memo`, INTERACTIONS).
+ */
+import { RNG, rng } from '../core/rng';
+import { Life, Person, makePerson, stat, bond, addLog, he } from '../game/state';
+import { INTERACTIONS } from '../game/activities';
+import { lembrar, podeNamorar } from '../game/relacoes';
+import type { EstadoExplorar, Frequentador, LugarId } from './tipos';
+
+// ------------------------------------------------------------------ níveis
+export interface Nivel { n: number; nome: string; cor: string }
+export const NIVEIS: Nivel[] = [
+  { n: 0, nome: 'Desconhecido(a)', cor: '#9aa0b0' },
+  { n: 1, nome: 'Rosto conhecido', cor: '#7fb3d5' },
+  { n: 2, nome: 'Colega de academia', cor: '#58b368' },
+  { n: 3, nome: 'Contato', cor: '#f2c14e' },
+  { n: 4, nome: 'Amigo(a)', cor: '#e8845a' },
+  { n: 5, nome: 'Melhor amigo(a)', cor: '#e8335a' },
+];
+
+/** Nível da relação: antes do contato vem da familiaridade; depois, do vínculo. */
+export function nivelDe(f: Frequentador | undefined, p: Person, L: Life): Nivel {
+  const naVida = L.people.includes(p);
+  if (naVida) {
+    if (['namorado', 'namorada', 'conjuge'].includes(p.rel)) return { n: 5, nome: p.rel === 'conjuge' ? 'Cônjuge' : 'Namoro', cor: '#e8335a' };
+    if (p.bond >= 80) return NIVEIS[5];
+    if (p.bond >= 50 || p.rel === 'amigo' || p.rel === 'amiga') return NIVEIS[4];
+    return NIVEIS[3];
+  }
+  const fam = f?.fam ?? 0;
+  return fam >= 35 ? NIVEIS[2] : fam >= 15 ? NIVEIS[1] : NIVEIS[0];
+}
+
+// ------------------------------------------------------------------ frequentadores
+const FAVORITOS = ['esteira', 'supino', 'rackPesos'];
+
+/** Gera (uma vez) os frequentadores de um lugar. Eles envelhecem com você e continuam lá nos próximos anos. */
+export function garantirFrequentadores(L: Life, est: EstadoExplorar, lugar: LugarId): Frequentador[] {
+  const lista = (est.frequentadores[lugar] ??= []);
+  if (lista.length) return lista;
+  if (lugar !== 'academia') return lista;
+  const r = new RNG(L.seed + 77);
+  const base = Math.max(16, L.player.age);
+  for (let i = 0; i < 7; i++) {
+    const idade = Math.max(16, Math.min(70, base + r.int(-10, 16) + (i === 6 ? 25 : 0)));
+    const p = makePerson(r, { age: idade, rel: 'conhecido', bond: 20 });
+    lista.push({ pessoa: p, fam: 0, nomeConhecido: false, encontros: 0, contato: false, assiduidade: r.range(0.45, 0.9), favorito: r.pick(FAVORITOS) });
+  }
+  return lista;
+}
+
+/** A Person "de verdade" de um frequentador (se virou contato, é a que está em L.people). */
+export function pessoaDe(L: Life, f: Frequentador): Person {
+  if (!f.contato) return f.pessoa;
+  return L.people.find((p) => p.id === f.pessoa.id) ?? f.pessoa;
+}
+
+/** Familiaridade muda devagar e trava em 100. */
+export function mudarFam(f: Frequentador, d: number) {
+  f.fam = Math.max(0, Math.min(100, Math.round(f.fam + d)));
+}
+
+// ------------------------------------------------------------------ interações do mundo
+export interface CtxInteracao {
+  L: Life;
+  est: EstadoExplorar;
+  p: Person;
+  f?: Frequentador;
+  /** a pessoa está usando um equipamento agora (dá para conversar sem ela parar) */
+  ocupada?: string;
+  lugar: LugarId;
+  /** quantas vezes esta interação já foi feita com esta pessoa HOJE */
+  hoje: number;
+}
+
+export interface Resultado {
+  /** fala do jogador (balão) */
+  eu?: string;
+  /** resposta da pessoa */
+  ela?: string;
+  /** resumo para o registro/toast */
+  texto: string;
+  tom: 'bom' | 'ruim' | 'neutro';
+  /** animação física de dois (physical) ou reação da pessoa (movimento) */
+  fisico?: string;
+  reacaoNpc?: string;
+  expr?: string;
+  social?: number;
+  diversao?: number;
+  /** contato recém-adicionado */
+  novoContato?: boolean;
+}
+
+export interface InteracaoMundo {
+  id: string;
+  label: string;
+  icon: string;
+  /** a pessoa precisa parar o que está fazendo? (false = dá para falar com ela treinando) */
+  para: boolean;
+  pode: (c: CtxInteracao) => boolean;
+  run: (c: CtxInteracao) => Resultado;
+}
+
+const traco = (p: Person, t: string) => p.traits.includes(t);
+const nomeOu = (c: CtxInteracao) => (c.f && !c.f.nomeConhecido ? he(c.p, 'ele', 'ela') : c.p.first);
+
+/** Interações de quem ainda NÃO é contato (desconhecidos e rostos conhecidos). */
+export const INTERACOES_ESTRANHO: InteracaoMundo[] = [
+  {
+    id: 'cumprimentar', label: 'Cumprimentar', icon: '👋', para: false,
+    pode: (c) => !!c.f && c.hoje === 0,
+    run: (c) => {
+      const f = c.f!;
+      const frio = traco(c.p, 'rabugento') || traco(c.p, 'tímido');
+      mudarFam(f, frio ? 3 : rng.int(4, 7));
+      const ela = frio ? rng.pick(['*aceno mínimo*', 'Hm.', 'Oi.']) : rng.pick(['E aí! Bom treino!', 'Opa, beleza?', 'Oiê!', 'Fala! Tudo certo?']);
+      return { eu: rng.pick(['Opa, bom dia!', 'E aí, tudo bem?', 'Oi!']), ela, texto: `Você cumprimentou ${nomeOu(c)}.`, tom: 'bom', reacaoNpc: 'acenar', social: 3 };
+    },
+  },
+  {
+    id: 'apresentar', label: 'Se apresentar', icon: '🤝', para: true,
+    pode: (c) => !!c.f && !c.f.nomeConhecido,
+    run: (c) => {
+      const f = c.f!;
+      f.nomeConhecido = true;
+      mudarFam(f, rng.int(8, 12));
+      const ela = traco(c.p, 'tímido') ? `Ah... prazer. ${c.p.first}.` : traco(c.p, 'engraçado') ? `${c.p.first}. Mas pode me chamar de "o(a) que sempre ocupa o supino".` : `Prazer, eu sou ${he(c.p, 'o', 'a')} ${c.p.first}!`;
+      return { eu: `Oi! Eu sou ${c.L.player.first}.`, ela, texto: `Você conheceu ${c.p.first}.`, tom: 'bom', fisico: 'apertoMao', social: 6 };
+    },
+  },
+  {
+    id: 'papoTreino', label: 'Puxar papo sobre o treino', icon: '💬', para: false,
+    pode: (c) => !!c.f && c.lugar === 'academia' && c.hoje < 2,
+    run: (c) => {
+      const f = c.f!;
+      if (c.ocupada && traco(c.p, 'rabugento')) {
+        mudarFam(f, -3);
+        return { eu: 'Treina aqui faz tempo?', ela: 'Tô no meio da série, meu anjo.', texto: `${nomeOu(c)} não gostou de ser interrompido(a) no meio da série.`, tom: 'ruim', reacaoNpc: 'bracosCruzados', social: -2 };
+      }
+      mudarFam(f, rng.int(6, 10));
+      const ela = rng.pick([
+        'Uns dois anos. Antes eu só pagava e não vinha.',
+        'Comecei esse mês. Tô vivo(a) por teimosia.',
+        'Desde que o médico falou a palavra "colesterol".',
+        'Faz tempo. Mas meu shape tá em manutenção desde 2019.',
+      ]);
+      return { eu: rng.pick(['Treina aqui faz tempo?', 'Esse aparelho é bom mesmo?', 'Hoje tá cheio, hein?']), ela, texto: `Você e ${nomeOu(c)} conversaram sobre treino.`, tom: 'bom', social: 7 };
+    },
+  },
+  {
+    id: 'elogiarTreino', label: 'Elogiar a disciplina', icon: '🌟', para: false,
+    pode: (c) => !!c.f && c.lugar === 'academia',
+    run: (c) => {
+      const f = c.f!;
+      if (c.hoje >= 1) {
+        mudarFam(f, -6);
+        return { eu: 'Cê manda muito, sério.', ela: 'Tá... obrigado(a) de novo?', texto: `Elogiar duas vezes no mesmo dia ficou estranho. ${nomeOu(c)} se afastou um pouquinho.`, tom: 'ruim', reacaoNpc: 'nervoso', expr: 'desconfiado' };
+      }
+      mudarFam(f, rng.int(5, 8));
+      return { eu: 'Admiro sua disciplina, viu?', ela: rng.pick(['Opa, valeu! Tô tentando!', 'Sério? Hoje eu quase não vim!', 'Ah, que isso... obrigado(a)!']), texto: `${nomeOu(c)} ficou sem graça com o elogio.`, tom: 'bom', expr: 'envergonhado', social: 4 };
+    },
+  },
+  {
+    id: 'pedirDica', label: 'Pedir uma dica de treino', icon: '🏋️', para: false,
+    pode: (c) => !!c.f && c.f.fam >= 15 && c.lugar === 'academia' && c.hoje === 0,
+    run: (c) => {
+      const f = c.f!;
+      mudarFam(f, rng.int(6, 9));
+      stat(c.L, 'inteligencia', 1);
+      c.L.fitness = Math.min(100, (c.L.fitness ?? 0) + 1);
+      const ela = rng.pick([
+        'Desce devagar e sobe forte. E respira, pelo amor.',
+        'Coluna reta. Sua lombar vai te agradecer aos 40.',
+        'Carga é consequência. Técnica primeiro.',
+        'Come proteína. E dorme. O resto é marketing.',
+      ]);
+      return { eu: 'Posso te pedir uma dica?', ela, texto: `${nomeOu(c)} te deu uma dica de treino que realmente ajudou.`, tom: 'bom', social: 5 };
+    },
+  },
+  {
+    id: 'piadaEstranho', label: 'Fazer uma piada', icon: '😂', para: true,
+    pode: (c) => !!c.f && c.f.fam >= 20 && c.hoje === 0,
+    run: (c) => {
+      const f = c.f!;
+      const ok = rng.chance(traco(c.p, 'engraçado') ? 0.85 : traco(c.p, 'rabugento') ? 0.3 : 0.62);
+      mudarFam(f, ok ? rng.int(7, 11) : -4);
+      const piada = rng.pick([
+        'Sabe por que o frango não vai na academia? Porque já é de granja.',
+        'Meu personal disse que eu tenho potencial. Potencial de desistir.',
+        'Faço cardio todo dia: corro dos meus boletos.',
+      ]);
+      return ok
+        ? { eu: piada, ela: 'HAHAHA! Para, que eu perco a série!', texto: `${nomeOu(c)} riu da sua piada.`, tom: 'bom', fisico: 'piada', social: 8, diversao: 6 }
+        : { eu: piada, ela: '...', texto: `A piada morreu no ar. ${nomeOu(c)} deu um sorriso de cortesia.`, tom: 'ruim', reacaoNpc: 'bracosCruzados', expr: 'cansado' };
+    },
+  },
+  {
+    id: 'highFiveEstranho', label: 'Toca aqui!', icon: '🙌', para: true,
+    pode: (c) => !!c.f && c.f.fam >= 25 && c.hoje === 0,
+    run: (c) => {
+      mudarFam(c.f!, rng.int(4, 7));
+      return { eu: 'Boa série! Toca aqui!', ela: 'Aêêê!', texto: `Toca aqui com ${nomeOu(c)}.`, tom: 'bom', fisico: 'highFive', social: 5, diversao: 3 };
+    },
+  },
+  {
+    id: 'pegarContato', label: 'Pedir o contato', icon: '📇', para: true,
+    pode: (c) => !!c.f && !c.f.contato && c.f.nomeConhecido && c.f.fam >= 35 && c.f.recusouEm !== c.est.dias,
+    run: (c) => {
+      const f = c.f!;
+      const L = c.L;
+      let chance = 0.3 + f.fam / 140 + L.stats.aparencia / 500 + L.stats.felicidade / 600;
+      if (traco(c.p, 'tímido')) chance -= 0.12;
+      if (traco(c.p, 'gentil') || traco(c.p, 'aventureiro')) chance += 0.1;
+      if (!rng.chance(Math.min(0.95, chance))) {
+        f.recusouEm = c.est.dias;
+        mudarFam(f, -4);
+        return { eu: 'Me passa seu número? A gente combina de treinar junto.', ela: rng.pick(['Ah... melhor a gente se ver por aqui mesmo, tá?', 'Hmm, eu não passo meu número assim, desculpa.', 'Deixa pra próxima, pode ser?']), texto: `${c.p.first} preferiu não passar o contato ainda. Tente mais para a frente.`, tom: 'ruim', reacaoNpc: 'nervoso', expr: 'envergonhado' };
+      }
+      // vira relacionamento de verdade (aba Relações)
+      f.contato = true;
+      c.p.rel = 'conhecido';
+      c.p.bond = Math.min(60, 25 + Math.round(f.fam * 0.3));
+      c.p.metAt = L.player.age;
+      if (!L.people.includes(c.p)) L.people.push(c.p);
+      lembrar(L, c.p, 'favor', 1, 'Trocamos contato na academia.');
+      addLog(L, `📇 Você pegou o contato de ${c.p.first} na academia.`, 'bom', '📇');
+      return { eu: 'Me passa seu número? A gente combina de treinar junto.', ela: rng.pick(['Claro! Anota aí.', 'Bora! Me chama no zap.', 'Fechou! Vou te seguir também.']), texto: `📇 ${c.p.first} agora está nos seus contatos!`, tom: 'bom', fisico: 'highFive', social: 10, novoContato: true };
+    },
+  },
+];
+
+/** Interações novas que só existem no mundo (com contatos). */
+export const INTERACOES_CONTATO: InteracaoMundo[] = [
+  {
+    id: 'treinarJuntos', label: 'Treinar juntos', icon: '🤜🤛', para: true,
+    pode: (c) => c.lugar === 'academia' && c.hoje === 0 && c.L.people.includes(c.p),
+    run: (c) => {
+      bond(c.p, rng.int(5, 9));
+      stat(c.L, 'saude', 2);
+      c.L.fitness = Math.min(100, (c.L.fitness ?? 0) + 2);
+      lembrar(c.L, c.p, 'favor', 1, 'Treinamos juntos.');
+      return { eu: 'Bora fazer uma série junto?', ela: 'Bora! Eu conto as repetições, você chora.', texto: `Você e ${c.p.first} treinaram juntos. O vínculo cresceu (e a dor muscular também).`, tom: 'bom', fisico: 'highFive', social: 12, diversao: 8 };
+    },
+  },
+];
+
+/** Interações "clássicas" (aba Relações) oferecidas no mundo, na ordem em que aparecem. */
+export const IDS_CLASSICAS = ['conversar', 'elogiar', 'piada', 'highFive', 'abracar', 'dancar', 'consolar', 'desculpas', 'presente', 'paquerar', 'encontro', 'beijar', 'pedirDinheiro', 'discutir'];
+/** mínimo de vínculo para cada interação clássica aparecer no mundo (as novas opções "destravam" com a amizade) */
+export const VINCULO_MINIMO: Record<string, number> = { abracar: 45, dancar: 40, presente: 30, paquerar: 40, encontro: 45, pedirDinheiro: 60, consolar: 55 };
+
+/** Opções da aba Relações válidas para esta pessoa agora (respeitando o nível de amizade). */
+export function classicasPara(L: Life, p: Person) {
+  const out = [] as typeof INTERACTIONS;
+  for (const id of IDS_CLASSICAS) {
+    const it = INTERACTIONS.find((i) => i.id === id);
+    if (!it || !it.cond(L, p)) continue;
+    const min = VINCULO_MINIMO[id] ?? 0;
+    const romance = id === 'paquerar' || id === 'encontro' || id === 'beijar';
+    if (p.bond < min && !['mae', 'pai', 'irmao', 'irma', 'filho', 'filha', 'conjuge', 'namorado', 'namorada', 'avo', 'avoM'].includes(p.rel)) continue;
+    if (romance && !podeNamorar(L, p)) continue;
+    // só faz sentido pedir desculpas a quem está magoado(a)
+    if (id === 'desculpas' && (p.memo?.rancor ?? 0) < 10) continue;
+    out.push(it);
+  }
+  return out;
+}
+
+/** Ação física (physical) que representa uma interação clássica no mundo. */
+export const FISICO_DE: Record<string, string> = {
+  conversar: 'conversar', elogiar: 'elogiar', piada: 'piada', highFive: 'highFive', abracar: 'abracar', dancar: 'dancar',
+  consolar: 'consolar', desculpas: 'desculpas', presente: 'presente', paquerar: 'conversar', encontro: 'abracar', beijar: 'beijar',
+  pedirDinheiro: 'pedirDinheiro', discutir: 'discutir', fofocar: 'fofocar', brincar: 'brincar', massagem: 'massagem',
+};
+
+/** Falas que os frequentadores trocam entre si (vida no ambiente). */
+export const PAPO_AMBIENTE = [
+  'Hoje é dia de quê?', 'Peito e tríceps. Sempre.', 'Viu o preço do whey?', 'Esse ar-condicionado é decorativo?',
+  'Três séries de doze.', 'Bora que tá pago!', 'Amanhã eu venho. Com certeza. Talvez.', 'Quem deixou o halter no chão??',
+];
+
+/** Frases de quem puxa conversa com VOCÊ (iniciativa do NPC). */
+export function puxaConversa(p: Person, f: Frequentador): string {
+  if (f.fam < 10) return rng.pick(['Você é novo(a) aqui?', 'Vai usar esse aparelho? Posso revezar?', 'Opa, licença!']);
+  if (!f.nomeConhecido) return rng.pick(['Te vejo sempre por aqui!', 'E aí, firme no treino?']);
+  return rng.pick([`E aí! Bora treinar?`, 'Olha quem apareceu!', 'Tava sentindo falta do meu parceiro de sofrimento!']);
+}

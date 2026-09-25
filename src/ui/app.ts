@@ -1,6 +1,7 @@
 import { titleScreen } from './title';
 import { editorScreen } from './editor';
 import { gameScreen } from './game';
+import { explorarScreen } from './explorar';
 import { Life } from '../game/state';
 import { clear } from './dom';
 
@@ -14,12 +15,14 @@ export class App {
   go(name: 'title'): void;
   go(name: 'editor', opts?: { presets?: boolean }): void;
   go(name: 'game', life: Life): void;
+  go(name: 'explorar', life: Life): void;
   go(name: string, arg?: any) {
     this.cur?.destroy();
     clear(this.root);
     let s: ScreenInst;
     if (name === 'editor') s = editorScreen(this, arg ?? {});
     else if (name === 'game') s = gameScreen(this, arg as Life);
+    else if (name === 'explorar') s = explorarScreen(this, arg as Life);
     else s = titleScreen(this);
     this.cur = s;
     this.root.appendChild(s.el);

@@ -40,6 +40,7 @@ Harness visual (com `npm run dev` rodando):
 - Galeria/movimento: `http://localhost:5199/?test&env=<idAmbiente>&n=3&m=<movimento>&expr=<expressao>`
 - Vitrines da tela de título: `http://localhost:5199/?vitrine=casamento`, `?vitrine=parque`, `?vitrine=praia`, `?vitrine=balada`, `?vitrine=acampamento` (força uma vitrine específica para QA)
 - Jogo rápido com personagem aleatório de 25 anos: `http://localhost:5199/#demo`
+- Modo Explorar direto (vida aleatória de 25 anos): `http://localhost:5199/#explorar` — console: `__ex` (ver `docs/EXPLORAR.md`)
 - Parâmetros extras das cenas de teste: `&alt=<jogador>,<outro>` (altura 0..1 de cada um — beijo/abraço com alturas diferentes),
   `&hit=<s>` (congela <s> depois do primeiro contato de mão), `&dy=<px>` (2º personagem em outra faixa de profundidade — testa o nivelamento do chão), `&oage=`, `&sex=`, `&seed=`. Galeria: `&hair=a,b,...&span=`.
   Espere `window.frozen === true` **e mais ~1 s** antes de capturar a tela (o painel repinta com atraso).
@@ -60,6 +61,7 @@ Harness visual (com `npm run dev` rodando):
 | `docs/specs/SPEC-07` e `SPEC-08` | Contato entre personagens (abraço, beijo, mãos) e rastreio de altura no beijo — leia antes de mexer em qualquer animação com dois personagens. |
 | `docs/PROMPT-CODEX.md` | Prompt modelo para delegar animação ao Codex e como **mostrar a tela no chat** (`npm run capturar`). |
 | `docs/PAINEL-QA.md` | Painel de QA: uso, formatos de cenário/proposta/calibração, limites de edição, procedimento "localizar pelo ID". |
+| `docs/EXPLORAR.md` | **Modo Explorar**: mundo contínuo point-and-click (casa → rua → academia), objetos com ações, necessidades, NPCs frequentadores e o caminho da amizade até o contato. Receitas para ampliar. |
 | `docs/ARSENAL-IA.md` | Ferramentas auxiliares disponíveis (Serena, Hindsight, Graphify, Superpowers, Context Mode etc.) e quando vale usar cada uma. |
 
 ## 4. Zonas de edição
@@ -86,6 +88,7 @@ Harness visual (com `npm run dev` rodando):
 **🔴 Vermelha — NÃO editar. Se precisar, registre em `docs/PEDIDOS-ENGINE.md`:**
 - `src/character/{rig,character,body,head,hair,actor,appearance,rc,palette}.ts` (esqueleto, desenho, IK)
 - `src/scenes/{scene,stage,contato}.ts`, `src/render/{draw,bg,particles}.ts` (motor de cena/câmera/render/contato entre personagens)
+- `src/explorar/{controle,tipos}.ts` (motor do modo Explorar). `src/explorar/{mundo,gente}.ts` são 🟡: acrescentar objetos, ações, trechos e interações seguindo `docs/EXPLORAR.md`
 - `src/game/{state,types,life,storage,relacoes}.ts` (formato do save, motor anual, tipos, memória de relacionamento)
 - `src/ui/**`, `src/main.ts`, `src/test.ts`, `index.html`
 - `package.json`, `tsconfig.json`, `vite.config.ts`, `.github/**`, `scripts/**`

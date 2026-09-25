@@ -65,7 +65,17 @@ export function gameScreen(app: App, L: Life) {
     return root;
   }));
   const ageBtn = h('button.age-btn', { onclick: () => doAgeUp(), title: 'Envelhecer 1 ano' }, h('b', null, '+1'), h('small', null, 'ANO')) as HTMLButtonElement;
-  const bottom = h('div.g-bottom', null, stats, ageBtn);
+  // modo Explorar: viver um dia no mundo contínuo (casa → rua → academia), com gente para conhecer
+  const exploreBtn = h('button.explore-btn', {
+    onclick: () => {
+      if (L.dead) return;
+      if (L.player.age < 4) { toast('Com menos de 4 anos, o mundo ainda é o berço. Cresça um pouco!', 'info'); return; }
+      saveLife(L);
+      app.go('explorar', L);
+    },
+    title: 'Viver o dia: explore a casa, a rua e a academia',
+  }, h('b', null, '🗺️'), h('small', null, 'VIVER O DIA')) as HTMLButtonElement;
+  const bottom = h('div.g-bottom', null, stats, exploreBtn, ageBtn);
 
   // ------------------------------------------------ abas
   const TABS = [

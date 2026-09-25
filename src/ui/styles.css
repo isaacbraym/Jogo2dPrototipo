@@ -221,6 +221,16 @@ input[type='range']::-moz-range-thumb { width: 18px; height: 18px; border-radius
   box-shadow: 0 12px 34px -6px rgba(255, 122, 89, 0.8), inset 0 -6px 12px rgba(160, 30, 60, 0.35), inset 0 4px 8px rgba(255, 255, 255, 0.55);
   transition: transform 0.18s cubic-bezier(0.3, 1.6, 0.5, 1); margin-top: -34px;
 }
+.explore-btn {
+  position: relative; width: 84px; height: 84px; border-radius: 50%; border: 0; cursor: pointer; flex: none; margin-top: -24px;
+  background: radial-gradient(circle at 35% 30%, #c8f7d8, #58b368 45%, #2f7f6f 85%);
+  color: #06301f; font-family: var(--display); font-weight: 800; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1;
+  box-shadow: 0 12px 30px -8px rgba(88, 179, 104, 0.85), inset 0 -6px 12px rgba(10, 60, 40, 0.35), inset 0 4px 8px rgba(255, 255, 255, 0.5);
+  transition: transform 0.18s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.explore-btn b { font-size: 26px; }
+.explore-btn small { font-size: 10px; letter-spacing: 0.4px; margin-top: 2px; }
+.explore-btn:hover { transform: scale(1.07) rotate(3deg); }
 .age-btn::before { content: ''; position: absolute; inset: -8px; border-radius: 50%; border: 3px solid rgba(255, 181, 71, 0.5); animation: ring 2.2s ease-out infinite; }
 @keyframes ring { 0% { transform: scale(0.9); opacity: 1; } 100% { transform: scale(1.25); opacity: 0; } }
 .age-btn:hover { transform: scale(1.07) rotate(-3deg); }

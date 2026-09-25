@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-24 — Modo Explorar: mundo contínuo point-and-click (Claude) · branch `claude/modo-explorar`
+- **Novo modo de jogo** (botão verde **VIVER O DIA** na tela da vida; atalho `/#explorar`): mundo contínuo 2,5D com 9 trechos
+  — quarto, banheiro, cozinha, sala → frente de casa, rua, frente da academia → academia (recepção/cardio e musculação).
+  Anda com clique/toque (duplo = correr) ou setas/WASD; câmera acompanha; minimapa clicável; ônibus como atalho.
+- **Objetos com ações** (20+): dormir, cochilar, estudar, jogar no PC, se arrumar, selfie, banho, lanche, cozinhar, TV,
+  videogame, ler, esteira, supino, rosca, bebedouro, matrícula, orelhão... com avanço rápido do tempo e números flutuando.
+- **Relógio e necessidades** (Energia, Fome, Diversão, Social); dia termina ao dormir, ao encerrar ou às 2h, com resumo.
+  Retorno decrescente por ano (anti-farm). Academia 6h–23h, matrícula R$ 120/ano, a partir de 14 anos.
+- **Gente viva**: 7 frequentadores persistentes na academia (treinam, revezam aparelhos, conversam entre si, puxam papo com
+  você), família em casa, pets passeando (clique para brincar), passantes na rua. Céu, janelas e postes pela hora do dia.
+- **Caminho da amizade**: Desconhecido → Rosto conhecido → Colega de academia → **pedir o contato** (a pessoa entra na aba
+  Relações) → Amigo(a) (vínculo 55) → Melhor amigo(a). Interações novas (cumprimentar, se apresentar, papo de treino, pedir
+  dica, treinar juntos...) + as clássicas destravando por vínculo; tudo animado no próprio mundo (contato do motor).
+- Motor: `Scene.mundo` (fundo por trechos, limites de câmera). Save: `L.explorar` opcional.
+- **Docs:** `docs/EXPLORAR.md` (como funciona e como ampliar), AGENTS.md (mapa, zonas, atalho).
+
 ## 2026-09-24 — Arsenal de ferramentas documentado para o Claude Code (Codex)
 - **Descoberta automática:** `CLAUDE.md` agora aponta para o arsenal e foi adicionada a skill de projeto
   `.claude/skills/viva-arsenal/SKILL.md`, permitindo que o Claude associe tarefas de engenharia às ferramentas disponíveis.

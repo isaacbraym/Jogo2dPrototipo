@@ -112,6 +112,18 @@ export class Scene {
   onBeat?: (dt: number) => void;
   /** Controladores de contato ativos (abraço, beijo...) — atualizados antes dos atores. */
   contatos: { vivo: boolean; update(dt: number): void }[] = [];
+  /**
+   * Mundo contínuo (modo Explorar): em vez das camadas do ambiente (2120 px), o fundo é desenhado por trechos visíveis
+   * a cada quadro e a câmera anda entre `x0` e `x1`. `frente` desenha por cima dos atores (batentes, plantas em primeiro plano).
+   */
+  mundo?: {
+    x0: number;
+    x1: number;
+    fundo: (ctx: Ctx, v: { x0: number; x1: number }, t: number) => void;
+    frente?: (ctx: Ctx, v: { x0: number; x1: number }, t: number) => void;
+    corTopo?: string;
+    corBase?: string;
+  };
 
   constructor(envId: string) {
     this.env = ENVS[envId] ?? ENVS.sala;
@@ -218,7 +230,7 @@ export class Scene {
     }
     for (const a of this.actors) a.update(dt);
     this.fx.update(dt);
-    this.env.ambient?.(this.fx, dt, this.t, { x0: this.view.x0, x1: this.view.x1 });
+    if (!this.mundo) this.env.ambient?.(this.fx, dt, this.t, { x0: this.view.x0, x1: this.view.x1 });
     const c = this.cam;
     c.x = damp(c.x, c.tx, c.speed, dt);
     c.y = damp(c.y, c.ty, c.speed, dt);
@@ -243,7 +255,8 @@ export class Scene {
     const sy = c.shake > 0 ? (Math.random() - 0.5) * c.shake : 0;
     // limita câmera à área do mundo
     const halfW = viewW / 2;
-    const camX = clamp(c.x, X0 + halfW, X0 + WW - halfW);
+    const limX0 = this.mundo ? this.mundo.x0 : X0, limX1 = this.mundo ? this.mundo.x1 : X0 + WW;
+    const camX = limX1 - limX0 > viewW ? clamp(c.x, limX0 + halfW, limX1 - halfW) : (limX0 + limX1) / 2;
     this.padCur += (this.padBottom - this.padCur) * 0.12;
     const padW = (h < 760 ? this.padCur : 0) / scale; // em unidades de mundo
     const camY = (viewH >= 720 ? 720 - viewH / 2 : clamp(c.y, viewH / 2, 720 - viewH / 2)) + padW * 0.85;
@@ -252,8 +265,13 @@ export class Scene {
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     // preenchimento para áreas fora do mundo (telas muito altas)
-    const firstStatic = this.env.layers.findIndex((l) => !!l.static);
-    if (firstStatic >= 0) {
+    const firstStatic = this.mundo ? -1 : this.env.layers.findIndex((l) => !!l.static);
+    if (this.mundo) {
+      ctx.fillStyle = this.mundo.corTopo ?? '#101018';
+      ctx.fillRect(0, 0, w, h / 2);
+      ctx.fillStyle = this.mundo.corBase ?? '#101018';
+      ctx.fillRect(0, h / 2, w, h / 2);
+    } else if (firstStatic >= 0) {
       const lc = getLayerCanvas(this.env, firstStatic, res);
       ctx.fillStyle = lc.top;
       ctx.fillRect(0, 0, w, h / 2);
@@ -280,7 +298,8 @@ export class Scene {
       L.anim?.(ctx, this.t);
       ctx.restore();
     };
-    this.env.layers.forEach((L, i) => { if (!L.front) drawLayer(i); });
+    if (this.mundo) this.mundo.fundo(ctx, { x0: this.view.x0, x1: this.view.x1 }, this.t);
+    else this.env.layers.forEach((L, i) => { if (!L.front) drawLayer(i); });
 
     // objetos e atores ordenados por profundidade
     type Item = { z: number; y: number; draw: () => void };
@@ -320,7 +339,8 @@ export class Scene {
     }
     this.fx.draw(ctx);
     for (const p of this.props) if (p.visible && p.front) this.drawProp(ctx, p);
-    this.env.layers.forEach((L, i) => { if (L.front) drawLayer(i); });
+    if (this.mundo) this.mundo.frente?.(ctx, { x0: this.view.x0, x1: this.view.x1 }, this.t);
+    else this.env.layers.forEach((L, i) => { if (L.front) drawLayer(i); });
     for (const a of this.actors) a.drawOverlay(ctx, this.t);
     ctx.restore();
 

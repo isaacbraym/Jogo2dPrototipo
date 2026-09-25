@@ -20,6 +20,14 @@ if (params.has('test')) {
       const ap = randomAppearance(rng);
       return app.go('game', newLife(ap, rng.pick(ap.sex === 'f' ? NOMES_F : NOMES_M), rng.pick(SOBRENOMES), 'São Paulo', 25));
     }
+    if (hash === 'explorar') {
+      // atalho de teste: vida aleatória de 25 anos direto no modo Explorar
+      const [{ randomAppearance }, { newLife }, { rng }, { NOMES_F, NOMES_M, SOBRENOMES }] = await Promise.all([
+        import('./character/appearance'), import('./game/state'), import('./core/rng'), import('./game/names'),
+      ]);
+      const ap = randomAppearance(rng);
+      return app.go('explorar', newLife(ap, rng.pick(ap.sex === 'f' ? NOMES_F : NOMES_M), rng.pick(SOBRENOMES), 'São Paulo', 25));
+    }
     if (hash === 'jogo') {
       const { lastLifeId, loadLife } = await import('./game/storage');
       const id = lastLifeId();

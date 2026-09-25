@@ -4,6 +4,7 @@ import { clamp } from '../core/math';
 import { NOMES_F, NOMES_M, SOBRENOMES } from './names';
 import type { CastMember } from '../scenes/situations';
 import type { Memoria } from './relacoes';
+import type { EstadoExplorar } from '../explorar/tipos';
 
 export type StatKey = 'felicidade' | 'saude' | 'inteligencia' | 'aparencia';
 export type Stats = Record<StatKey, number>;
@@ -93,6 +94,8 @@ export interface Life {
   yearsActions: number; // ações feitas neste ano
   licenca: boolean;
   seed: number;
+  /** modo Explorar (mundo contínuo): relógio, necessidades, frequentadores conhecidos. Opcional — saves antigos continuam válidos. */
+  explorar?: EstadoExplorar;
 }
 
 let uid = Date.now() % 100000;
