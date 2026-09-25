@@ -33,7 +33,7 @@ A1. CABELO NA FRENTE DA BOCHECHA (mecha que devia ficar atrás do rosto aparece 
      "trança do lado de lá: na camada de TRÁS, nascendo na silhueta do rosto"). Mechas laterais do lado LONGE da
      câmera (em ¾, turn ≈ 0,72) devem ir para `back`; só o lado PERTO e a franja ficam em `front`.
    - Reproduzir TODOS os penteados em 3 giros com a galeria:
-     npm run capturar -- cabelos-a "/?test&env=parque&n=6&m=parado&hair=longo,ondulado,franja,trancas,mariaChiquinha,blackPower&span=1"
+     npm run capturar -- cabelos-a "/?test&env=parque&n=6&m=parado&hair=longo,ondulado,franja,trancas,mariaChiquinha,blackPower"
      (troque a lista para cobrir todos os ids de penteado do CATALOGO.md; use também &sex=f e &sex=m).
    - Aceite: em ¾ e de frente, nenhuma mecha do lado de lá cobre bochecha/olho/boca; em perfil o cabelo não "flutua"
      na frente do rosto. Nenhum penteado piorou (compare antes/depois lado a lado).
