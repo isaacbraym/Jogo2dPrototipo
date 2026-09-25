@@ -124,6 +124,7 @@ export class Explorador {
   private fachadas: { pp: PlacedProp; predio?: string }[] = [];
   /** coisas entre a câmera e um prédio (muro, postes, árvores da calçada): ficam translúcidas quando você está lá dentro */
   private naFrente: { pp: PlacedProp; predio?: string }[] = [];
+  private retomadaRua = new Map<NpcVivo, { alvo: NonNullable<NpcVivo['alvo']>; depois?: () => void }>();
   private emInteracao = false;
   private proxPassante = 6;
   private proxIniciativa = 18;
@@ -169,6 +170,8 @@ export class Explorador {
       },
       frente: (ctx, v) => this.desenharDestaques(ctx, v),
     };
+    // Overlays de atores internos respeitam a opacidade da fachada, igual ao corpo desenhado por profundidade.
+    this.sc.actorOverlayAlpha = (a) => this.visibilidadeDeFora(a.x, a.y);
     // objetos (móveis com partes: a de trás antes de quem usa, a da frente depois)
     for (const o of OBJETOS) this.montarObjeto(o);
     // decoração (postes acendem à noite)
@@ -190,6 +193,7 @@ export class Explorador {
     this.popularCasa();
     this.popularPets();
     this.popularAcademia();
+    this.popularRua();
     this.sc.focus(this.eu.x, this.camY(), this.zoom);
     this.sc.cam.x = this.sc.cam.tx;
     this.sc.cam.y = this.sc.cam.ty;
@@ -304,7 +308,7 @@ export class Explorador {
   nivel(n: NpcVivo): Nivel {
     if (n.papel === 'familia') return { n: 5, nome: relTexto(n.p), cor: '#e8845a' };
     if (n.papel === 'passante') return { n: 0, nome: 'Passante', cor: '#9aa0b0' };
-    return nivelDe(n.f, pessoaDe(this.L, n.f!), this.L);
+    return nivelDe(n.f, pessoaDe(this.L, n.f!), this.L, n.lugar);
   }
 
   // ================================================================== comandos da interface
@@ -563,7 +567,14 @@ export class Explorador {
   }
 
   private async chegarPerto(n: NpcVivo, para: boolean) {
-    if (para) this.soltarNpc(n);
+    if (para) {
+      // Morador abordado no passeio retoma o mesmo destino depois da conversa.
+      if (n.papel === 'frequentador' && n.lugar === 'rua' && n.estado === 'indo' && n.alvo) {
+        this.retomadaRua.set(n, { alvo: { ...n.alvo }, depois: n.depois });
+        n.alvo = undefined; n.depois = undefined;
+      }
+      this.soltarNpc(n);
+    }
     n.estado = 'interagindo';
     const lado = this.eu.x < n.ator.x ? -1 : 1;
     const gx = n.ator.x + lado * 150 * n.ator.scale;
@@ -644,7 +655,10 @@ export class Explorador {
     const dfam = (n.f?.fam ?? 0) - fam0;
     if (dfam && !r.novoContato) this.ui.flutuar(n.ator.x, n.ator.topWorld() - 18, `${dfam > 0 ? '+' : ''}${dfam} familiaridade`, dfam > 0 ? '#ffe08a' : '#ff8a8a');
     this.ui.registrar(r.texto, r.tom);
-    if (r.tom === 'bom' && n.f && n.f.fam >= 35 && fam0 < 35) this.ui.aviso(`${n.p.first} agora é seu/sua colega de academia. Já dá para pedir o contato!`, 'ok');
+    if (r.tom === 'bom' && n.f && n.f.fam >= 35 && fam0 < 35) {
+      const nivel = n.lugar === 'rua' ? 'conhecido(a) do bairro' : 'colega de academia';
+      this.ui.aviso(`${n.p.first} agora é seu/sua ${nivel}. Já dá para pedir o contato!`, 'ok');
+    }
   }
 
   /** As pessoas reparam: mau cheiro e mão que não foi lavada depois do banheiro. */
@@ -669,7 +683,16 @@ export class Explorador {
     n.ator.lookAt = null;
     this.eu.scale = escalaProf(this.eu.y);
     n.ator.scale = escalaProf(n.ator.y);
-    if (n.estado === 'interagindo') { n.estado = 'pausa'; n.ate = this.sc.t + rng.range(1.5, 3); n.ator.play('parado', { fade: 0.3 }); }
+    if (n.estado === 'interagindo') {
+      const retomar = this.retomadaRua.get(n);
+      if (retomar) {
+        this.retomadaRua.delete(n);
+        n.estado = 'indo'; n.alvo = retomar.alvo; n.depois = retomar.depois;
+        n.ator.play('andar', { fade: 0.25 });
+      } else {
+        n.estado = 'pausa'; n.ate = this.sc.t + rng.range(1.5, 3); n.ator.play('parado', { fade: 0.3 });
+      }
+    }
     this.eu.play('parado', { fade: 0.3 });
     this.ui.atualizar();
   }
@@ -752,6 +775,38 @@ export class Explorador {
     }
   }
 
+  /** Moradores persistentes do bairro: alguns sentam na praça, outros circulam pela calçada. */
+  private popularRua() {
+    if (this.L.player.age < 8) return;
+    const lista = garantirFrequentadores(this.L, this.est, 'rua');
+    const r = new RNG(this.L.seed + this.est.dias * 43 + 19);
+    const presentes = lista.filter((f) => r.chance(f.assiduidade)).slice(0, 6);
+    const bancos = ['bancoPraca1', 'bancoPraca2'].map((id) => OBJETOS.find((o) => o.id === id)!).filter(Boolean);
+    presentes.forEach((f, i) => {
+      const p = pessoaDe(this.L, f);
+      if (!p.alive) return;
+      if (i < bancos.length) {
+        const o = bancos[i], ac = o.acoes[0];
+        const n = this.novoNpc(p, 'frequentador', 'rua', o.x, o.y, f);
+        this.ocupado.set(this.chaveVaga(o, 0), n.ator);
+        this.marcarUso(o, true);
+        n.obj = o; n.acao = ac;
+        this.posicionar(n.ator, o, ac, 0);
+        n.ator.play(ac.motion, { fade: 0.01 });
+        n.estado = 'usando';
+        n.ate = this.sc.t + r.range(10, 24);
+        return;
+      }
+      const naPraca = i % 2 === 0;
+      const alvo = naPraca
+        ? pontoAndavel(r.range(3750, 5750), r.range(700, 790), 99)
+        : pontoAndavel(r.range(3550, 6000), r.range(828, 878), 99);
+      const n = this.novoNpc(p, 'frequentador', 'rua', alvo.x, alvo.y, f);
+      n.estado = 'pausa';
+      n.ate = this.sc.t + r.range(1, 5);
+    });
+  }
+
   private soltarNpc(n: NpcVivo) {
     const o = n.obj;
     if (o) {
@@ -767,6 +822,7 @@ export class Explorador {
   private pensarNpc(n: NpcVivo) {
     const t = this.sc.t;
     if (n.papel === 'passante') return;
+    if (n.papel === 'frequentador' && n.lugar === 'rua') return this.pensarMoradorRua(n);
     const daCasa = n.papel === 'familia';
     const objs = OBJETOS.filter((o) => (daCasa ? trechoEm(o.x).lugar === 'casa' : trechoEm(o.x).lugar === 'academia') && o.acoes.some((a) => !a.especial));
     const livres = objs.filter((o) => !o.exclusivo || this.vagaLivre(o, n.ator) >= 0);
@@ -821,11 +877,55 @@ export class Explorador {
     };
   }
 
+  /** Rotina própria dos moradores: banco, chafariz e passeio — nunca tentam usar aparelhos da academia. */
+  private pensarMoradorRua(n: NpcVivo) {
+    const t = this.sc.t;
+    const sorte = rng.next();
+    if (sorte < 0.3) {
+      const bancos = OBJETOS.filter((o) => o.id === 'bancoPraca1' || o.id === 'bancoPraca2')
+        .filter((o) => this.vagaLivre(o, n.ator) >= 0);
+      if (bancos.length) {
+        const o = rng.pick(bancos), ac = o.acoes[0];
+        this.ocupado.set(this.chaveVaga(o, 0), n.ator);
+        this.marcarUso(o, true);
+        n.obj = o; n.acao = ac; n.estado = 'indo';
+        const pu = pontoDeUso(o, ac, 0);
+        n.alvo = { x: pu.x, y: Math.max(pu.y, o.y + 6) };
+        n.depois = () => {
+          this.posicionar(n.ator, o, ac, 0);
+          n.ator.play(ac.motion, { fade: 0.25 });
+          n.estado = 'usando';
+          n.ate = this.sc.t + rng.range(10, 22);
+        };
+        return;
+      }
+    }
+    if (sorte < 0.5) {
+      const direita = rng.chance(0.5);
+      const p = pontoAndavel(direita ? 4930 : 4370, rng.range(735, 790), 99);
+      n.estado = 'indo'; n.alvo = { x: p.x, y: p.y };
+      n.depois = () => {
+        n.ator.facing = direita ? -1 : 1;
+        if (rng.chance(0.5)) this.d.say(n.ator, rng.pick(['Bonito esse chafariz.', 'Moeda dá sorte mesmo?', 'Cinco minutos de paz.']), 2, 'pensa');
+        n.estado = 'pausa'; n.ate = t + rng.range(4, 8);
+      };
+      return;
+    }
+    const naPraca = rng.chance(0.6);
+    const p = naPraca
+      ? pontoAndavel(rng.range(3720, 5800), rng.range(700, 800), 99)
+      : pontoAndavel(clamp(n.ator.x + rng.range(-900, 900), 250, 10850), rng.range(824, 880), 99);
+    n.estado = 'indo';
+    n.alvo = { x: p.x, y: p.y };
+    n.depois = () => { n.estado = 'pausa'; n.ate = this.sc.t + rng.range(2, 6); };
+  }
+
   private tickNpcs(dt: number) {
     const t = this.sc.t;
     for (const n of [...this.npcs]) {
       const a = n.ator;
       a.scale = escalaProf(a.y);
+      if (n.estado === 'livre' || n.estado === 'pausa') this.afastarSobreposicao(n, dt);
       if (n.estado === 'interagindo') continue;
       if (n.estado === 'indo' || n.estado === 'saindo') {
         if (n.alvo && this.passo(a, n.alvo, dt, n.papel === 'passante' ? 0.9 : 0.85)) {
@@ -845,6 +945,19 @@ export class Explorador {
     }
   }
 
+  /** Pequena separação só em repouso evita dois corpos ocupando exatamente o mesmo pixel sem atrapalhar contatos. */
+  private afastarSobreposicao(n: NpcVivo, dt: number) {
+    const a = n.ator;
+    const outros = [this.eu, ...this.npcs.filter((m) => m !== n && (m.estado === 'livre' || m.estado === 'pausa')).map((m) => m.ator)];
+    for (const b of outros) {
+      const dx = a.x - b.x, dy = a.y - b.y;
+      if (Math.abs(dx) >= 72 || Math.abs(dy) >= 34) continue;
+      const lado = dx === 0 ? (a.id > b.id ? 1 : -1) : Math.sign(dx);
+      const p = pontoAndavel(a.x + lado * Math.min(55, (72 - Math.abs(dx)) * dt * 8), a.y, 99);
+      if (trechoEm(p.x).lugar === n.lugar) { a.x = p.x; a.y = p.y; }
+    }
+  }
+
   private removerNpc(n: NpcVivo) {
     this.soltarNpc(n);
     this.sc.removeActor(n.ator);
@@ -857,8 +970,8 @@ export class Explorador {
     // some quem já saiu de vista há tempo
     for (const n of this.npcs.filter((m) => m.papel === 'passante' && m.estado !== 'interagindo')) if (Math.abs(n.ator.x - this.eu.x) > 2600) this.removerNpc(n);
     const noite = luz(this.est.hora).noite;
-    if (this.proxPassante > 0 || this.npcs.filter((n) => n.papel === 'passante').length >= (noite > 0.6 ? 2 : 5)) return;
-    this.proxPassante = rng.range(4, 9) * (noite > 0.6 ? 2 : 1);
+    if (this.proxPassante > 0 || this.npcs.filter((n) => n.papel === 'passante').length >= (noite > 0.6 ? 1 : 3)) return;
+    this.proxPassante = rng.range(7, 13) * (noite > 0.6 ? 2 : 1);
     const daDireita = rng.chance(0.5);
     const v = this.sc.view;
     const x0 = clamp(daDireita ? v.x1 + rng.range(80, 400) : v.x0 - rng.range(80, 400), MUNDO_X0 + 10, MUNDO_X1 - 10);
@@ -883,7 +996,7 @@ export class Explorador {
       if (this.emInteracao) return;
       n.ator.facing = this.eu.x > n.ator.x ? 1 : -1;
       this.eu.facing = n.ator.x > this.eu.x ? 1 : -1;
-      this.d.say(n.ator, puxaConversa(n.p, n.f!), 2.4);
+      this.d.say(n.ator, puxaConversa(n.p, n.f!, n.lugar), 2.4);
       mudarFam(n.f!, 2);
       this.est.nec.social = clamp(this.est.nec.social + 3, 0, 100);
       this.ui.registrar(`${n.f!.nomeConhecido ? n.p.first : 'Alguém'} puxou conversa com você. Clique na pessoa para responder!`, 'neutro');
@@ -900,7 +1013,9 @@ export class Explorador {
     const cands = this.npcs.filter((n) => n.papel !== 'passante' && n.estado !== 'interagindo' && Math.abs(n.ator.x - this.eu.x) < 800 && !n.ator.bubble);
     if (!cands.length) return;
     const n = rng.pick(cands);
-    const falas = n.papel === 'familia' ? FALAS_CASA : n.estado === 'usando' ? ['Mais uma!', 'Uff...', 'Queima!', 'Só mais três...'] : PAPO_AMBIENTE;
+    const falas = n.papel === 'familia' ? FALAS_CASA
+      : n.lugar === 'rua' ? ['Bonito dia.', 'A praça tá cheia hoje.', 'Vou passar na padaria.', 'Esse banco já é patrimônio.', 'Bora caminhar?']
+        : n.estado === 'usando' ? ['Mais uma!', 'Uff...', 'Queima!', 'Só mais três...'] : PAPO_AMBIENTE;
     this.d.say(n.ator, rng.pick(falas), 2, n.estado === 'usando' ? 'pensa' : 'fala');
   }
 
@@ -964,7 +1079,7 @@ export class Explorador {
     this.tickPets(dt);
     this.tickPassantes(dt);
     this.tickCarros(dt);
-    if (this.trechoAtual().lugar === 'academia') this.tickIniciativa(dt);
+    if (this.trechoAtual().lugar === 'academia' || this.trechoAtual().lugar === 'rua') this.tickIniciativa(dt);
     this.tickPapo(dt);
     // câmera segue (em x e em y: dentro de casa mostra do teto ao jardim; na rua, a fachada e a calçada)
     this.sc.focus(e.x, this.camY(), this.zoom);
@@ -974,6 +1089,14 @@ export class Explorador {
   }
 
   /** Casa de bonecas: a fachada do prédio onde você está some (e volta quando você sai). */
+  private visibilidadeDeFora(x: number, y: number) {
+    if (y >= FACHADA_Y) return 1;
+    const predio = predioEm(x);
+    if (!predio) return 1;
+    const fachada = this.fachadas.find((f) => f.predio === predio);
+    return fachada ? clamp(1 - fachada.pp.alpha, 0, 1) : 1;
+  }
+
   private tickFachadas(dt: number) {
     const dentro = this.dentroDe();
     const naPorta = zonaEm(this.eu.x, this.eu.y)?.id;
@@ -1056,10 +1179,13 @@ export class Explorador {
   private desenharBarras(ctx: CanvasRenderingContext2D) {
     for (const a of this.sc.actors) {
       if (a.motionName !== 'supino') continue;
+      const alpha = this.visibilidadeDeFora(a.x, a.y);
+      if (alpha <= 0.01) continue;
       const h1 = a.handWorld(true), h2 = a.handWorld(false);
       const mx = (h1.x + h2.x) / 2, my = (h1.y + h2.y) / 2;
       const ex = 0.65 * M * a.scale * 0.42, ey = -0.65 * M * a.scale * 0.9; // direção da profundidade (OX, OY) normalizada à mão
       ctx.save();
+      ctx.globalAlpha *= alpha;
       ctx.strokeStyle = '#c9d2d4'; ctx.lineWidth = 5 * a.scale; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(mx - ex, my - ey); ctx.lineTo(mx + ex, my + ey); ctx.stroke();
       for (const k of [-1, 1]) {
@@ -1199,12 +1325,12 @@ export class Explorador {
           await this.espera(3.2);
           e.propN = undefined;
           e.play('esforcoVaso', { fade: 0.2 });
-          for (let i = 0; i < 5; i++) { this.sc.fx.spawn('suor', e.headWorld().x, e.headWorld().y - 10, 2, { speed: 60 }); await this.espera(0.45); }
+          for (let i = 0; i < 5; i++) { if (this.visibilidadeDeFora(e.x, e.y) > 0.05) this.sc.fx.spawn('suor', e.headWorld().x, e.headWorld().y - 10, 2, { speed: 60 }); await this.espera(0.45); }
           sfx.pop(); await this.espera(0.35); sfx.pop();
           e.setExpr('alivio', 2.5);
           e.play('sentarVaso', { fade: 0.3 });
           this.d.say(e, rng.pick(['Ufa...', 'Missão cumprida.', 'Leve como uma pluma.']), 1.6, 'fala');
-          this.sc.fx.spawn('fumaca', o.x + 10, o.y - 90, 4, { speed: 30, size: 16, life: 1.6, color: 'rgba(150,190,90,0.5)' });
+          if (this.visibilidadeDeFora(o.x, o.y) > 0.05) this.sc.fx.spawn('fumaca', o.x + 10, o.y - 90, 4, { speed: 30, size: 16, life: 1.6, color: 'rgba(150,190,90,0.5)' });
           await this.espera(1.4);
         }
         // papel e levantar
@@ -1243,10 +1369,12 @@ export class Explorador {
   }
 
   private espuma(x: number, y: number, n: number) {
+    if (this.visibilidadeDeFora(x, y) <= 0.05) return;
     this.sc.fx.spawn('bolha', x, y, n, { speed: 40, size: 7, life: 1.1, color: 'rgba(255,255,255,0.9)' });
   }
   private respingo(o: ObjetoMundo) {
     const s = escalaProf(o.y);
+    if (this.visibilidadeDeFora(o.x, o.y) <= 0.05) return;
     this.sc.fx.spawn('bolha', o.x + 15 * s, o.y - 80 * s, 2, { speed: 30, size: 4, life: 0.4, color: 'rgba(250,225,120,0.8)' });
   }
 
@@ -1262,7 +1390,7 @@ export class Explorador {
       e.play('nervoso', { fade: 0.2 });
       e.setExpr('envergonhado', 4);
       this.d.say(e, 'Ai não... não deu tempo.', 2.4, 'fala');
-      this.sc.fx.spawn('lagrima', e.x, e.y - 60, 6, { speed: 40, size: 6, life: 1, color: 'rgba(250,225,120,0.85)' });
+      if (this.visibilidadeDeFora(e.x, e.y) > 0.05) this.sc.fx.spawn('lagrima', e.x, e.y - 60, 6, { speed: 40, size: 6, life: 1, color: 'rgba(250,225,120,0.85)' });
       addLog(this.L, 'Você não chegou a tempo ao banheiro. Constrangimento nível máximo.', 'ruim', '😳');
       this.ui.registrar('😳 Não deu tempo de chegar ao banheiro... Higiene lá embaixo. Hora de um banho.', 'ruim');
       for (const n of this.npcs) if (n.estado !== 'interagindo' && Math.abs(n.ator.x - e.x) < 700 && n.papel !== 'passante') {
@@ -1275,7 +1403,7 @@ export class Explorador {
       this.proxCheiro -= dt;
       if (this.proxCheiro <= 0) {
         this.proxCheiro = 1.2;
-        this.sc.fx.spawn('fumaca', e.x + rng.range(-25, 25), e.y - rng.range(60, 180) * e.scale, 1, { speed: 25, size: 12, life: 1.4, color: 'rgba(140,180,80,0.45)' });
+        if (this.visibilidadeDeFora(e.x, e.y) > 0.05) this.sc.fx.spawn('fumaca', e.x + rng.range(-25, 25), e.y - rng.range(60, 180) * e.scale, 1, { speed: 25, size: 12, life: 1.4, color: 'rgba(140,180,80,0.45)' });
       }
     }
   }
@@ -1285,6 +1413,9 @@ export class Explorador {
     const b = this.banho;
     const ch = OBJETOS.find((o) => o.id === 'chuveiro')!;
     if (b) {
+      const alpha = this.visibilidadeDeFora(ch.x, ch.y);
+      ctx.save();
+      ctx.globalAlpha *= alpha;
       const t = this.sc.t;
       const s = escalaProf(ch.y);
       if (b.agua) {
@@ -1335,6 +1466,7 @@ export class Explorador {
           ctx.beginPath(); ctx.arc(vx, vy, 30 + (i % 3) * 10, 0, Math.PI * 2); ctx.fill();
         }
       }
+      ctx.restore();
     }
     // jato do xixi (sai por trás das mãos, cai na bacia)
     if (this.jato && this.sc.t < this.jato.ate) {
@@ -1343,6 +1475,7 @@ export class Explorador {
       const sv = escalaProf(vaso.y);
       const x0 = h.x + this.eu.facing * 6, y0 = h.y + 4, x1 = vaso.x + 15 * sv, y1 = vaso.y - 80 * sv;
       ctx.save();
+      ctx.globalAlpha *= this.visibilidadeDeFora(this.eu.x, this.eu.y);
       ctx.strokeStyle = 'rgba(245,215,90,0.85)';
       ctx.lineWidth = 3;
       ctx.setLineDash([10, 5]);

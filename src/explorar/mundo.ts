@@ -72,11 +72,48 @@ export function pontoAndavel(x: number, y: number, idade = 99): { x: number; y: 
   let melhor: { x: number; y: number; zona: Zona } | null = null, dMin = Infinity;
   for (const z of ZONAS) {
     if ((z.minIdade ?? 0) > idade) continue;
-    const px = Math.max(z.x0, Math.min(z.x1, x)), py = Math.max(z.y0, Math.min(z.y1, y));
+    let px = Math.max(z.x0, Math.min(z.x1, x)), py = Math.max(z.y0, Math.min(z.y1, y));
+    // Praça/calçada têm móveis altos: o clique precisa parar no contorno físico, não no meio do desenho.
+    ({ x: px, y: py } = tirarDeObstaculos(px, py, z));
     const d = Math.hypot(px - x, (py - y) * 1.4);
     if (d < dMin) { dMin = d; melhor = { x: px, y: py, zona: z }; }
   }
   return melhor!;
+}
+
+function tirarDeObstaculos(x: number, y: number, z: Zona): { x: number; y: number } {
+  let px = x, py = y;
+  for (let tentativa = 0; tentativa < 8; tentativa++) {
+    const hit = obstaculosAndar().find((o) => Math.abs(px - o.x) < o.rx && Math.abs(py - o.y) < o.ry);
+    if (!hit) break;
+    const margem = 4;
+    const candidatos = [
+      { x: hit.x - hit.rx - margem, y: py },
+      { x: hit.x + hit.rx + margem, y: py },
+      { x: px, y: hit.y - hit.ry - margem },
+      { x: px, y: hit.y + hit.ry + margem },
+    ].filter((p) => p.x >= z.x0 && p.x <= z.x1 && p.y >= z.y0 && p.y <= z.y1);
+    if (!candidatos.length) break;
+    const melhor = candidatos.sort((a, b) => Math.hypot(a.x - px, (a.y - py) * 1.4) - Math.hypot(b.x - px, (b.y - py) * 1.4))[0];
+    px = melhor.x; py = melhor.y;
+  }
+  return { x: px, y: py };
+}
+
+function obstaculosAndar(): { x: number; y: number; rx: number; ry: number }[] {
+  const out: { x: number; y: number; rx: number; ry: number }[] = [];
+  for (const o of OBJETOS) {
+    if (o.id === 'chafariz') out.push({ x: o.x, y: o.y + 24, rx: 225, ry: 92 });
+    else if (o.id.startsWith('bancoPraca')) out.push({ x: o.x, y: o.y + 8, rx: 190, ry: 42 });
+    else if (o.id === 'pontoOnibus') out.push({ x: o.x, y: o.y - 4, rx: 150, ry: 48 });
+  }
+  for (const d of DECORACAO) {
+    if (d.desenho === 'poste') out.push({ x: d.x, y: d.y, rx: 24, ry: 28 });
+    else if (d.desenho === 'lixeira') out.push({ x: d.x, y: d.y, rx: 38, ry: 30 });
+    else if (d.desenho === 'hidrante') out.push({ x: d.x, y: d.y, rx: 34, ry: 26 });
+    else if (d.desenho === 'arvore' && d.y >= 640) out.push({ x: d.x, y: d.y, rx: 48, ry: 34 });
+  }
+  return out;
 }
 
 const liga = (a: Zona, b: Zona) => a.x0 <= b.x1 && b.x0 <= a.x1 && a.y0 <= b.y1 && b.y0 <= a.y1;
@@ -226,7 +263,7 @@ export const OBJETOS: ObjetoMundo[] = [
   },
   // ---- praça e calçada
   ...[4180, 5160].map((x, i): ObjetoMundo => ({
-    id: 'bancoPraca' + (i + 1), nome: 'Banco da praça', desenho: 'bancoPraca', x, y: 690, w: 400, h: 170,
+    id: 'bancoPraca' + (i + 1), nome: 'Banco da praça', desenho: 'bancoPraca', x, y: 690, w: 400, h: 170, exclusivo: true,
     acoes: [
       { id: 'observar', label: 'Sentar e ver o movimento', icon: '👀', minutos: 30, motion: 'sentar', dx: i ? 60 : -60, dy: -18, lado: i ? -1 : 1, giro: 0.45, assento: 0.45, efeito: { stats: { felicidade: 1 }, nec: { diversao: 8, energia: 6 } }, texto: 'Um senhor passou com um papagaio. O dia valeu.' },
     ],
