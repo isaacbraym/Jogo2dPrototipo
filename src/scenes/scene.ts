@@ -21,6 +21,8 @@ export interface PlacedProp {
   rot: number;
   front?: boolean;
   visible: boolean;
+  /** profundidade usada só para ORDENAR (padrão: y). Ex.: a cadeira atrás de quem senta e a mesa na frente. */
+  ordem?: number;
 }
 
 // cache global das camadas estáticas (LRU simples)
@@ -119,6 +121,9 @@ export class Scene {
   mundo?: {
     x0: number;
     x1: number;
+    /** limites verticais do mundo (padrão 0..720) — a câmera anda entre eles */
+    y0?: number;
+    y1?: number;
     fundo: (ctx: Ctx, v: { x0: number; x1: number }, t: number) => void;
     frente?: (ctx: Ctx, v: { x0: number; x1: number }, t: number) => void;
     corTopo?: string;
@@ -259,7 +264,8 @@ export class Scene {
     const camX = limX1 - limX0 > viewW ? clamp(c.x, limX0 + halfW, limX1 - halfW) : (limX0 + limX1) / 2;
     this.padCur += (this.padBottom - this.padCur) * 0.12;
     const padW = (h < 760 ? this.padCur : 0) / scale; // em unidades de mundo
-    const camY = (viewH >= 720 ? 720 - viewH / 2 : clamp(c.y, viewH / 2, 720 - viewH / 2)) + padW * 0.85;
+    const limY0 = this.mundo?.y0 ?? 0, limY1 = this.mundo?.y1 ?? 720;
+    const camY = (viewH >= limY1 - limY0 ? limY1 - viewH / 2 : clamp(c.y, limY0 + viewH / 2, limY1 - viewH / 2)) + padW * 0.85;
     this.view = { x0: camX - halfW, x1: camX + halfW, scale, w, h, y0: camY - viewH / 2 };
     const res = Math.min(2, Math.max(1, dpr * baseScale * 1.15));
 
@@ -306,7 +312,7 @@ export class Scene {
     const items: Item[] = [];
     for (const p of this.props) {
       if (!p.visible || p.front) continue;
-      items.push({ z: p.z, y: p.y, draw: () => this.drawProp(ctx, p) });
+      items.push({ z: p.z, y: p.ordem ?? p.y, draw: () => this.drawProp(ctx, p) });
     }
     for (const a of this.actors) {
       const b = a.enlace;

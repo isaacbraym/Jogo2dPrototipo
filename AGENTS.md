@@ -27,6 +27,7 @@ npm run catalog      # regenera docs/CATALOGO.md (rode após adicionar conteúdo
 npm run build        # gera dist/index.html (arquivo único, abre via file://)
 npm run painel       # Painel de QA local: http://localhost:5199/painel.html (catálogo, esteira, laboratório, calibrador)
 npm run capturar -- <nome> "<url>"   # captura de tela da cena (com npm run dev rodando) — ver docs/PROMPT-CODEX.md
+npm run capturar -- --roteiro qa/roteiros/explorar.json   # modo Explorar: /?ex=x,y&zoom=&hora=&usar=obj:acao#explorar
 npm run capturar -- --roteiro qa/roteiros/<arquivo>.json   # várias capturas de uma vez
 ```
 
@@ -61,6 +62,8 @@ Harness visual (com `npm run dev` rodando):
 | `docs/specs/SPEC-07` e `SPEC-08` | Contato entre personagens (abraço, beijo, mãos) e rastreio de altura no beijo — leia antes de mexer em qualquer animação com dois personagens. |
 | `docs/PROMPT-CODEX.md` | Prompt modelo para delegar animação ao Codex e como **mostrar a tela no chat** (`npm run capturar`). |
 | `docs/PAINEL-QA.md` | Painel de QA: uso, formatos de cenário/proposta/calibração, limites de edição, procedimento "localizar pelo ID". |
+| `docs/EXPLORAR.md` | Modo Explorar (mundo contínuo): profundidade, zonas, fachadas, móveis em escala, gente, banheiro (regras obrigatórias). |
+| `instrucoesCodex/` | **Manual do Codex / agentes de conteúdo**: padrão de qualidade, móveis e texturas, objetos e ações, lugares, diálogos, eventos e regras, como mostrar a tela, fila de tarefas prontas. |
 | `docs/EXPLORAR.md` | **Modo Explorar**: mundo contínuo point-and-click (casa → rua → academia), objetos com ações, necessidades, NPCs frequentadores e o caminho da amizade até o contato. Receitas para ampliar. |
 | `docs/ARSENAL-IA.md` | Ferramentas auxiliares disponíveis (Serena, Hindsight, Graphify, Superpowers, Context Mode etc.) e quando vale usar cada uma. |
 
@@ -76,6 +79,7 @@ Harness visual (com `npm run dev` rodando):
 - `src/character/expressions.ts` → novas entradas em `EXPRESSIONS`
 - `src/scenes/environments.ts` → novo `const x: Env` + registrar em `ENVS`
 - `src/render/props.ts` → novas entradas em `PROPS` (cenário) e `HELD` (objetos de mão)
+- `src/explorar/moveis.ts` → novos móveis 2,5D em `MOVEIS` (escala `M`, `caixa()` — ver `instrucoesCodex/02`)
 - `docs/**` (exceto `CATALOGO.md`, que é gerado)
 - `qa/propostas/*.json` (propostas de calibração) e `qa/cenarios/*.json` (casos de reprodução) — o `npm run check` valida
 
@@ -88,7 +92,7 @@ Harness visual (com `npm run dev` rodando):
 **🔴 Vermelha — NÃO editar. Se precisar, registre em `docs/PEDIDOS-ENGINE.md`:**
 - `src/character/{rig,character,body,head,hair,actor,appearance,rc,palette}.ts` (esqueleto, desenho, IK)
 - `src/scenes/{scene,stage,contato}.ts`, `src/render/{draw,bg,particles}.ts` (motor de cena/câmera/render/contato entre personagens)
-- `src/explorar/{controle,tipos}.ts` (motor do modo Explorar). `src/explorar/{mundo,gente}.ts` são 🟡: acrescentar objetos, ações, trechos e interações seguindo `docs/EXPLORAR.md`
+- `src/explorar/{controle,tipos}.ts` (motor do modo Explorar). `src/explorar/{mundo,gente}.ts` são 🟡: acrescentar objetos, ações, trechos, zonas, fachadas e interações seguindo `docs/EXPLORAR.md` e `instrucoesCodex/`
 - `src/game/{state,types,life,storage,relacoes}.ts` (formato do save, motor anual, tipos, memória de relacionamento)
 - `src/ui/**`, `src/main.ts`, `src/test.ts`, `index.html`
 - `package.json`, `tsconfig.json`, `vite.config.ts`, `.github/**`, `scripts/**`

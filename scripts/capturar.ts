@@ -73,8 +73,15 @@ function capturar(c: Captura, pasta: string, exe: string): string {
     `--window-size=${w},${h}`, `--virtual-time-budget=${c.tempo ?? tempoPadrao(url)}`,
     `--screenshot=${arquivo}`, url,
   ];
-  const r = spawnSync(exe, args, { encoding: 'utf8', timeout: 90_000 });
-  if (!existsSync(arquivo) || statSync(arquivo).size < 1000) {
+  // O "tempo virtual" do Edge headless às vezes trava em páginas com animação contínua (modo Explorar) e não grava a
+  // imagem: nesse caso tenta de novo em TEMPO REAL (--timeout), que sempre termina.
+  const ok = () => existsSync(arquivo) && statSync(arquivo).size >= 1000;
+  let r = spawnSync(exe, args, { encoding: 'utf8', timeout: 45_000 });
+  for (let tent = 1; tent < 3 && !ok(); tent++) {
+    const real = args.map((a) => (a.startsWith('--virtual-time-budget=') ? `--timeout=${(c.tempo ?? tempoPadrao(url)) + 7000}` : a));
+    r = spawnSync(exe, real, { encoding: 'utf8', timeout: 60_000 });
+  }
+  if (!ok()) {
     throw new Error(`Falhou "${c.nome}" (${url}).\n${r.stderr?.slice(-600) ?? ''}`);
   }
   return arquivo;

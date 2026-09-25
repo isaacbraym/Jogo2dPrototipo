@@ -1,0 +1,17 @@
+{
+  "tempo": 5000,
+  "tam": "1280x720",
+  "capturas": [
+    { "nome": "01-casa-camera-longe", "url": "/?ex=1500,712&zoom=0.55&hora=10#explorar" },
+    { "nome": "02-quarto-dormindo", "url": "/?usar=cama:cochilar&zoom=0.9&hora=14#explorar" },
+    { "nome": "03-escrivaninha", "url": "/?usar=escrivaninha:estudar&zoom=1.0&hora=15#explorar" },
+    { "nome": "04-mesa-jantar", "url": "/?usar=mesaJantar&zoom=0.95&hora=12#explorar", "tempo": 3500 },
+    { "nome": "05-sofa-tv", "url": "/?usar=sofa:tv&zoom=0.9&hora=20#explorar" },
+    { "nome": "06-fachada-casa", "url": "/?ex=3350,860&zoom=0.62&hora=10#explorar" },
+    { "nome": "07-praca-banco", "url": "/?usar=bancoPraca1&zoom=0.7&hora=16#explorar" },
+    { "nome": "08-esteira", "url": "/?usar=esteira2:correrEsteira&zoom=0.95&hora=9#explorar" },
+    { "nome": "09-supino", "url": "/?usar=supino1&zoom=1.1&hora=9#explorar" },
+    { "nome": "10-halteres", "url": "/?usar=rackPesos&zoom=0.9&hora=9#explorar" },
+    { "nome": "11-rua-noite", "url": "/?ex=5000,850&zoom=0.62&hora=21#explorar" }
+  ]
+}

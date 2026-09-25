@@ -34,6 +34,9 @@ ENTREGA FINAL: (1) capturas finais no chat; (2) o que mudou, por arquivo, com os
 numérico final; (4) o que ficou pendente.
 ```
 
+> Manual completo para o Codex (padrão de qualidade, móveis, lugares, diálogos, regras e fila de tarefas):
+> **`instrucoesCodex/README.md`**. Este arquivo continua sendo o prompt modelo das tarefas de animação.
+
 ## Como mostrar a tela (vale para qualquer agente)
 
 O jogo é desenhado em canvas; a forma confiável de ver o resultado é capturar a tela com o comando do projeto — ele

@@ -1484,6 +1484,54 @@ Object.assign(MOTIONS, {
   },
 } as Record<string, Motion>);
 
+// ------------------------------------------------ academia 2,5D (modo Explorar)
+Object.assign(MOTIONS, {
+  /** Dormir na cama (modo Explorar): deitado com os braços junto ao corpo, por baixo do edredom. */
+  dormirCama: {
+    loop: true,
+    grounded: false,
+    fn: (t: number) => {
+      const p = P({ rot: -PI / 2, head: -0.08 });
+      p.armN = L(-0.04, 0.12); p.armF = L(-0.02, 0.1);
+      p.y += S(t * 1.2) * 1.5;
+      return p;
+    },
+    expr: 'dormindo',
+  },
+  /** Supino: deitado de costas no banco (cabeça para trás do `facing`), empurrando a barra para cima; joelhos dobrados, pés no banco. */
+  supino: {
+    loop: true,
+    grounded: false,
+    fn: (t: number) => {
+      const k = (S(t * 2.4) + 1) / 2; // 0 = barra no peito, 1 = braços estendidos
+      const p = P({ rot: -PI / 2, head: 0.08 });
+      p.armN = L(-0.25 + k * 1.75, 2.0 - k * 1.9); p.armF = L(-0.2 + k * 1.72, 1.95 - k * 1.85);
+      p.handN = 'segura'; p.handF = 'segura';
+      p.legN = L(0.8, 1.6); p.legF = L(0.7, 1.45);
+      p.footN = 0.3; p.footF = 0.3;
+      return p;
+    },
+    expr: 'esforco',
+  },
+  /** Pedalar na bicicleta ergométrica: tronco inclinado, mãos no guidão, pernas girando o pedal (pelve baixa, no selim). */
+  pedalar: {
+    loop: true,
+    grounded: false,
+    fn: (t: number) => {
+      const b = t * 2 * PI * 1.15;
+      const p = P({ lean: 0.34, head: -0.22, chest: 0.05, y: 22 });
+      p.legN = L(1.05 + S(b) * 0.36, 1.3 + C(b) * 0.42);
+      p.legF = L(1.05 - S(b) * 0.36, 1.3 - C(b) * 0.42);
+      p.footN = C(b) * 0.2; p.footF = -C(b) * 0.2;
+      p.armN = L(1.25, 0.3); p.armF = L(1.2, 0.35);
+      p.handN = 'segura'; p.handF = 'segura';
+      return p;
+    },
+    expr: 'determinado',
+  },
+} as Record<string, Motion>);
+
+
 export type MotionName = keyof typeof MOTIONS;
 
 /** Ajusta a altura da pelve para manter o pé mais baixo no chão. */

@@ -65,6 +65,9 @@ function css() {
   .ex-prog .bar { height: 8px; background: rgba(255,255,255,0.15); border-radius: 8px; overflow: hidden; margin-top: 6px; }
   .ex-prog .bar i { display: block; height: 100%; background: linear-gradient(90deg, #7c5cff, #ff8a5c); }
   .ex-dica { position: absolute; z-index: 14; pointer-events: none; background: rgba(0,0,0,0.75); color: #fff; font: 800 12px sans-serif; padding: 5px 9px; border-radius: 8px; transform: translate(-50%, -130%); white-space: nowrap; }
+  .ex-zoom { position: absolute; right: 12px; bottom: 56px; z-index: 5; display: flex; flex-direction: column; gap: 6px; }
+  .ex-zoom button { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); background: rgba(18,13,43,0.78); color: #fff; font: 900 20px sans-serif; cursor: pointer; }
+  .ex-zoom button:hover { background: rgba(60,50,110,0.9); }
   @media (max-width: 720px) { .ex-necs { grid-template-columns: repeat(3, 76px); } .ex-lugar { font-size: 16px; } .ex-acoes .btn span { display: none; } .ex-mapa .tr { font-size: 0; } }
   `;
   document.head.appendChild(s);
@@ -96,7 +99,10 @@ export function explorarScreen(app: App, L: Life) {
   const diario = h('div.ex-diario');
   const prog = h('div.ex-prog', { style: { display: 'none' } });
   const dica = h('div.ex-dica', { style: { display: 'none' } });
-  const el = h('div.screen.explorar', null, host, top, mapa, diario, prog, dica);
+  const zoomMais = h('button', { title: 'Aproximar (roda do mouse)' }, '+');
+  const zoomMenos = h('button', { title: 'Afastar a câmera (roda do mouse)' }, '−');
+  const zoomBox = h('div.ex-zoom', null, zoomMais, zoomMenos);
+  const el = h('div.screen.explorar', null, host, top, mapa, diario, prog, dica, zoomBox);
 
   let menu: HTMLElement | null = null;
   const fecharMenu = () => { menu?.remove(); menu = null; };
@@ -151,6 +157,15 @@ export function explorarScreen(app: App, L: Life) {
   const ex = new Explorador(L, ui);
   stage.setScene(ex.sc);
   (window as unknown as { __ex: Explorador }).__ex = ex; // inspeção/QA pelo console
+  // QA por URL (capturas headless, ver instrucoesCodex/): ?ex=3350,850&zoom=0.6&hora=21&usar=supino1:supino
+  const qp = new URLSearchParams(location.search);
+  if (qp.has('zoom')) ex.zoom = Number(qp.get('zoom'));
+  if (qp.has('ex')) { const [x, y] = (qp.get('ex') ?? '').split(',').map(Number); ex.teleportar(x, y); }
+  if (qp.has('hora')) { ex.est.hora = Number(qp.get('hora')) * 60; ex.avancar(0); }
+  if (qp.has('usar')) { const [o, a] = (qp.get('usar') ?? '').split(':'); ex.testarUso(o, a, true); }
+  if (qp.has('zoom')) ex.sc.cam.zoom = ex.sc.cam.tz = ex.zoom;
+  // captura: sem a animação de entrada da tela (no Edge headless em tempo real ela pode parar no meio e escurecer tudo)
+  if (['ex', 'zoom', 'hora', 'usar'].some((k) => qp.has(k))) el.style.animation = 'none';
 
   // ------------------------------------------------ minimapa
   const largura = MUNDO_X1 - MUNDO_X0;
@@ -163,7 +178,7 @@ export function explorarScreen(app: App, L: Life) {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         const k = (e.clientX - rect.left) / rect.width;
         ex.pararUso();
-        ex.irPara(tr.x0 + (tr.x1 - tr.x0) * k, 668, true);
+        ex.irPara(tr.x0 + (tr.x1 - tr.x0) * k, tr.interno ? 720 : 850, true);
       },
     }, tr.nome.split(' · ')[0]));
   }
@@ -192,6 +207,11 @@ export function explorarScreen(app: App, L: Life) {
     else dica.style.display = 'none';
   });
   host.addEventListener('pointerleave', () => { dica.style.display = 'none'; ex.destaque = null; });
+  // zoom: roda do mouse, pinça (ctrl+roda no trackpad) e botões
+  host.addEventListener('wheel', (e) => { e.preventDefault(); ex.ajustarZoom(Math.exp(-e.deltaY * 0.0012)); }, { passive: false });
+  zoomMais.onclick = (e) => { e.stopPropagation(); ex.ajustarZoom(1.15); };
+  zoomMenos.onclick = (e) => { e.stopPropagation(); ex.ajustarZoom(1 / 1.15); };
+  zoomBox.addEventListener('pointerdown', (e) => e.stopPropagation());
   // teclado: setas/WASD andam, Shift corre
   const teclas = new Set<string>();
   const direcao = () => {
@@ -207,8 +227,7 @@ export function explorarScreen(app: App, L: Life) {
 
   // ------------------------------------------------ HUD
   function atualizar() {
-    const tr = ex.trechoAtual();
-    lugar.textContent = tr.nome;
+    lugar.textContent = ex.lugarAtual();
     hora.textContent = `🕒 ${ex.horaTexto()} · Dia ${ex.est.dias + 1} · ${L.player.age} anos`;
     grana.textContent = money(L.money);
     for (const k of NECESSIDADES) {

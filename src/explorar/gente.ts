@@ -290,3 +290,22 @@ export function puxaConversa(p: Person, f: Frequentador): string {
   if (!f.nomeConhecido) return rng.pick(['Te vejo sempre por aqui!', 'E aí, firme no treino?']);
   return rng.pick([`E aí! Bora treinar?`, 'Olha quem apareceu!', 'Tava sentindo falta do meu parceiro de sofrimento!']);
 }
+
+// ------------------------------------------------------------------ rua e casa (conteúdo: pode acrescentar no fim das listas)
+/** Falas soltas da família pela casa (balões aleatórios). */
+export const FALAS_CASA = ['Alguém viu o controle?', 'Quem comeu meu iogurte?', 'Apaga a luz do quarto!', 'Tem janta hoje?', 'Essa novela tá boa demais.'];
+
+/**
+ * O que dá para fazer com quem passa na calçada (gente de passagem: não vira contato, não fica salva).
+ * `para: false` = a pessoa responde andando. Acrescente novas no fim (ver instrucoesCodex/05-DIALOGOS-E-INTERACOES.md).
+ */
+export const INTERACOES_PASSANTE: InteracaoMundo[] = [
+  {
+    id: 'oiPassante', label: 'Cumprimentar', icon: '👋', para: false, pode: () => true,
+    run: () => ({ eu: 'Bom dia!', ela: rng.pick(['Bom dia!', '*acena de volta*', 'Opa!', 'Te conheço?']), texto: 'Você cumprimentou alguém na rua. Gentileza de graça.', tom: 'bom', reacaoNpc: 'acenar', social: 2 }),
+  },
+  {
+    id: 'horas', label: 'Perguntar as horas', icon: '⌚', para: false, pode: () => true,
+    run: () => ({ eu: 'Com licença, que horas são?', ela: rng.pick(['Tá no seu celular, meu bem.', 'Hora de você comprar um relógio.', 'Sei lá, meu celular morreu.', 'Umas... três? Quatro?']), texto: 'Você perguntou as horas. Recebeu sabedoria.', tom: 'neutro', diversao: 2, social: 1 }),
+  },
+];

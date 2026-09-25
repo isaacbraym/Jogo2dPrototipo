@@ -26,7 +26,8 @@ if (params.has('test')) {
         import('./character/appearance'), import('./game/state'), import('./core/rng'), import('./game/names'),
       ]);
       const ap = randomAppearance(rng);
-      return app.go('explorar', newLife(ap, rng.pick(ap.sex === 'f' ? NOMES_F : NOMES_M), rng.pick(SOBRENOMES), 'São Paulo', 25));
+      const idade = Number(new URLSearchParams(location.search).get('idade') ?? 25) || 25; // ?idade=12 (QA)
+      return app.go('explorar', newLife(ap, rng.pick(ap.sex === 'f' ? NOMES_F : NOMES_M), rng.pick(SOBRENOMES), 'São Paulo', idade));
     }
     if (hash === 'jogo') {
       const { lastLifeId, loadLife } = await import('./game/storage');

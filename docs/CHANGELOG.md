@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-09-25 — Modo Explorar v2: ambientes em profundidade, móveis em escala e manual do Codex (Claude) · branch `claude/modo-explorar`
+- **Mundo em profundidade ("casa de bonecas")**: rua contínua com interiores (y 560–750), **fachadas** na linha 750, jardim
+  com caminho até a porta, **calçada contínua** e **rua com carros**. A fachada da casa/academia some quando você entra (e
+  a porta abre); muro, postes e gente na calçada ficam translúcidos na frente do prédio onde você está.
+- **Passantes** agora andam pela calçada de ponta a ponta — passam em frente às casas e nunca "somem na porta".
+- **Zonas e rotas** (`ZONAS`, `rota()`): para ir do quarto à praça o personagem sai pela porta, desce o caminho e anda na
+  calçada. Idade mínima por zona (rua ≥ 8, academia ≥ 14). Clicar na fachada leva até a porta.
+- **Câmera**: segue em x e y; **zoom** pela roda do mouse e botões + / − (0,5–1,4) para afastar e ver vários cômodos.
+- **Móveis 2,5D em escala real** (`src/explorar/moveis.ts`, novo): projeção oblíqua leve (frente + topo + lateral), 1 m =
+  170 px, sombra de contato. Cama 2,6 m com edredom por cima de quem dorme, escrivaninha **com cadeira**, mesa de jantar
+  **com duas cadeiras**, sofá de frente para a câmera, banco da praça 2,3 m, esteira com painel/corrimão **na frente** de
+  quem corre, supino com barra nas mãos, rack de halteres, bike ergométrica, vaso, box, geladeira, bancada, estante, TV,
+  chafariz, ponto de ônibus, orelhão, postes, árvores, carros...
+- **Sentar/deitar na altura certa**: ações com `assento`/`plataforma` em metros — o controlador calcula a elevação de cada
+  corpo (nada de sentar no ar); `giro` do corpo (sofá de frente); `partes` na frente/atrás de quem usa; **`vagas`**: o rack de
+  halteres aceita 3 pessoas ao mesmo tempo (os outros aparelhos continuam "Ocupado por Fulano").
+- Lugares novos: **praça** (bancos, chafariz com desejo por R$ 1, árvores, postes) e **comércio** (fachadas de padaria e
+  farmácia). Academia reorganizada (recepção, 3 esteiras, 2 bikes, bebedouro | 2 supinos, rack, espelhão, anilhas).
+- Movimentos novos: `dormirCama`, `supino` (deitado empurrando a barra), `pedalar`.
+- Motor: `Scene.mundo.y0/y1` (câmera vertical), `PlacedProp.ordem` (ordem de desenho independente da posição).
+  `L.explorar.y` salvo (posições antigas vão para o ponto andável mais próximo).
+- QA: `/?ex=x,y&zoom=&hora=&usar=obj:acao#explorar` e `?idade=`; `__ex.testarUso()`, `__ex.teleportar()`;
+  roteiro `qa/roteiros/explorar.json` (11 telas); `npm run capturar` tenta de novo quando o Edge headless falha.
+- Conteúdo: `INTERACOES_PASSANTE` e `FALAS_CASA` foram para `gente.ts` (🟡) para os agentes de conteúdo ampliarem.
+- **Docs**: `docs/EXPLORAR.md` reescrito (profundidade, zonas, móveis, receitas); **`instrucoesCodex/`** (novo, 9 guias:
+  padrão de qualidade, móveis e texturas, objetos e ações, lugares, diálogos, eventos e regras, verificação com capturas e
+  12 tarefas prontas com critério de aceite); `AGENTS.md` e `docs/PROMPT-CODEX.md` apontam para ele.
+
 ## 2026-09-24 — Modo Explorar: banheiro completo (Claude) · branch `claude/modo-explorar`
 - **Banho de verdade**: entra no box, tira a roupa (adultos), água com vapor, cabelo com xampu, sabonete, enxágue, toalha,
   veste. Vidro com faixa jateada que acompanha o corpo; **menores: cortina e sempre vestidos**. Corpo sem detalhes íntimos.

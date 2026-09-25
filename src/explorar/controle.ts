@@ -13,12 +13,16 @@ import { sfx } from '../core/audio';
 import { Life, Person, stat, addLog, STAT_LABEL, StatKey, makePerson } from '../game/state';
 import { INTERACTIONS } from '../game/activities';
 import type { Interaction, Outcome } from '../game/types';
+import { MOTIONS, groundDrop } from '../character/motions';
+import { legLength } from '../character/character';
 import {
-  TRECHOS, OBJETOS, PINTORES, DESENHOS, DECORACAO, FLOOR, CHAO_FUNDO, CHAO_FRENTE, MUNDO_X0, MUNDO_X1, PONTOS, trechoEm, luz, coresCeu,
+  TRECHOS, OBJETOS, DECORACAO, FACHADAS, FACHADA_Y, CALCADA_Y0, MUNDO_X0, MUNDO_X1, MUNDO_ALTURA, PONTOS, trechoEm, zonaEm, pontoAndavel, rota,
+  lugarEm, escalaProf, luz, coresCeu, pintarTrecho, pintarRua, muroCasa, trechoPorId,
 } from './mundo';
+import { MOVEIS, M } from './moveis';
 import {
   garantirFrequentadores, pessoaDe, nivelDe, INTERACOES_ESTRANHO, INTERACOES_CONTATO, classicasPara, FISICO_DE, PAPO_AMBIENTE,
-  puxaConversa, mudarFam, type CtxInteracao, type InteracaoMundo, type Resultado, type Nivel,
+  puxaConversa, mudarFam, INTERACOES_PASSANTE, FALAS_CASA, type CtxInteracao, type InteracaoMundo, type Resultado, type Nivel,
 } from './gente';
 import { NECESSIDADES, type EstadoExplorar, type Frequentador, type ObjetoMundo, type AcaoObjeto, type LugarId, type Necessidade, type Trecho } from './tipos';
 
@@ -36,9 +40,18 @@ export const CANSACO_ANO = 0.1;
 export const HORA_ACORDAR = 7 * 60;
 export const HORA_LIMITE = 26 * 60; // 2h da manhã: apaga de sono
 
-// ------------------------------------------------------------------ desenhos próprios registrados como props
-for (const [id, fn] of Object.entries(DESENHOS)) {
-  PROPS['explorar_' + id] = (ctx, _t, o) => fn(ctx, o as unknown as ObjetoMundo, 0);
+// ------------------------------------------------------------------ móveis e fachadas registrados como props
+for (const [id, fn] of Object.entries(MOVEIS)) PROPS['movel_' + id] = (ctx, t, o) => fn(ctx, o as Record<string, unknown>, t);
+for (const f of FACHADAS) PROPS['fachada_' + f.id] = (ctx, t, o) => f.desenho(ctx, f.x1 - f.x0, ((o as Record<string, unknown>).hora as number) ?? 720, t, o as Record<string, unknown>);
+PROPS.explorar_muro = (ctx) => muroCasa(ctx);
+
+/** Altura da pelve acima dos pés num movimento (px na escala 1) — para sentar na altura certa de cada assento. */
+function alturaPelve(a: Actor, motion: string): number {
+  const m = MOTIONS[motion];
+  if (!m) return legLength(a.d);
+  let p = m.fn(0, { speed: 1, seed: a.id });
+  if (m.grounded !== false && p.rot === 0) p = { ...p, y: p.y + groundDrop(p, a.d.thigh, a.d.shin, a.d.hipW) };
+  return legLength(a.d) - p.y;
 }
 
 export type Alvo =
@@ -88,7 +101,13 @@ export interface ResumoDia {
   momentos: string[];
 }
 
-const escalaProf = (y: number) => 0.9 + clamp((y - CHAO_FUNDO) / (CHAO_FRENTE - CHAO_FUNDO), 0, 1.2) * 0.18;
+/** Ponto de uso de uma ação (ou de uma vaga do objeto), já na escala da profundidade. */
+export function pontoDeUso(o: ObjetoMundo, ac: AcaoObjeto, vaga = -1) {
+  const s = escalaProf(o.y) * (o.escala ?? 1);
+  const v = vaga >= 0 && o.vagas ? o.vagas[vaga] : null;
+  const dx = v ? v.dx : ac.dx, dy = v ? v.dy ?? 0 : ac.dy ?? 0;
+  return { x: o.x + dx * s, y: o.y + dy, s, lado: (v?.lado ?? ac.lado ?? 1) as 1 | -1 };
+}
 
 export class Explorador {
   sc: Scene;
@@ -99,8 +118,12 @@ export class Explorador {
   props = new Map<string, PlacedProp>();
   ocupado = new Map<string, Actor>();
   /** o que o jogador está fazendo */
-  ocupadoEu: { obj: ObjetoMundo; acao: AcaoObjeto; t: number; dur: number } | null = null;
-  private mover: { x: number; y: number; correr: boolean; depois?: () => void } | null = null;
+  ocupadoEu: { obj: ObjetoMundo; acao: AcaoObjeto; t: number; dur: number; vaga: string } | null = null;
+  private mover: { x: number; y: number; correr: boolean; depois?: () => void; resto?: { x: number; y: number }[] } | null = null;
+  /** fachadas (a da casa e a da academia ficam transparentes quando você está dentro) */
+  private fachadas: { pp: PlacedProp; predio?: string }[] = [];
+  /** coisas entre a câmera e um prédio (muro, postes, árvores da calçada): ficam translúcidas quando você está lá dentro */
+  private naFrente: { pp: PlacedProp; predio?: string }[] = [];
   private emInteracao = false;
   private proxPassante = 6;
   private proxIniciativa = 18;
@@ -112,7 +135,10 @@ export class Explorador {
   private contatosNovos: string[] = [];
   private momentos: string[] = [];
   encerrado = false;
-  zoom = 1.08;
+  /** zoom da câmera (roda do mouse / botões): menor = mais longe, mais mundo na tela */
+  zoom = 0.92;
+  static ZOOM_MIN = 0.5;
+  static ZOOM_MAX = 1.4;
 
   constructor(public L: Life, public ui: InterfaceExplorar) {
     this.est = prepararEstado(L);
@@ -125,47 +151,109 @@ export class Explorador {
     this.sc.mundo = {
       x0: MUNDO_X0,
       x1: MUNDO_X1,
+      y0: -260,
+      y1: MUNDO_ALTURA,
       fundo: (ctx, v, t) => {
         for (const tr of TRECHOS) {
           if (tr.x1 < v.x0 - 60 || tr.x0 > v.x1 + 60) continue;
           ctx.save();
           ctx.beginPath();
-          ctx.rect(tr.x0, -200, tr.x1 - tr.x0, 1200);
+          ctx.rect(tr.x0, -600, tr.x1 - tr.x0, CALCADA_Y0 + 600);
           ctx.clip();
-          PINTORES[tr.pintor]?.(ctx, tr, this.est.hora, t);
+          pintarTrecho(ctx, tr, this.est.hora, t);
           ctx.restore();
         }
+        // limita à largura do mundo (com a tela ainda sem tamanho a vista pode ser infinita)
+        const a = Math.max(MUNDO_X0, v.x0 - 50), b = Math.min(MUNDO_X1, v.x1 + 50);
+        if (b > a) pintarRua(ctx, a, b, this.est.hora);
       },
       frente: (ctx, v) => this.desenharDestaques(ctx, v),
     };
-    this.atualizarCeu();
-    // objetos
-    for (const o of OBJETOS) {
-      const id = o.prop ?? 'explorar_' + o.desenho;
-      const pp = this.sc.addProp(id, o.x, o.y, { z: 0, scale: o.escala ?? 1, opts: { ...(o.opts ?? {}), flip: o.flip } });
-      this.props.set(o.id, pp);
-    }
+    // objetos (móveis com partes: a de trás antes de quem usa, a da frente depois)
+    for (const o of OBJETOS) this.montarObjeto(o);
     // decoração (postes acendem à noite)
     for (const dc of DECORACAO) {
-      const pp = this.sc.addProp(dc.prop, dc.x, dc.y, { z: 0, scale: dc.escala ?? 1, opts: { ...(dc.opts ?? {}) } });
+      const id = dc.desenho ? 'movel_' + dc.desenho : dc.prop!;
+      const pp = this.sc.addProp(id, dc.x, dc.y, { z: 0, scale: (dc.escala ?? 1) * escalaProf(dc.y), opts: { ...(dc.opts ?? {}) } });
+      if (dc.desenho === 'tapete') pp.ordem = 0; // tapete fica sempre por baixo de tudo
       if (dc.acende) this.postes.push(pp);
+      if (dc.y > FACHADA_Y) this.naFrente.push({ pp, predio: predioEm(dc.x) });
     }
-    this.atualizarCeu();
+    // fachadas e muro (na linha da rua)
+    for (const f of FACHADAS) this.fachadas.push({ pp: this.sc.addProp('fachada_' + f.id, f.x0, FACHADA_Y, { z: 0, opts: { hora: this.est.hora } as PlacedProp['opts'] }), predio: f.predio });
+    this.naFrente.push({ pp: this.sc.addProp('explorar_muro', 0, 803, { z: 0 }), predio: 'casa' });
     // jogador
-    const x0 = this.est.x ?? PONTOS.cama + 140;
-    this.eu = this.sc.addActor(L.player.ap, L.player.age, { x: x0, y: 668, facing: 1, name: L.player.first, z: 0 });
+    const ini = this.est.x !== undefined ? pontoAndavel(this.est.x, this.est.y ?? PONTOS.inicioY, L.player.age) : { x: PONTOS.inicioX, y: PONTOS.inicioY };
+    this.eu = this.sc.addActor(L.player.ap, L.player.age, { x: ini.x, y: ini.y, facing: 1, name: L.player.first, z: 0 });
     this.eu.scale = escalaProf(this.eu.y);
+    this.atualizarCeu();
     this.popularCasa();
     this.popularPets();
     this.popularAcademia();
-    this.sc.focus(this.eu.x, 360, this.zoom);
+    this.sc.focus(this.eu.x, this.camY(), this.zoom);
     this.sc.cam.x = this.sc.cam.tx;
+    this.sc.cam.y = this.sc.cam.ty;
     this.sc.cam.zoom = this.zoom;
+    this.tickFachadas(10); // já começa com a fachada certa (sem esmaecer)
     this.sc.onBeat = (dt) => this.tick(dt);
   }
 
   // ================================================================== consulta
   trechoAtual(): Trecho { return trechoEm(this.eu.x); }
+  /** nome do lugar exato (cômodo, calçada em frente a...) */
+  lugarAtual(): string { return lugarEm(this.eu.x, this.eu.y); }
+  /** está dentro de um prédio (casa/academia)? */
+  dentroDe(a: Actor = this.eu): string | undefined { const z = zonaEm(a.x, a.y); return z?.predio; }
+  private camY() { return clamp(this.eu.y - 290, 330, 600); }
+  ajustarZoom(fator: number) { this.zoom = clamp(this.zoom * fator, Explorador.ZOOM_MIN, Explorador.ZOOM_MAX); }
+
+  /** Coloca um objeto no mundo: escala da profundidade, partes (atrás/na frente de quem usa). */
+  private montarObjeto(o: ObjetoMundo) {
+    const s = escalaProf(o.y) * (o.escala ?? 1);
+    const usoY = o.y + (o.acoes[0]?.dy ?? 0);
+    const senta = o.acoes.some((a) => a.assento !== undefined || a.plataforma !== undefined);
+    const lista: PlacedProp[] = [];
+    const partes = o.partes ?? [{ desenho: o.desenho! }];
+    for (const pt of partes) {
+      const id = o.prop && !o.partes ? o.prop : 'movel_' + pt.desenho;
+      const pp = this.sc.addProp(id, o.x + (pt.dx ?? 0) * s, o.y + (pt.dy ?? 0), { z: 0, scale: s, opts: { ...(o.opts ?? {}), ...(pt.opts ?? {}), flip: o.flip || pt.opts?.flip } as PlacedProp['opts'] });
+      // quem usa fica ENTRE as partes: a de trás um pouco antes, a da frente um pouco depois
+      if (pt.frente) pp.ordem = Math.max(o.y, usoY) + 1;
+      else if (senta || o.partes) pp.ordem = Math.min(o.y, usoY) - 1;
+      lista.push(pp);
+    }
+    this.props.set(o.id, lista[0]);
+    this.partesDe.set(o.id, lista);
+  }
+  private partesDe = new Map<string, PlacedProp[]>();
+  private marcarUso(o: ObjetoMundo, emUso: boolean) {
+    for (const pp of this.partesDe.get(o.id) ?? []) pp.opts = { ...pp.opts, emUso } as typeof pp.opts;
+  }
+  /** vaga livre de um objeto (rack de halteres tem várias; o resto tem uma só). -1 = nenhuma */
+  private vagaLivre(o: ObjetoMundo, quem: Actor): number {
+    const n = o.vagas?.length ?? 1;
+    for (let i = 0; i < n; i++) {
+      const dono = this.ocupado.get(this.chaveVaga(o, i));
+      if (!dono || dono === quem) return i;
+    }
+    return -1;
+  }
+  private chaveVaga(o: ObjetoMundo, i: number) { return o.vagas ? `${o.id}#${i}` : o.id; }
+  /** Posiciona o ator para usar a ação: altura do assento/colchão/lona, giro do corpo, lado. */
+  private posicionar(a: Actor, o: ObjetoMundo, ac: AcaoObjeto, vaga = -1) {
+    const pu = pontoDeUso(o, ac, o.vagas ? vaga : -1);
+    a.x = pu.x;
+    a.y = pu.y;
+    a.scale = escalaProf(a.y);
+    a.facing = pu.lado;
+    a.turn = ac.giro ?? 0.72;
+    if (ac.assento !== undefined) {
+      // assento (m) × escala do objeto − altura natural da pelve sentada (menos a "almofada" da coxa)
+      const pelve = alturaPelve(a, ac.motion) - a.d.thighW * 0.45;
+      a.elev = Math.max(0, ac.assento * M * pu.s - pelve * a.scale);
+    } else if (ac.plataforma !== undefined) a.elev = ac.plataforma * M * pu.s;
+    else a.elev = ac.elev ?? 0;
+  }
   horaTexto(h = this.est.hora) {
     const m = Math.floor(h) % 1440;
     return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(Math.floor(m % 60)).padStart(2, '0')}`;
@@ -180,17 +268,25 @@ export class Explorador {
       const npc = this.npcs.find((n) => n.ator === a);
       if (npc) return { tipo: 'npc', npc };
     }
+    // fachada opaca (você está do lado de fora): clicar nela leva até a porta
+    const fora = !this.dentroDe();
     let melhor: ObjetoMundo | null = null;
     for (const o of OBJETOS) {
-      const s = o.escala ?? 1;
+      const s = (o.escala ?? 1) * escalaProf(o.y);
+      if (fora && o.y < FACHADA_Y - 4 && trechoEm(o.x).interno) continue;
       if (Math.abs(w.x - o.x) <= (o.w * s) / 2 && w.y <= o.y + 14 && w.y >= o.y - o.h * s) {
         if (!melhor || o.y > melhor.y) melhor = o;
       }
     }
     if (melhor) return { tipo: 'obj', obj: melhor };
     for (const pt of this.pets) if (Math.abs(w.x - pt.pp.x) < 60 && w.y <= pt.pp.y + 10 && w.y >= pt.pp.y - 90) return { tipo: 'pet', id: pt.id, nome: pt.nome };
-    if (w.y >= FLOOR - 10) return { tipo: 'chao', x: w.x, y: clamp(w.y, CHAO_FUNDO, CHAO_FRENTE) };
-    return { tipo: 'chao', x: w.x, y: this.eu.y };
+    if (fora && w.y < FACHADA_Y && trechoEm(w.x).interno) {
+      // clicou na fachada: vai até a porta daquele prédio (e entra, se for a casa/academia)
+      const lugar = trechoEm(w.x).lugar;
+      const px = lugar === 'casa' ? PONTOS.portaCasa : PONTOS.portaAcademia;
+      return { tipo: 'chao', x: px, y: FACHADA_Y - 30 };
+    }
+    return { tipo: 'chao', x: w.x, y: w.y };
   }
 
   rotuloAlvo(a: Alvo | null): string | null {
@@ -241,8 +337,7 @@ export class Explorador {
     const ops: OpcaoMenu[] = [];
     const naVida = this.L.people.includes(p);
     if (n.papel === 'passante') {
-      ops.push({ id: 'oi', label: 'Cumprimentar', icon: '👋', run: () => this.interagirMundo(n, PASSANTE[0]) });
-      ops.push({ id: 'horas', label: 'Perguntar as horas', icon: '⌚', run: () => this.interagirMundo(n, PASSANTE[1]) });
+      for (const it of INTERACOES_PASSANTE) if (it.pode({ ...c, hoje: n.hoje[it.id] ?? 0 })) ops.push({ id: it.id, label: it.label, icon: it.icon, run: () => this.interagirMundo(n, it) });
     } else if (!naVida) {
       for (const it of INTERACOES_ESTRANHO) if (it.pode({ ...c, hoje: n.hoje[it.id] ?? 0 })) ops.push({ id: it.id, label: it.label, icon: it.icon, run: () => this.interagirMundo(n, it) });
       if (n.f && n.f.nomeConhecido && n.f.fam < 35 && !n.f.contato) ops.push({ id: 'contatoBloq', label: 'Pedir o contato', icon: '📇', bloqueio: `Conheça melhor primeiro (familiaridade ${n.f.fam}/35)`, run: () => undefined });
@@ -256,30 +351,27 @@ export class Explorador {
   }
 
   // ================================================================== movimento
-  irPara(x: number, y: number, correr = false, depois?: () => void) {
-    // limites por idade (sair de casa, entrar na academia)
+  /** Anda até (x, y) pelo caminho das zonas (portas, portão, calçada). Limites por idade: rua ≥ 8, academia ≥ 14. */
+  irPara(x: number, y: number, correr = false, depois?: () => void, avisar = true) {
     const idade = this.L.player.age;
-    let lim1 = MUNDO_X1 - 40;
-    for (const tr of TRECHOS) if ((tr.minIdade ?? 0) > idade) { lim1 = Math.min(lim1, tr.x0 - 50); break; }
-    if (x > lim1) {
-      x = lim1;
-      const bloq = TRECHOS.find((tr) => (tr.minIdade ?? 0) > idade);
-      if (bloq) this.ui.aviso(bloq.lugar === 'academia' ? 'A academia só aceita a partir de 14 anos.' : 'Você ainda é novo(a) demais para sair sozinho(a).', 'info');
-    }
-    this.mover = { x: clamp(x, MUNDO_X0 + 40, MUNDO_X1 - 40), y, correr, depois };
+    const z = zonaEm(x, y);
+    if (avisar && z && (z.minIdade ?? 0) > idade) this.ui.aviso(z.predio === 'academia' || z.id === 'portaAcademia' ? 'A academia só aceita a partir de 14 anos.' : 'Você ainda é novo(a) demais para sair sozinho(a).', 'info');
+    const pts = rota({ x: this.eu.x, y: this.eu.y }, { x: clamp(x, MUNDO_X0 + 30, MUNDO_X1 - 30), y }, idade);
+    const [p0, ...resto] = pts;
+    this.mover = { x: p0.x, y: p0.y, correr, depois, resto };
   }
 
   private passo(a: Actor, alvo: { x: number; y: number; correr?: boolean }, dt: number, veloc = 1): boolean {
     const dx = alvo.x - a.x, dy = alvo.y - a.y;
     const dist = Math.hypot(dx, dy * 1.6);
-    if (dist < 4) {
+    if (dist < 3) {
       if (a.motionName === 'andar' || a.motionName === 'correr') a.play('parado', { fade: 0.2 });
       return true;
     }
-    const v = (alvo.correr ? 330 : 165) * veloc * dt;
+    const v = (alvo.correr ? 330 : 165) * veloc * dt * a.scale;
     const k = Math.min(1, v / dist);
     a.x += dx * k;
-    a.y += dy * k * 0.75;
+    a.y += dy * k;
     if (Math.abs(dx) > 2) a.facing = dx > 0 ? 1 : -1;
     const quer = alvo.correr ? 'correr' : 'andar';
     if (a.motionName !== quer) a.play(quer, { fade: 0.15 });
@@ -288,10 +380,11 @@ export class Explorador {
 
   pararUso() {
     if (!this.ocupadoEu) return;
-    const { obj } = this.ocupadoEu;
+    const { obj, vaga } = this.ocupadoEu;
     this.ocupadoEu = null;
-    this.ocupado.delete(obj.id);
-    this.eu.elev = 0;
+    this.ocupado.delete(vaga);
+    this.marcarUso(obj, [...this.ocupado.keys()].some((k) => k === obj.id || k.startsWith(obj.id + '#')));
+    this.sairDoMovel(this.eu, obj);
     this.eu.propN = undefined;
     this.eu.maoForma = null;
     this.eu.play('parado', { fade: 0.2 });
@@ -303,9 +396,11 @@ export class Explorador {
     const b = ac.cond?.(this.L, this.est);
     if (b) return b;
     if (ac.efeito.dinheiro && this.L.money + ac.efeito.dinheiro < 0) return 'Dinheiro insuficiente.';
-    const quem = this.ocupado.get(o.id);
-    if (o.exclusivo && quem && quem !== this.eu) return `Ocupado por ${quem.name || 'alguém'}.`;
-    if (o.id.startsWith('esteira') || o.id.startsWith('supino') || o.id === 'rackPesos') if (!this.academiaAberta()) return 'A academia está fechada (6h às 23h).';
+    if (o.exclusivo && this.vagaLivre(o, this.eu) < 0) {
+      const quem = this.ocupado.get(this.chaveVaga(o, 0));
+      return o.vagas ? 'Todos os halteres estão em uso. Espere um pouco.' : `Ocupado por ${quem?.name || 'alguém'}.`;
+    }
+    if (trechoEm(o.x).lugar === 'academia' && !this.academiaAberta()) return 'A academia está fechada (6h às 23h).';
     return null;
   }
 
@@ -313,22 +408,72 @@ export class Explorador {
     const b = this.bloqueio(o, ac);
     if (b) return this.ui.aviso(b, 'bad');
     this.pararUso();
-    const sx = o.x + ac.dx, sy = clamp(o.y + (ac.dy ?? 0) + 28, CHAO_FUNDO, CHAO_FRENTE + 20);
-    if (o.exclusivo) this.ocupado.set(o.id, this.eu);
-    this.irPara(sx, sy, Math.abs(sx - this.eu.x) > 900, () => this.comecarUso(o, ac, sx, sy));
+    const vaga = this.vagaLivre(o, this.eu);
+    const chave = this.chaveVaga(o, Math.max(0, vaga));
+    const pu = pontoDeUso(o, ac, o.vagas ? vaga : -1);
+    if (o.exclusivo) this.ocupado.set(chave, this.eu);
+    // anda até a frente do móvel (ponto de chegada) e só então "entra" nele
+    const chegada = { x: pu.x, y: Math.max(pu.y, o.y + 6) };
+    this.irPara(chegada.x, chegada.y, Math.abs(chegada.x - this.eu.x) > 900, () => this.comecarUso(o, ac, Math.max(0, vaga), chave), false);
   }
 
-  private comecarUso(o: ObjetoMundo, ac: AcaoObjeto, sx: number, sy: number) {
+  private comecarUso(o: ObjetoMundo, ac: AcaoObjeto, vaga: number, chave: string) {
     const e = this.eu;
-    e.x = sx;
-    e.y = sy;
-    e.facing = ac.lado ?? 1;
+    this.posicionar(e, o, ac, vaga);
     if (ac.especial) return this.especial(o, ac);
-    e.elev = ac.elev ?? 0;
     e.propN = ac.segura;
     e.play(ac.motion, { fade: 0.25 });
+    if (o.exclusivo) this.marcarUso(o, true);
     const dur = Math.max(2.4, ac.minutos / AVANCO);
-    this.ocupadoEu = { obj: o, acao: ac, t: 0, dur };
+    this.ocupadoEu = { obj: o, acao: ac, t: 0, dur, vaga: chave };
+  }
+
+  /** Coloca o jogador em (x, y) na hora (câmera junto) — QA e ônibus. */
+  teleportar(x: number, y: number) {
+    const p = pontoAndavel(x, isNaN(y) ? this.eu.y : y, this.L.player.age);
+    this.pararUso();
+    this.mover = null;
+    this.eu.x = p.x;
+    this.eu.y = p.y;
+    this.eu.scale = escalaProf(p.y);
+    this.sc.focus(p.x, this.camY(), this.zoom);
+    this.sc.cam.x = this.sc.cam.tx;
+    this.sc.cam.y = this.sc.cam.ty;
+    this.tickFachadas(10);
+  }
+
+  /** QA pelo console: teleporta e começa a ação na hora, sem requisitos — `__ex.testarUso('cama', 'cochilar')`. */
+  testarUso(objId: string, acaoId?: string, manter = false) {
+    const o = OBJETOS.find((x) => x.id === objId);
+    const ac = o?.acoes.find((a) => !acaoId || a.id === acaoId);
+    if (!o || !ac) return 'objeto/ação não existe';
+    this.pararUso();
+    this.mover = null;
+    const vaga = Math.max(0, this.vagaLivre(o, this.eu));
+    const chave = this.chaveVaga(o, vaga);
+    if (o.exclusivo) this.ocupado.set(chave, this.eu);
+    this.comecarUso(o, ac, vaga, chave);
+    if (manter && this.ocupadoEu) {
+      this.ocupadoEu.dur = 1e9; // captura: a ação não termina sozinha
+      this.eu.play(ac.motion, { fade: 0.01 }); // e já na pose final (o headless desenha poucos quadros)
+    }
+    this.sc.focus(this.eu.x, this.camY(), this.zoom);
+    this.sc.cam.x = this.sc.cam.tx;
+    this.sc.cam.y = this.sc.cam.ty;
+    this.tickFachadas(10);
+    return 'ok';
+  }
+
+  /** Sai do móvel: volta para o chão, na frente dele, com o giro normal. */
+  private sairDoMovel(a: Actor, o?: ObjetoMundo) {
+    const subiu = a.elev > 1;
+    a.elev = 0;
+    a.turn = 0.72;
+    a.propN = undefined;
+    a.maoForma = null;
+    if (o && subiu) a.y = Math.max(a.y, o.y + 8);
+    a.scale = escalaProf(a.y);
+    a.play('parado', { fade: 0.2 });
   }
 
   private terminarUso() {
@@ -345,8 +490,7 @@ export class Explorador {
     if (ac.especial === 'coco') return void this.roteiroVaso(o, 2);
     if (ac.especial === 'lavarMaos') return void this.roteiroLavarMaos();
     if (ac.especial === 'dormir') {
-      e.elev = 34;
-      e.play('deitado', { fade: 0.3 });
+      e.play(ac.motion, { fade: 0.3 });
       this.sc.fadeTarget = 1;
       setTimeout(() => this.encerrarDia('dormiu'), 1400);
       return;
@@ -372,7 +516,8 @@ export class Explorador {
         setTimeout(() => {
           this.avancar(20);
           this.eu.x = x;
-          this.eu.y = 668;
+          this.eu.y = 850;
+          this.eu.scale = escalaProf(850);
           this.sc.cam.x = this.sc.cam.tx = x;
           this.sc.fadeTarget = 0;
           this.ui.aviso(`Você desceu em: ${nome}.`, 'info');
@@ -380,8 +525,8 @@ export class Explorador {
         }, 700);
       };
       const ops: OpcaoMenu[] = [
-        { id: 'casa', label: 'Ir para casa', icon: '🏠', run: ir(PONTOS.portaCasa - 120, 'Casa') },
-        { id: 'academia', label: 'Ir para a academia', icon: '🏋️', bloqueio: this.L.player.age < 14 ? 'A partir de 14 anos.' : undefined, run: ir(PONTOS.portaAcademia + 160, 'Academia') },
+        { id: 'casa', label: 'Ir para casa', icon: '🏠', run: ir(PONTOS.frenteCasa.x, 'Em frente de casa') },
+        { id: 'academia', label: 'Ir para a academia', icon: '🏋️', bloqueio: this.L.player.age < 14 ? 'A partir de 14 anos.' : undefined, run: ir(PONTOS.frenteAcademia.x, 'Em frente à academia') },
       ];
       this.ui.escolher('Ônibus (R$ 5)', ops);
     }
@@ -421,8 +566,9 @@ export class Explorador {
     if (para) this.soltarNpc(n);
     n.estado = 'interagindo';
     const lado = this.eu.x < n.ator.x ? -1 : 1;
-    const gx = n.ator.x + lado * 150;
-    await new Promise<void>((res) => this.irPara(gx, n.ator.y, Math.abs(gx - this.eu.x) > 700, res));
+    const gx = n.ator.x + lado * 150 * n.ator.scale;
+    const gy = n.ator.elev > 1 && n.obj ? Math.max(n.ator.y, n.obj.y + 8) : n.ator.y;
+    await new Promise<void>((res) => this.irPara(gx, gy, Math.abs(gx - this.eu.x) > 700, res, false));
     this.eu.facing = n.ator.x > this.eu.x ? 1 : -1;
     if (para) n.ator.facing = this.eu.x > n.ator.x ? 1 : -1;
     this.eu.lookAt = n.ator;
@@ -546,7 +692,7 @@ export class Explorador {
     const r = new RNG(L.seed + this.est.dias * 13);
     mora.slice(0, 4).forEach((p, i) => {
       const tr = TRECHOS.filter((t) => t.lugar === 'casa')[(i + 1) % 4];
-      this.novoNpc(p, 'familia', 'casa', r.range(tr.x0 + 150, tr.x1 - 150), r.range(640, 690));
+      this.novoNpc(p, 'familia', 'casa', r.range(tr.x0 + 150, tr.x1 - 150), r.range(700, 736));
     });
   }
 
@@ -556,7 +702,7 @@ export class Explorador {
     const vivos = (this.L.pets ?? []).filter((p) => p.alive).slice(0, 2);
     vivos.forEach((pet, i) => {
       const x = 1900 + i * 900;
-      const pp = this.sc.addProp(pet.kind, x, 690, { z: 0, scale: 0.9, opts: { color: pet.color } });
+      const pp = this.sc.addProp(pet.kind, x, 728, { z: 0, scale: 0.9 * escalaProf(728), opts: { color: pet.color } });
       this.pets.push({ pp, alvo: x, ate: 0, nome: pet.name, id: pet.id });
     });
   }
@@ -568,7 +714,7 @@ export class Explorador {
         pt.ate = rng.range(3, 8);
         // às vezes segue você pela casa
         const perto = trechoEm(this.eu.x).lugar === 'casa' && rng.chance(0.5);
-        pt.alvo = clamp(perto ? this.eu.x + rng.range(-160, 160) : pt.pp.x + rng.range(-350, 350), 120, PONTOS.portaCasa - 120);
+        pt.alvo = clamp(perto ? this.eu.x + rng.range(-160, 160) : pt.pp.x + rng.range(-350, 350), 380, 3520);
       }
       const dx = pt.alvo - pt.pp.x;
       if (Math.abs(dx) > 3) {
@@ -583,7 +729,7 @@ export class Explorador {
     const pt = this.pets.find((p) => p.id === id);
     if (!pet || !pt) return;
     this.pararUso();
-    this.irPara(pt.pp.x - 90, 686, false, () => {
+    this.irPara(pt.pp.x - 90, pt.pp.y - 4, false, () => {
       this.eu.facing = 1;
       this.eu.play('agachar', { fade: 0.2 });
       pet.bond = Math.min(100, pet.bond + 5);
@@ -601,18 +747,21 @@ export class Explorador {
     for (const f of presentes) {
       const p = pessoaDe(this.L, f);
       if (!p.alive) continue;
-      const tr = r.chance(0.5) ? TRECHOS.find((t) => t.id === 'recepcao')! : TRECHOS.find((t) => t.id === 'pesos')!;
-      this.novoNpc(p, 'frequentador', 'academia', r.range(tr.x0 + 250, tr.x1 - 200), r.range(640, 690), f);
+      const tr = r.chance(0.5) ? trechoPorId('cardio') : trechoPorId('musculacao');
+      this.novoNpc(p, 'frequentador', 'academia', r.range(tr.x0 + 250, tr.x1 - 200), r.range(700, 736), f);
     }
   }
 
   private soltarNpc(n: NpcVivo) {
-    if (n.obj && this.ocupado.get(n.obj.id) === n.ator) this.ocupado.delete(n.obj.id);
-    n.ator.elev = 0;
+    const o = n.obj;
+    if (o) {
+      for (const [k, a] of [...this.ocupado]) if (a === n.ator) this.ocupado.delete(k);
+      this.marcarUso(o, [...this.ocupado.keys()].some((k) => k === o.id || k.startsWith(o.id + '#')));
+    }
+    if (n.estado === 'usando' || n.ator.elev > 0) this.sairDoMovel(n.ator, o);
     n.ator.propN = undefined;
     n.obj = undefined;
     n.acao = undefined;
-    if (n.estado === 'usando') n.ator.play('parado', { fade: 0.2 });
   }
 
   private pensarNpc(n: NpcVivo) {
@@ -620,13 +769,13 @@ export class Explorador {
     if (n.papel === 'passante') return;
     const daCasa = n.papel === 'familia';
     const objs = OBJETOS.filter((o) => (daCasa ? trechoEm(o.x).lugar === 'casa' : trechoEm(o.x).lugar === 'academia') && o.acoes.some((a) => !a.especial));
-    const livres = objs.filter((o) => !o.exclusivo || !this.ocupado.has(o.id));
+    const livres = objs.filter((o) => !o.exclusivo || this.vagaLivre(o, n.ator) >= 0);
     const fav = n.f?.favorito;
     let o: ObjetoMundo | undefined;
     if (!daCasa && !this.academiaAberta()) {
       // academia fechando: todo mundo vai embora
       n.estado = 'saindo';
-      n.alvo = { x: TRECHOS.find((tr) => tr.id === 'recepcao')!.x0 - 200, y: 668 };
+      n.alvo = { x: PONTOS.portaAcademia, y: 738 };
       return;
     }
     const sorte = rng.next();
@@ -649,21 +798,22 @@ export class Explorador {
     if (!o) {
       const tr = trechoEm(n.ator.x);
       n.estado = 'indo';
-      n.alvo = { x: clamp(n.ator.x + rng.range(-400, 400), tr.x0 + 80, tr.x1 - 80), y: rng.range(CHAO_FUNDO + 30, CHAO_FRENTE - 10) };
+      n.alvo = { x: clamp(n.ator.x + rng.range(-400, 400), tr.x0 + 80, tr.x1 - 80), y: rng.range(700, 738) };
       n.depois = () => { n.estado = 'pausa'; n.ate = this.sc.t + rng.range(2, 5); };
       return;
     }
     const ac = rng.pick(o.acoes.filter((a) => !a.especial));
-    if (o.exclusivo) this.ocupado.set(o.id, n.ator);
+    const vaga = Math.max(0, this.vagaLivre(o, n.ator));
+    if (o.exclusivo) this.ocupado.set(this.chaveVaga(o, vaga), n.ator);
     n.obj = o;
     n.acao = ac;
     n.estado = 'indo';
-    n.alvo = { x: o.x + ac.dx, y: clamp(o.y + (ac.dy ?? 0) + 28, CHAO_FUNDO, CHAO_FRENTE + 20) };
+    const pu = pontoDeUso(o, ac, o.vagas ? vaga : -1);
+    n.alvo = { x: pu.x, y: Math.max(pu.y, o.y + 6) };
     n.depois = () => {
       const a = n.ator;
-      a.x = n.alvo!.x; a.y = n.alvo!.y;
-      a.facing = ac.lado ?? 1;
-      a.elev = ac.elev ?? 0;
+      this.posicionar(a, o, ac, vaga);
+      if (o.exclusivo) this.marcarUso(o, true);
       a.propN = ac.segura;
       a.play(ac.motion, { fade: 0.25 });
       n.estado = 'usando';
@@ -701,22 +851,22 @@ export class Explorador {
     this.npcs = this.npcs.filter((m) => m !== n);
   }
 
-  /** Vida na rua: gente passando (dá para cumprimentar). */
+  /** Vida na rua: gente passando pela CALÇADA, de ponta a ponta (passam em frente às casas, nunca entram). */
   private tickPassantes(dt: number) {
-    const tr = this.trechoAtual();
-    if (tr.lugar !== 'rua') return;
     this.proxPassante -= dt;
-    if (this.proxPassante > 0 || this.npcs.filter((n) => n.papel === 'passante').length >= 3) return;
-    this.proxPassante = rng.range(7, 14);
+    // some quem já saiu de vista há tempo
+    for (const n of this.npcs.filter((m) => m.papel === 'passante' && m.estado !== 'interagindo')) if (Math.abs(n.ator.x - this.eu.x) > 2600) this.removerNpc(n);
+    const noite = luz(this.est.hora).noite;
+    if (this.proxPassante > 0 || this.npcs.filter((n) => n.papel === 'passante').length >= (noite > 0.6 ? 2 : 5)) return;
+    this.proxPassante = rng.range(4, 9) * (noite > 0.6 ? 2 : 1);
     const daDireita = rng.chance(0.5);
-    const x0 = daDireita ? this.sc.view.x1 + 120 : this.sc.view.x0 - 120;
-    const ruas = TRECHOS.filter((t) => t.lugar === 'rua');
-    const minX = ruas[0].x0 + 40, maxX = ruas[ruas.length - 1].x1 - 40;
+    const v = this.sc.view;
+    const x0 = clamp(daDireita ? v.x1 + rng.range(80, 400) : v.x0 - rng.range(80, 400), MUNDO_X0 + 10, MUNDO_X1 - 10);
     const p = makePerson(rng, { age: rng.int(12, 80), rel: 'conhecido', bond: 30 });
-    const n = this.novoNpc(p, 'passante', 'rua', clamp(x0, minX, maxX), rng.range(CHAO_FUNDO + 20, CHAO_FRENTE));
+    const n = this.novoNpc(p, 'passante', 'rua', x0, rng.range(818, 884));
     n.estado = 'indo';
-    n.alvo = { x: daDireita ? minX : maxX, y: n.ator.y };
-    if (rng.chance(0.25)) n.ator.propN = rng.pick(['celular', 'sacola', 'guardaChuva']);
+    n.alvo = { x: daDireita ? MUNDO_X0 + 5 : MUNDO_X1 - 5, y: n.ator.y };
+    if (rng.chance(0.3)) n.ator.propN = rng.pick(['celular', 'sacola', 'guardaChuva']);
   }
 
   /** Um frequentador toma a iniciativa de falar com você. */
@@ -724,7 +874,7 @@ export class Explorador {
     this.proxIniciativa -= dt;
     if (this.proxIniciativa > 0 || this.emInteracao || this.ocupadoEu || this.mover) return;
     this.proxIniciativa = rng.range(20, 40);
-    const perto = this.npcs.filter((n) => n.papel === 'frequentador' && (n.estado === 'pausa' || n.estado === 'livre') && Math.abs(n.ator.x - this.eu.x) < 650);
+    const perto = this.npcs.filter((n) => n.papel === 'frequentador' && (n.estado === 'pausa' || n.estado === 'livre') && Math.abs(n.ator.x - this.eu.x) < 650 && this.dentroDe(n.ator) === this.dentroDe());
     if (!perto.length) return;
     const n = rng.pick(perto);
     n.estado = 'indo';
@@ -769,9 +919,10 @@ export class Explorador {
     const c = coresCeu(this.est.hora);
     const acesa = luz(this.est.hora).noite > 0.45 ? 1 : 0;
     for (const p of this.postes ?? []) if (p.opts.state !== acesa) p.opts = { ...p.opts, state: acesa };
-    const tr = trechoEm(this.eu?.x ?? 0);
+    const dentro = this.eu ? !!this.dentroDe() : true;
     const { noite } = luz(this.est.hora);
-    this.sc.night = noite * (tr.interno ? 0.18 : 0.42);
+    this.sc.night = noite * (dentro ? 0.16 : 0.36);
+    for (const f of this.fachadas ?? []) f.pp.opts = { ...f.pp.opts, hora: this.est.hora } as typeof f.pp.opts;
     if (this.sc.mundo) { this.sc.mundo.corTopo = c.topo; this.sc.mundo.corBase = '#222'; }
   }
 
@@ -794,30 +945,52 @@ export class Explorador {
     } else {
       this.avancar(dt * MIN_POR_SEG);
     }
-    if (this.mover && !this.emInteracao) {
-      const cansado = this.est.nec.energia < 10 ? 0.7 : 1;
+    if (this.mover) {
+      const cansado = this.est.nec.energia < 10 && !this.emInteracao ? 0.7 : 1;
       if (this.passo(e, this.mover, dt, cansado)) {
-        const dep = this.mover.depois;
-        this.mover = null;
-        dep?.();
+        const prox = this.mover.resto?.shift();
+        if (prox) { this.mover.x = prox.x; this.mover.y = prox.y; }
+        else { const dep = this.mover.depois; this.mover = null; dep?.(); }
       }
-    } else if (this.mover && this.emInteracao) {
-      if (this.passo(e, this.mover, dt)) { const dep = this.mover.depois; this.mover = null; dep?.(); }
     }
-    e.scale = escalaProf(e.y);
+    if (!this.ocupadoEu && !this.roteiro && e.elev < 1) e.scale = escalaProf(e.y);
     if (this.direcao && (this.direcao.x || this.direcao.y) && !this.emInteracao && !this.ocupadoEu) {
-      this.mover = { x: e.x + this.direcao.x * 90, y: clamp(e.y + this.direcao.y * 40, CHAO_FUNDO, CHAO_FRENTE), correr: this.direcao.correr };
+      const alvo = pontoAndavel(e.x + this.direcao.x * 90, e.y + this.direcao.y * 50, this.L.player.age);
+      this.mover = { x: alvo.x, y: alvo.y, correr: this.direcao.correr };
     }
+    this.tickFachadas(dt);
     this.tickCorpo(dt);
     this.tickNpcs(dt);
     this.tickPets(dt);
     this.tickPassantes(dt);
+    this.tickCarros(dt);
     if (this.trechoAtual().lugar === 'academia') this.tickIniciativa(dt);
     this.tickPapo(dt);
-    // câmera segue
-    this.sc.focus(e.x, 360, this.zoom);
+    // câmera segue (em x e em y: dentro de casa mostra do teto ao jardim; na rua, a fachada e a calçada)
+    this.sc.focus(e.x, this.camY(), this.zoom);
     this.est.x = e.x;
+    this.est.y = e.y;
     if (this.est.hora >= HORA_LIMITE) this.encerrarDia('apagou');
+  }
+
+  /** Casa de bonecas: a fachada do prédio onde você está some (e volta quando você sai). */
+  private tickFachadas(dt: number) {
+    const dentro = this.dentroDe();
+    const naPorta = zonaEm(this.eu.x, this.eu.y)?.id;
+    for (const f of this.fachadas) {
+      if (!f.predio) continue;
+      let alvo = dentro === f.predio ? 0.06 : 1;
+      if (naPorta === (f.predio === 'casa' ? 'portaCasa' : 'portaAcademia')) alvo = clamp((this.eu.y - (FACHADA_Y - 16)) / 70, 0.06, 1);
+      f.pp.alpha += (alvo - f.pp.alpha) * Math.min(1, dt * 6);
+      f.pp.opts = { ...f.pp.opts, aberta: naPorta === 'portaCasa' } as typeof f.pp.opts;
+    }
+    // o que está na frente do prédio onde você está fica translúcido (props e gente na calçada)
+    const k = Math.min(1, dt * 6);
+    for (const f of this.naFrente) f.pp.alpha += ((dentro && f.predio === dentro ? 0.22 : 1) - f.pp.alpha) * k;
+    for (const n of this.npcs) {
+      const alvo = dentro && n.ator.y > FACHADA_Y && predioEm(n.ator.x) === dentro ? 0.26 : 1;
+      n.ator.alpha += (alvo - n.ator.alpha) * k;
+    }
   }
 
   pararTeclado() { if (this.mover && !this.mover.depois) this.mover = { ...this.mover, x: this.eu.x, y: this.eu.y }; }
@@ -827,16 +1000,74 @@ export class Explorador {
   /** contorno do objeto sob o ponteiro (destaque) */
   destaque: ObjetoMundo | null = null;
   private desenharDestaques(ctx: CanvasRenderingContext2D, _v: { x0: number; x1: number }) {
+    this.desenharCarros(ctx);
     this.desenharBanheiro(ctx);
     const o = this.destaque;
-    if (!o) return;
-    const s = o.escala ?? 1;
+    if (!o) return this.desenharBarras(ctx);
+    this.desenharBarras(ctx);
+    const s = (o.escala ?? 1) * escalaProf(o.y);
     ctx.save();
     ctx.strokeStyle = 'rgba(255,230,140,0.9)';
     ctx.setLineDash([8, 6]);
     ctx.lineWidth = 3;
     ctx.strokeRect(o.x - (o.w * s) / 2, o.y - o.h * s, o.w * s, o.h * s + 10);
     ctx.restore();
+  }
+
+  /** Carros na rua (a faixa da rua é a mais perto da câmera: são desenhados por cima de tudo). */
+  carros: { x: number; y: number; v: number; cor: string; giro: number }[] = [];
+  private proxCarro = 2;
+  private tickCarros(dt: number) {
+    for (const c of this.carros) { c.x += c.v * dt; c.giro += (c.v * dt) / (0.3 * M); }
+    this.carros = this.carros.filter((c) => Math.abs(c.x - this.eu.x) < 3200);
+    this.proxCarro -= dt;
+    const noite = luz(this.est.hora).noite;
+    if (this.proxCarro > 0 || this.carros.length >= 3) return;
+    this.proxCarro = rng.range(3, 8) * (noite > 0.6 ? 2.5 : 1);
+    const praDireita = rng.chance(0.5);
+    const v = this.sc.view;
+    this.carros.push({
+      x: praDireita ? v.x0 - 900 : v.x1 + 900,
+      y: praDireita ? 992 : 948,
+      v: (praDireita ? 1 : -1) * rng.range(520, 760),
+      cor: rng.pick(['#e63956', '#3d7bd9', '#f2c14e', '#e9eef0', '#2b2d3a', '#58b368', '#9aa0b0']),
+      giro: 0,
+    });
+  }
+  private desenharCarros(ctx: CanvasRenderingContext2D) {
+    const noite = luz(this.est.hora).noite > 0.45;
+    const desenha = MOVEIS.carro;
+    for (const c of [...this.carros].sort((a, b) => a.y - b.y)) {
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      const s = escalaProf(c.y) * 0.8;
+      // passando na frente de você: fica translúcido para não esconder o personagem
+      if (Math.abs(c.x - this.eu.x) < 1.9 * M * s + 140) ctx.globalAlpha = 0.45;
+      // na frente do prédio onde você está (casa de bonecas): quase transparente
+      const dentro = this.dentroDe();
+      if (dentro && predioEm(c.x) === dentro) ctx.globalAlpha = 0.25;
+      ctx.scale(s, s);
+      desenha(ctx, { color: c.cor, flip: c.v < 0, noite, giro: c.giro * (c.v < 0 ? -1 : 1) }, this.sc.t);
+      ctx.restore();
+    }
+  }
+
+  /** Barra do supino entre as mãos de quem está deitado no banco (atravessa em profundidade, como no suporte). */
+  private desenharBarras(ctx: CanvasRenderingContext2D) {
+    for (const a of this.sc.actors) {
+      if (a.motionName !== 'supino') continue;
+      const h1 = a.handWorld(true), h2 = a.handWorld(false);
+      const mx = (h1.x + h2.x) / 2, my = (h1.y + h2.y) / 2;
+      const ex = 0.65 * M * a.scale * 0.42, ey = -0.65 * M * a.scale * 0.9; // direção da profundidade (OX, OY) normalizada à mão
+      ctx.save();
+      ctx.strokeStyle = '#c9d2d4'; ctx.lineWidth = 5 * a.scale; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(mx - ex, my - ey); ctx.lineTo(mx + ex, my + ey); ctx.stroke();
+      for (const k of [-1, 1]) {
+        ctx.fillStyle = '#1c1d26';
+        ctx.beginPath(); ctx.ellipse(mx + ex * k * 0.92, my + ey * k * 0.92, 9 * a.scale, 26 * a.scale, 0.25, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    }
   }
 
   // ================================================================== banheiro (banho completo e necessidades)
@@ -873,11 +1104,8 @@ export class Explorador {
       this.roteiro = null;
       this.emInteracao = false;
       this.ui.progresso(null);
-      this.eu.elev = 0;
-      this.eu.propN = undefined;
       this.eu.propF = undefined;
-      this.eu.maoForma = null;
-      this.eu.play('parado', { fade: 0.3 });
+      this.sairDoMovel(this.eu);
       this.ui.atualizar();
     }
   }
@@ -886,7 +1114,7 @@ export class Explorador {
   async roteiroBanho(o: ObjetoMundo) {
     const e = this.eu, adulto = this.adulto();
     await this.rodarRoteiro('Tomando banho', 20, 21, async () => {
-      e.x = o.x; e.y = o.y + 8; e.facing = 1;
+      this.posicionar(e, o, o.acoes[0]);
       this.banho = { adulto, agua: false, vapor: 0 };
       if (adulto) {
         this.d.say(e, rng.pick(['Hora do banho!', 'Água quente, por favor...', 'Banho: o único lugar onde eu canto bem.']), 1.6, 'pensa');
@@ -940,8 +1168,9 @@ export class Explorador {
     const pp = this.props.get(o.id)!;
     const emPe = n === 1 && this.L.player.sex === 'm';
     await this.rodarRoteiro(n === 1 ? 'Número 1' : 'Número 2', n === 1 ? 3 : 12, n === 1 ? 7 : 14, async () => {
+      const acXixi = o.acoes.find((a) => a.id === 'xixi')!, acCoco = o.acoes.find((a) => a.id === 'coco')!;
       if (emPe) {
-        e.x = o.x - 64; e.y = o.y + 6; e.facing = 1;
+        this.posicionar(e, o, acXixi);
         pp.opts = { ...pp.opts, tampa: 1 } as typeof pp.opts;
         sfx.tick();
         e.play('xixiEmPe', { fade: 0.25 });
@@ -955,9 +1184,9 @@ export class Explorador {
         else pp.opts = { ...pp.opts, tampa: 0 } as typeof pp.opts;
       } else {
         // sentar: abaixa a roupa de baixo (adultos) e senta
-        e.x = o.x + 6; e.y = o.y + 3; e.facing = 1;
+        this.posicionar(e, o, acCoco);
+        pp.opts = { ...pp.opts, tampa: 1 } as typeof pp.opts; // ninguém senta na tampa fechada
         if (adulto) { if (!this.roupaGuardada) { this.roupaNormal = e.outfit; this.roupaGuardada = true; } e.outfit = { ...(this.roupaNormal ?? {}), bottom: 'nu' }; }
-        e.elev = 0;
         e.play('sentarVaso', { fade: 0.3 });
         await this.espera(1.2);
         if (n === 1) {
@@ -983,8 +1212,10 @@ export class Explorador {
         await e.play('limparVaso', { fade: 0.2 });
         if (n === 2) await e.play('limparVaso', { fade: 0.1 });
         e.propF = undefined;
+        this.sairDoMovel(e, o);
+        this.posicionar(e, o, acXixi);
+        pp.opts = { ...pp.opts, tampa: 0 } as typeof pp.opts;
         e.play('parado', { fade: 0.3 });
-        e.x = o.x - 60; e.y = o.y + 8;
         if (this.roupaGuardada) { e.outfit = this.roupaNormal; this.roupaGuardada = false; }
         await this.espera(0.3);
       }
@@ -1015,7 +1246,8 @@ export class Explorador {
     this.sc.fx.spawn('bolha', x, y, n, { speed: 40, size: 7, life: 1.1, color: 'rgba(255,255,255,0.9)' });
   }
   private respingo(o: ObjetoMundo) {
-    this.sc.fx.spawn('bolha', o.x + 8, o.y - 64, 2, { speed: 30, size: 4, life: 0.4, color: 'rgba(250,225,120,0.8)' });
+    const s = escalaProf(o.y);
+    this.sc.fx.spawn('bolha', o.x + 15 * s, o.y - 80 * s, 2, { speed: 30, size: 4, life: 0.4, color: 'rgba(250,225,120,0.8)' });
   }
 
   /** Necessidades do corpo: acidente quando a bexiga zera, mau cheiro com higiene baixa. */
@@ -1054,18 +1286,20 @@ export class Explorador {
     const ch = OBJETOS.find((o) => o.id === 'chuveiro')!;
     if (b) {
       const t = this.sc.t;
+      const s = escalaProf(ch.y);
       if (b.agua) {
-        // água caindo do chuveiro
+        // água caindo do chuveiro (do crivo até o chão do box)
+        const cx = ch.x + 23 * s, cy = ch.y - 424 * s, chao = this.eu.y - 4, queda = chao - cy;
         ctx.strokeStyle = 'rgba(170,215,240,0.75)';
         ctx.lineWidth = 2;
-        for (let i = 0; i < 16; i++) {
-          const x = ch.x + 20 + ((i * 7) % 34) - 12 + Math.sin(i + t * 3) * 3;
-          const y0 = ch.y - 416 + ((t * 700 + i * 43) % 360);
-          ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x - 2, y0 + 18); ctx.stroke();
+        for (let i = 0; i < 18; i++) {
+          const x = cx + ((i * 7) % 40) - 20 + Math.sin(i + t * 3) * 3;
+          const y0 = cy + ((t * 700 + i * 43) % queda);
+          ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x - 2, Math.min(chao, y0 + 18)); ctx.stroke();
         }
         b.vapor = Math.min(1, b.vapor + 0.004);
       } else b.vapor = Math.max(0, b.vapor - 0.004);
-      const x0 = ch.x - 82, x1 = ch.x + 82, y0 = 112, y1 = ch.y + 22;
+      const x0 = ch.x - 0.55 * M * s, x1 = ch.x + 0.55 * M * s, y0 = ch.y - 2.3 * M * s, y1 = ch.y - 0.08 * M * s;
       if (b.adulto) {
         // vidro transparente em cima e embaixo; faixa jateada (opaca) do peito às coxas — como box de verdade
         ctx.fillStyle = 'rgba(210,235,245,0.22)';
@@ -1085,17 +1319,14 @@ export class Explorador {
         for (let y = fy0; y < fy1; y += 9) { ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke(); }
       } else {
         // menores: cortina fechada (só a cabeça aparece por cima)
+        const cTopo = Math.min(ch.y - 1.1 * M * s, this.eu.headWorld().y + 22 * this.eu.scale), alt = y1 - cTopo;
         ctx.fillStyle = '#7fb3d5';
-        ctx.fillRect(x0, ch.y - 250, x1 - x0, 272);
+        ctx.fillRect(x0, cTopo, x1 - x0, alt);
         ctx.fillStyle = 'rgba(255,255,255,0.35)';
-        for (let x = x0 + 10; x < x1; x += 22) ctx.fillRect(x, ch.y - 250, 8, 272);
+        for (let x = x0 + 10; x < x1; x += 22) ctx.fillRect(x, cTopo, 8, alt);
         ctx.fillStyle = '#9aa7b0';
-        ctx.fillRect(x0 - 4, ch.y - 256, x1 - x0 + 8, 6);
+        ctx.fillRect(x0 - 4, cTopo - 6, x1 - x0 + 8, 6);
       }
-      // moldura do box
-      ctx.strokeStyle = '#b9c8cc';
-      ctx.lineWidth = 5;
-      ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
       // vapor
       if (b.vapor > 0.02) {
         for (let i = 0; i < 7; i++) {
@@ -1109,7 +1340,8 @@ export class Explorador {
     if (this.jato && this.sc.t < this.jato.ate) {
       const vaso = OBJETOS.find((o) => o.id === 'vaso')!;
       const h = this.eu.handWorld(true);
-      const x0 = h.x + this.eu.facing * 6, y0 = h.y + 4, x1 = vaso.x + 6, y1 = vaso.y - 62;
+      const sv = escalaProf(vaso.y);
+      const x0 = h.x + this.eu.facing * 6, y0 = h.y + 4, x1 = vaso.x + 15 * sv, y1 = vaso.y - 80 * sv;
       ctx.save();
       ctx.strokeStyle = 'rgba(245,215,90,0.85)';
       ctx.lineWidth = 3;
@@ -1141,30 +1373,22 @@ export class Explorador {
     est.hora = HORA_ACORDAR;
     est.nec.energia = motivo === 'dormiu' ? 100 : 55;
     est.nec.fome = Math.max(35, est.nec.fome - 20);
-    est.x = PONTOS.cama + 140;
+    est.x = PONTOS.inicioX;
+    est.y = PONTOS.inicioY;
     if (motivo === 'apagou') addLog(L, 'Você apagou de sono longe da cama. Acordou todo(a) torto(a).', 'ruim', '😵');
     this.ui.fimDoDia(resumo);
   }
 }
 
 // ------------------------------------------------------------------ utilidades
+/** prédio (casa/academia) cuja fachada cobre este x */
+function predioEm(x: number) { return FACHADAS.find((f) => f.predio && x >= f.x0 && x <= f.x1)?.predio; }
+
 function relTexto(p: Person) {
   const m: Record<string, string> = { mae: 'Mãe', pai: 'Pai', irmao: 'Irmão', irma: 'Irmã', conjuge: 'Cônjuge', filho: 'Filho', filha: 'Filha', namorado: 'Namorado', namorada: 'Namorada' };
   return m[p.rel] ?? 'Família';
 }
 
-const FALAS_CASA = ['Alguém viu o controle?', 'Quem comeu meu iogurte?', 'Apaga a luz do quarto!', 'Tem janta hoje?', 'Essa novela tá boa demais.'];
-
-const PASSANTE: InteracaoMundo[] = [
-  {
-    id: 'oiPassante', label: 'Cumprimentar', icon: '👋', para: false, pode: () => true,
-    run: () => ({ eu: 'Bom dia!', ela: rng.pick(['Bom dia!', '*acena de volta*', 'Opa!', 'Te conheço?']), texto: 'Você cumprimentou alguém na rua. Gentileza de graça.', tom: 'bom', reacaoNpc: 'acenar', social: 2 }),
-  },
-  {
-    id: 'horas', label: 'Perguntar as horas', icon: '⌚', para: false, pode: () => true,
-    run: () => ({ eu: 'Com licença, que horas são?', ela: rng.pick(['Tá no seu celular, meu bem.', 'Hora de você comprar um relógio.', 'Sei lá, meu celular morreu.', 'Umas... três? Quatro?']), texto: 'Você perguntou as horas. Recebeu sabedoria.', tom: 'neutro', diversao: 2, social: 1 }),
-  },
-];
 
 /** Cria/atualiza o estado do modo explorar no save (novo ano zera os usos e a contagem de dias). */
 export function prepararEstado(L: Life): EstadoExplorar {

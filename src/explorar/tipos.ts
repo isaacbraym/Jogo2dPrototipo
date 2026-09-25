@@ -47,8 +47,14 @@ export interface AcaoObjeto {
   dx: number;
   dy?: number;
   lado?: 1 | -1;
-  /** altura extra (sentado/deitado sobre o móvel) */
+  /** altura extra (sentado/deitado sobre o móvel), em px já na escala 1 */
   elev?: number;
+  /** altura do assento/colchão em METROS: o controlador calcula a elevação certa para o corpo de cada um */
+  assento?: number;
+  /** altura em METROS da superfície onde a pessoa fica em pé ou deitada (colchão, lona da esteira, banco do supino) */
+  plataforma?: number;
+  /** giro do corpo durante a ação (0 = de frente para a câmera, 0,72 = ¾) — ex.: sentado no sofá de frente */
+  giro?: number;
   /** objeto de mão durante a ação */
   segura?: string;
   forma?: Hand;
@@ -75,8 +81,27 @@ export interface ObjetoMundo {
   acoes: AcaoObjeto[];
   /** só um usuário por vez (equipamentos) */
   exclusivo?: boolean;
-  /** desenho próprio (quando não há prop pronta) */
+  /** desenho próprio (MOVEIS em moveis.ts) quando não há prop pronta */
   desenho?: string;
+  /**
+   * Partes desenhadas separadamente: por padrão ficam ATRÁS de quem usa o objeto; `frente: true` desenha a parte
+   * DEPOIS da pessoa (mesa na frente de quem senta, cobertor por cima de quem dorme, corrimão da esteira).
+   */
+  partes?: { desenho: string; dx?: number; dy?: number; opts?: Record<string, unknown>; frente?: boolean }[];
+  /** vários lugares no mesmo objeto (rack de halteres): cada vaga é um ponto de uso independente */
+  vagas?: { dx: number; dy?: number; lado?: 1 | -1 }[];
+}
+
+/** Área onde se anda. Zonas que se sobrepõem se ligam (a sobreposição é a "porta"). */
+export interface Zona {
+  id: string;
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+  /** prédio a que pertence (a fachada fica transparente quando você está dentro) */
+  predio?: 'casa' | 'academia';
+  minIdade?: number;
 }
 
 /** Frequentador de um lugar (academia): gente que você reencontra, com familiaridade antes de virar contato. */
@@ -111,8 +136,9 @@ export interface EstadoExplorar {
   frequentadores: Partial<Record<LugarId, Frequentador[]>>;
   /** matrícula na academia válida até esta idade */
   matriculaAte?: number;
-  /** onde parou (x) */
+  /** onde parou (x, y) */
   x?: number;
+  y?: number;
   /** usou o vaso e não lavou as mãos (as pessoas percebem...) */
   maosSujas?: boolean;
 }
