@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-24 — Modo Explorar: banheiro completo (Claude) · branch `claude/modo-explorar`
+- **Banho de verdade**: entra no box, tira a roupa (adultos), água com vapor, cabelo com xampu, sabonete, enxágue, toalha,
+  veste. Vidro com faixa jateada que acompanha o corpo; **menores: cortina e sempre vestidos**. Corpo sem detalhes íntimos.
+- **Vaso sanitário** (novo objeto desenhado: tampa, água girando na descarga, rolo de papel): **nº 1** (homem em pé com jato;
+  mulher sentada) e **nº 2** (celular no vaso, força, alívio, papel), descarga; **lavar as mãos** na pia.
+- **Necessidades Higiene e Bexiga**; acidente quando a bexiga zera (as pessoas riem); mau cheiro com higiene baixa e
+  comentários; "mãos sujas" percebidas no aperto de mão. Beber água enche a bexiga; treino suja.
+- Motor: traje `nu` (pele lisa, só adultos — `IDADE_NUDEZ`), objetos de mão `toalha`, `sabonete`, `papelHigienico`,
+  expressões `esforco` e `alivio`, 14 movimentos de banheiro (`tirarRoupa`, `vestirRoupa`, `banhoEnsaboar`, `banhoCabelo`,
+  `banhoEnxaguar`, `secarToalha`, `sentarVaso`, `esforcoVaso`, `celularVaso`, `limparVaso`, `xixiEmPe`, `sacudir`,
+  `lavarMaos`, `puxarDescarga`).
+- **Docs:** `docs/EXPLORAR.md` (banheiro + regras de conteúdo adulto obrigatórias).
+
 ## 2026-09-24 — Modo Explorar: mundo contínuo point-and-click (Claude) · branch `claude/modo-explorar`
 - **Novo modo de jogo** (botão verde **VIVER O DIA** na tela da vida; atalho `/#explorar`): mundo contínuo 2,5D com 9 trechos
   — quarto, banheiro, cozinha, sala → frente de casa, rua, frente da academia → academia (recepção/cardio e musculação).

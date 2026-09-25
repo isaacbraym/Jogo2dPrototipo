@@ -8,8 +8,8 @@ import type { Life, Person, StatKey } from '../game/state';
 import type { Hand } from '../character/rig';
 
 /** Necessidades do dia (0 = crítico, 100 = cheio), no estilo "The Sims". */
-export type Necessidade = 'energia' | 'fome' | 'diversao' | 'social';
-export const NECESSIDADES: Necessidade[] = ['energia', 'fome', 'diversao', 'social'];
+export type Necessidade = 'energia' | 'fome' | 'diversao' | 'social' | 'higiene' | 'bexiga';
+export const NECESSIDADES: Necessidade[] = ['energia', 'fome', 'diversao', 'social', 'higiene', 'bexiga'];
 
 export type LugarId = 'casa' | 'rua' | 'academia';
 
@@ -57,7 +57,7 @@ export interface AcaoObjeto {
   texto?: string;
   cond?: (L: Life, est: EstadoExplorar) => string | null; // null = pode; texto = motivo do bloqueio
   /** ação especial (dormir, matrícula, viajar) tratada pelo controlador */
-  especial?: 'dormir' | 'matricula' | 'onibus' | 'porta';
+  especial?: 'dormir' | 'matricula' | 'onibus' | 'porta' | 'banho' | 'xixi' | 'coco' | 'lavarMaos';
 }
 
 export interface ObjetoMundo {
@@ -113,4 +113,6 @@ export interface EstadoExplorar {
   matriculaAte?: number;
   /** onde parou (x) */
   x?: number;
+  /** usou o vaso e não lavou as mãos (as pessoas percebem...) */
+  maosSujas?: boolean;
 }

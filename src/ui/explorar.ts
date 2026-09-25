@@ -17,6 +17,8 @@ const NEC_INFO: Record<Necessidade, { icon: string; nome: string; cor: string }>
   fome: { icon: '🍔', nome: 'Fome', cor: '#e8845a' },
   diversao: { icon: '🎈', nome: 'Diversão', cor: '#7c5cff' },
   social: { icon: '💬', nome: 'Social', cor: '#58b368' },
+  higiene: { icon: '🧼', nome: 'Higiene', cor: '#7fd3ff' },
+  bexiga: { icon: '🚽', nome: 'Bexiga', cor: '#e8d06a' },
 };
 
 let cssPronto = false;
@@ -29,10 +31,11 @@ function css() {
   .explorar .stage-host { position: absolute; inset: 0; cursor: pointer; }
   .ex-top { position: absolute; left: 12px; right: 12px; top: 10px; display: flex; gap: 10px; align-items: flex-start; pointer-events: none; z-index: 5; }
   .ex-card { pointer-events: auto; background: rgba(18, 13, 43, 0.78); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.14); border-radius: 16px; padding: 10px 14px; color: #fff; box-shadow: 0 10px 30px -12px rgba(0,0,0,0.7); }
-  .ex-lugar { font-family: var(--display); font-weight: 800; font-size: 20px; line-height: 1; }
+  .ex-lugar { font-family: var(--display); font-weight: 800; font-size: 20px; line-height: 1.05; }
+  .ex-top > .ex-card:first-child { min-width: 200px; max-width: 260px; }
   .ex-hora { font-size: 13px; font-weight: 800; color: var(--muted); margin-top: 4px; }
   .ex-grana { font-weight: 900; color: #9be89b; margin-top: 4px; font-size: 13px; }
-  .ex-necs { display: grid; grid-template-columns: repeat(2, 132px); gap: 6px 12px; }
+  .ex-necs { display: grid; grid-template-columns: repeat(3, 118px); gap: 6px 12px; }
   .ex-nec { font-size: 12px; font-weight: 800; }
   .ex-nec .bar { height: 7px; border-radius: 6px; background: rgba(255,255,255,0.14); overflow: hidden; margin-top: 3px; }
   .ex-nec .bar i { display: block; height: 100%; border-radius: 6px; transition: width .4s; }
@@ -62,7 +65,7 @@ function css() {
   .ex-prog .bar { height: 8px; background: rgba(255,255,255,0.15); border-radius: 8px; overflow: hidden; margin-top: 6px; }
   .ex-prog .bar i { display: block; height: 100%; background: linear-gradient(90deg, #7c5cff, #ff8a5c); }
   .ex-dica { position: absolute; z-index: 14; pointer-events: none; background: rgba(0,0,0,0.75); color: #fff; font: 800 12px sans-serif; padding: 5px 9px; border-radius: 8px; transform: translate(-50%, -130%); white-space: nowrap; }
-  @media (max-width: 720px) { .ex-necs { grid-template-columns: repeat(2, 92px); } .ex-lugar { font-size: 16px; } .ex-acoes .btn span { display: none; } .ex-mapa .tr { font-size: 0; } }
+  @media (max-width: 720px) { .ex-necs { grid-template-columns: repeat(3, 76px); } .ex-lugar { font-size: 16px; } .ex-acoes .btn span { display: none; } .ex-mapa .tr { font-size: 0; } }
   `;
   document.head.appendChild(s);
 }

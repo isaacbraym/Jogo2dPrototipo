@@ -81,6 +81,24 @@ Desconhecido(a) ─(fam 15)→ Rosto conhecido ─(fam 35)→ Colega de academia
   que **vão destravando com o vínculo** (`VINCULO_MINIMO`). Com vínculo 55 o contato vira **amigo(a)** automaticamente.
 - Interações clássicas usam o mesmo `run` da aba Relações (com recusa por mágoa/medo) e a animação acontece no mundo.
 
+### Banheiro (público adulto, estilizado)
+- **Chuveiro** (`roteiroBanho`): entra no box → tira a roupa (adultos) → abre a água (vapor, som) → lava o cabelo (espuma) →
+  ensaboa o corpo → enxágua → fecha → seca com a toalha → se veste. ~21 s reais, 20 min de jogo. Higiene vai a 100.
+- **Vaso** (`roteiroVaso`): **nº 1** — homem em pé (levanta a tampa, jato, sacudida; às vezes esquece a tampa levantada);
+  mulher sentada (abaixa a roupa de baixo, papel). **nº 2** — sentado(a), "três minutinhos no zap", força (suor, rosto
+  vermelho), alívio, papel duas vezes. Sempre dá descarga (água girando). Bexiga vai a 100.
+- **Pia**: lavar as mãos. Quem usa o vaso e não lava fica com `maosSujas`: no aperto de mão/toca aqui as pessoas reparam.
+- **Necessidades novas**: Higiene (cai 2,2/h; treino suja) e Bexiga (cai 7/h; beber água enche). Bexiga zerada = acidente
+  (higiene 5, felicidade −4, quem está perto ri e perde familiaridade). Higiene < 18 = cheiro visível e as pessoas comentam.
+
+**Regras de conteúdo (obrigatórias para qualquer agente):**
+1. **Sem detalhes íntimos, nunca.** O traje `nu` (`TOP_SPECS.nu` + `bottom 'nu'`) é pele lisa estilo boneco. Não desenhe
+   genitais, mamilos ou detalhes sexuais. O vidro do box tem faixa jateada que acompanha o corpo (peito às coxas).
+2. **Nudez só com adultos** (`IDADE_NUDEZ` = 18 em `controle.ts`). Menores: cortina opaca no box e a roupa **nunca** muda
+   (a função `roupa()` não faz nada para menores). No vaso, menores continuam vestidos.
+3. **Nada sexual** nesses roteiros. Banheiro é humor de situação (celular no vaso, xampu no olho), não conteúdo erótico.
+4. **Todo roteiro termina vestido**: `rodarRoteiro` devolve a roupa guardada no `finally`, mesmo se algo falhar.
+
 ## 4. Como ampliar (receitas)
 
 ### Um objeto novo com ações (ex.: esteira nova, piano na sala)

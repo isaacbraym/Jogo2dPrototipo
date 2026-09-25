@@ -1326,6 +1326,164 @@ Object.assign(MOTIONS, {
   },
 } as Record<string, Motion>);
 
+// ---- modo Explorar: banheiro (banho completo e necessidades). Público adulto, estilizado e sem detalhes íntimos.
+Object.assign(MOTIONS, {
+  // Tirar a roupa: puxa a camiseta por cima da cabeça, depois abaixa a calça e tira uma perna de cada vez.
+  tirarRoupa: {
+    loop: false, dur: 2.6,
+    fn: keyframes([
+      [0, {}],
+      [0.45, { chest: 0.1, armN: L(0.55, 1.7), armF: L(0.5, 1.75), handN: 'segura', handF: 'segura' }, Ease.outQuad],
+      [1.0, { chest: -0.12, head: 0.1, armN: L(2.95, 0.35), armF: L(2.9, 0.4), handN: 'segura', handF: 'segura', shrugN: 0.5, shrugF: 0.5 }, Ease.inOutSine],
+      [1.25, { armN: L(0.3, 0.4), armF: L(0.25, 0.45) }],
+      [1.7, { lean: 0.5, chest: 0.3, head: 0.2, armN: L(0.25, 0.15), armF: L(0.2, 0.15), legN: L(0.15, 0.3), legF: L(-0.1, 0.3), handN: 'segura', handF: 'segura' }, Ease.inOutSine],
+      [2.05, { lean: 0.32, chest: 0.2, legN: L(0.9, 1.5), armN: L(0.6, 0.3), armF: L(0.5, 0.3) }],
+      [2.3, { lean: 0.3, chest: 0.2, legF: L(0.85, 1.5), legN: L(0, 0.05) }],
+      [2.6, { lean: 0, chest: 0, legN: L(0, 0), legF: L(0, 0), armN: L(0.1, 0.3), armF: L(0, 0.3) }],
+    ]),
+  },
+  // Vestir a roupa: o caminho inverso (calça primeiro, camiseta depois).
+  vestirRoupa: {
+    loop: false, dur: 2.4,
+    fn: keyframes([
+      [0, {}],
+      [0.4, { lean: 0.32, chest: 0.2, legN: L(0.9, 1.5), armN: L(0.35, 0.2), armF: L(0.3, 0.2), handN: 'segura', handF: 'segura' }],
+      [0.75, { lean: 0.32, chest: 0.2, legF: L(0.85, 1.5), legN: L(0, 0.05) }],
+      [1.15, { lean: 0.05, legF: L(0, 0), armN: L(0.35, 0.9), armF: L(0.3, 0.95) }, Ease.inOutSine],
+      [1.6, { chest: -0.1, armN: L(2.9, 0.4), armF: L(2.85, 0.45), handN: 'segura', handF: 'segura' }, Ease.inOutSine],
+      [2.0, { chest: 0.05, armN: L(0.6, 1.6), armF: L(0.55, 1.65) }],
+      [2.4, { chest: 0, armN: L(0.1, 0.3), armF: L(0, 0.3) }],
+    ]),
+  },
+  // Ensaboar o corpo: as mãos esfregam braços e peito em ritmo alternado.
+  banhoEnsaboar: {
+    loop: true, expr: 'aconchego',
+    fn: (t: number) => {
+      const k = S(t * 6.5);
+      const p = breathe(P({ lean: 0.06, chest: 0.05, head: 0.18, hipTilt: k * 0.04 }), t, 0.5);
+      p.armN = L(0.95 + k * 0.28, 1.85 - k * 0.2); p.armF = L(0.85 - k * 0.28, 1.95 + k * 0.2);
+      p.handN = 'aberta'; p.handF = 'aberta';
+      return p;
+    },
+  },
+  // Lavar o cabelo: as duas mãos esfregam a cabeça, cabeça um pouco para trás, olhos fechados.
+  banhoCabelo: {
+    loop: true, expr: 'aconchego',
+    fn: (t: number) => {
+      const k = S(t * 8);
+      const p = breathe(P({ chest: -0.06, head: -0.14, neck: -0.05 }), t, 0.4);
+      p.armN = L(2.55 + k * 0.12, 2.25); p.armF = L(2.45 - k * 0.12, 2.3);
+      p.handN = 'aberta'; p.handF = 'aberta';
+      p.shrugN = 0.3; p.shrugF = 0.3;
+      return p;
+    },
+  },
+  // Enxaguar: rosto para cima, na água, mãos passando pelo rosto e cabelo.
+  banhoEnxaguar: {
+    loop: true, expr: 'alivio',
+    fn: (t: number) => {
+      const k = S(t * 3);
+      const p = breathe(P({ chest: -0.14, lean: -0.04, head: -0.34, neck: -0.12 }), t, 0.5);
+      p.armN = L(2.1 + k * 0.18, 2.1); p.armF = L(1.95 - k * 0.15, 2.2);
+      p.handN = 'aberta'; p.handF = 'aberta';
+      return p;
+    },
+  },
+  // Secar com a toalha: esfrega a nuca e as costas.
+  secarToalha: {
+    loop: true, expr: 'feliz',
+    fn: (t: number) => {
+      const k = S(t * 5);
+      const p = breathe(P({ chest: 0.04, head: 0.08 + k * 0.04, hipTilt: k * 0.05 }), t, 0.5);
+      p.armN = L(2.25 + k * 0.22, 2.0); p.armF = L(2.6 - k * 0.1, 1.8);
+      p.handN = 'segura'; p.handF = 'aberta';
+      return p;
+    },
+  },
+  // Sentado no vaso, mãos nos joelhos.
+  sentarVaso: {
+    loop: true,
+    fn: (t: number) => {
+      const p = sit(P({ lean: 0.14, chest: 0.06, head: 0.08 }));
+      p.armN = L(0.75, 0.55); p.armF = L(0.7, 0.6);
+      return breathe(p, t, 0.6);
+    },
+  },
+  // Fazendo força no vaso: inclina, cerra os punhos e treme.
+  esforcoVaso: {
+    loop: true, expr: 'esforco',
+    fn: (t: number) => {
+      const p = sit(P({ lean: 0.32, chest: 0.16, head: 0.12, x: S(t * 42) * 0.9 }));
+      p.armN = L(0.95, 1.25); p.armF = L(0.9, 1.3);
+      p.handN = 'punho'; p.handF = 'punho';
+      p.shrugN = 0.35; p.shrugF = 0.35;
+      return p;
+    },
+  },
+  // Sentado no vaso mexendo no celular ("três minutos no zap").
+  celularVaso: {
+    loop: true,
+    fn: (t: number) => {
+      const p = sit(P({ lean: 0.22, chest: 0.1, head: 0.34 }));
+      p.armN = L(0.95, 2.05); p.armF = L(0.7, 0.6);
+      p.wristN = S(t * 3) * 0.06;
+      return breathe(p, t, 0.5);
+    },
+  },
+  // Limpar-se: inclina para a frente e leva a mão para trás.
+  limparVaso: {
+    loop: false, dur: 1.3,
+    fn: keyframes([
+      [0, { lean: 0.14 }],
+      [0.4, { lean: 0.42, chest: 0.2, head: 0.1, armF: L(-0.75, 0.9), armN: L(0.75, 0.55) }, Ease.outQuad],
+      [0.85, { lean: 0.42, chest: 0.2, armF: L(-0.55, 1.0), armN: L(0.75, 0.55) }],
+      [1.3, { lean: 0.14, armF: L(0.7, 0.6) }],
+    ]),
+  },
+  // Xixi em pé: quadril um pouco à frente, olhando para baixo, mãos à frente do corpo.
+  xixiEmPe: {
+    loop: true,
+    fn: (t: number) => {
+      const p = breathe(P({ lean: -0.05, chest: 0.04, head: 0.28, hipTilt: S(t * 1.3) * 0.03 }), t, 0.4);
+      p.armN = L(0.32, 1.35); p.armF = L(0.28, 1.4);
+      p.handN = 'segura'; p.handF = 'segura';
+      return p;
+    },
+  },
+  // A sacudidinha final.
+  sacudir: {
+    loop: false, dur: 0.7,
+    fn: (t: number) => {
+      const p = P({ lean: -0.04, head: 0.26, x: S(t * 34) * 2.2 });
+      p.armN = L(0.32, 1.35); p.armF = L(0.28, 1.4);
+      p.handN = 'segura'; p.handF = 'segura';
+      return p;
+    },
+  },
+  // Lavar as mãos na pia: mãos à frente esfregando.
+  lavarMaos: {
+    loop: true,
+    fn: (t: number) => {
+      const k = S(t * 9);
+      const p = breathe(P({ lean: 0.16, chest: 0.08, head: 0.22 }), t, 0.4);
+      p.armN = L(1.0 + k * 0.08, 1.2); p.armF = L(1.05 - k * 0.08, 1.15);
+      p.wristN = k * 0.25; p.wristF = -k * 0.25;
+      p.handN = 'aberta'; p.handF = 'aberta';
+      return p;
+    },
+  },
+  // Dar descarga: estica o braço para o botão atrás.
+  puxarDescarga: {
+    loop: false, dur: 0.8,
+    fn: keyframes([
+      [0, {}],
+      [0.35, { lean: 0.1, chest: -0.05, head: -0.05, armF: L(1.9, 0.3), handF: 'aponta' }, Ease.outQuad],
+      [0.55, { lean: 0.1, armF: L(1.85, 0.35), handF: 'aponta' }],
+      [0.8, { armF: L(0, 0.3) }],
+    ]),
+  },
+} as Record<string, Motion>);
+
 export type MotionName = keyof typeof MOTIONS;
 
 /** Ajusta a altura da pelve para manter o pé mais baixo no chão. */

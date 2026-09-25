@@ -80,4 +80,6 @@ export const TOP_SPECS: Record<string, TopSpec> = {
   policial: { sleeve: 1, neck: 'collar', len: 0.12, inset: 0, forceBottom: 'calca', forceBottomColor: '#1d2a44' },
   chef: { sleeve: 2, neck: 'turtle', len: 0.18, inset: 0 },
   banho: { sleeve: 0, neck: 'scoop', len: -0.2, inset: 0.55, forceBottom: 'sunga' },
+  /** sem roupa (banho no modo Explorar, SÓ adultos): tronco de pele lisa, sem detalhes íntimos (estilo boneco) */
+  nu: { sleeve: 0, neck: 'scoop', len: 0, inset: 0, forceBottom: 'nu' },
 };

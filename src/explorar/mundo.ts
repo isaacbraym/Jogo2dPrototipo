@@ -70,8 +70,21 @@ export const OBJETOS: ObjetoMundo[] = [
   {
     id: 'pia', nome: 'Pia e espelho', desenho: 'pia', x: 1330, y: 612, w: 170, h: 250,
     acoes: [
-      { id: 'banho', label: 'Tomar banho', icon: '🚿', minutos: 25, motion: 'limparSuor', dx: 0, lado: 1, efeito: { stats: { aparencia: 1, felicidade: 1 }, nec: { energia: 6 } }, texto: 'Banho tomado. Gente de novo.' },
-      { id: 'escovar', label: 'Escovar os dentes', icon: '🪥', minutos: 5, motion: 'parado', dx: 0, lado: 1, efeito: { stats: { saude: 1 } }, texto: 'Dentes brilhando.' },
+      { id: 'lavarMaos', label: 'Lavar as mãos', icon: '🧼', minutos: 2, motion: 'lavarMaos', dx: 0, lado: 1, especial: 'lavarMaos', efeito: { nec: { higiene: 6 } } },
+      { id: 'escovar', label: 'Escovar os dentes', icon: '🪥', minutos: 5, motion: 'lavarMaos', dx: 0, lado: 1, efeito: { stats: { saude: 1 }, nec: { higiene: 5 } }, texto: 'Dentes brilhando. O dentista ficaria orgulhoso (e desempregado).' },
+    ],
+  },
+  {
+    id: 'vaso', nome: 'Vaso sanitário', desenho: 'vaso', x: 1470, y: 612, w: 100, h: 150, opts: { tampa: 0, agua: 0 },
+    acoes: [
+      { id: 'xixi', label: 'Fazer o número 1', icon: '💧', minutos: 3, motion: 'xixiEmPe', dx: -64, dy: 6, lado: 1, especial: 'xixi', efeito: { nec: { bexiga: 100 } } },
+      { id: 'coco', label: 'Fazer o número 2', icon: '💩', minutos: 12, motion: 'sentarVaso', dx: 6, dy: 2, lado: 1, especial: 'coco', efeito: { nec: { bexiga: 100 } } },
+    ],
+  },
+  {
+    id: 'chuveiro', nome: 'Chuveiro', desenho: 'chuveiro', x: 1630, y: 598, w: 170, h: 420,
+    acoes: [
+      { id: 'banho', label: 'Tomar banho', icon: '🚿', minutos: 20, motion: 'banhoEnsaboar', dx: 0, dy: -20, lado: 1, especial: 'banho', efeito: { stats: { aparencia: 1, felicidade: 1 }, nec: { higiene: 100, energia: 6 } } },
     ],
   },
   // ---- cozinha
@@ -79,7 +92,7 @@ export const OBJETOS: ObjetoMundo[] = [
     id: 'geladeira', nome: 'Geladeira', prop: 'geladeira', x: 1880, y: 640, w: 120, h: 260,
     acoes: [
       { id: 'lanche', label: 'Fazer um lanche', icon: '🥪', minutos: 15, motion: 'comer', dx: 90, lado: -1, efeito: { nec: { fome: 30, energia: 5 } }, texto: 'Sanduíche de geladeira: gourmet do improviso.' },
-      { id: 'agua', label: 'Beber água', icon: '🥤', minutos: 3, motion: 'beber', dx: 90, lado: -1, segura: 'xicara', efeito: { stats: { saude: 1 }, nec: { energia: 3 } }, texto: 'Hidratado(a).' },
+      { id: 'agua', label: 'Beber água', icon: '🥤', minutos: 3, motion: 'beber', dx: 90, lado: -1, segura: 'xicara', efeito: { stats: { saude: 1 }, nec: { energia: 3, bexiga: -18 } }, texto: 'Hidratado(a). A bexiga anotou.' },
     ],
   },
   {
@@ -143,26 +156,26 @@ export const OBJETOS: ObjetoMundo[] = [
   ...[8450, 8750, 9050].map((x, i): ObjetoMundo => ({
     id: 'esteira' + (i + 1), nome: 'Esteira', prop: 'esteira', x, y: 640, w: 200, h: 200, exclusivo: true,
     acoes: [
-      { id: 'correrEsteira', label: 'Correr 30 min', icon: '🏃', minutos: 30, motion: 'esteira', dx: -8, dy: -2, lado: 1, elev: 14, efeito: { stats: { saude: 3, aparencia: 1 }, fitness: 3, nec: { energia: -18, fome: -12 } }, texto: 'Cinco quilômetros. Ou quatro. O visor está mentindo?', cond: juntos(matriculado, cansado(20)) },
+      { id: 'correrEsteira', label: 'Correr 30 min', icon: '🏃', minutos: 30, motion: 'esteira', dx: -8, dy: -2, lado: 1, elev: 14, efeito: { stats: { saude: 3, aparencia: 1 }, fitness: 3, nec: { energia: -18, fome: -12, higiene: -22 } }, texto: 'Cinco quilômetros. Ou quatro. O visor está mentindo?', cond: juntos(matriculado, cansado(20)) },
       { id: 'caminharEsteira', label: 'Caminhar 30 min', icon: '🚶', minutos: 30, motion: 'andar', dx: -8, dy: -2, lado: 1, elev: 14, efeito: { stats: { saude: 2 }, fitness: 1, nec: { energia: -8, fome: -6 } }, texto: 'Caminhada leve, consciência pesada.', cond: juntos(matriculado, cansado(10)) },
     ],
   })),
   {
     id: 'bebedouro', nome: 'Bebedouro', desenho: 'bebedouro', x: 9150, y: 606, w: 90, h: 200,
     acoes: [
-      { id: 'beberAcademia', label: 'Beber água', icon: '💧', minutos: 3, motion: 'beber', dx: -60, lado: 1, segura: 'xicara', efeito: { nec: { energia: 4 } }, texto: 'Água gelada pós-treino: melhor bebida do mundo.' },
+      { id: 'beberAcademia', label: 'Beber água', icon: '💧', minutos: 3, motion: 'beber', dx: -60, lado: 1, segura: 'xicara', efeito: { nec: { energia: 4, bexiga: -18 } }, texto: 'Água gelada pós-treino: melhor bebida do mundo.' },
     ],
   },
   ...[9480, 9900].map((x, i): ObjetoMundo => ({
     id: 'supino' + (i + 1), nome: 'Supino', prop: 'bancoSupino', x, y: 640, w: 240, h: 170, exclusivo: true,
     acoes: [
-      { id: 'supino', label: 'Supino (peito)', icon: '🏋️', minutos: 40, motion: 'levantarPeso', dx: 0, lado: 1, efeito: { stats: { saude: 2, aparencia: 2 }, fitness: 3, nec: { energia: -20, fome: -10 } }, texto: 'O peito vai estar dolorido amanhã. Ótimo sinal (dizem).', cond: juntos(matriculado, cansado(22)) },
+      { id: 'supino', label: 'Supino (peito)', icon: '🏋️', minutos: 40, motion: 'levantarPeso', dx: 0, lado: 1, efeito: { stats: { saude: 2, aparencia: 2 }, fitness: 3, nec: { energia: -20, fome: -10, higiene: -18 } }, texto: 'O peito vai estar dolorido amanhã. Ótimo sinal (dizem).', cond: juntos(matriculado, cansado(22)) },
     ],
   })),
   {
     id: 'rackPesos', nome: 'Halteres', prop: 'rackPesos', x: 10300, y: 640, w: 240, h: 180, exclusivo: true, escala: 1.1,
     acoes: [
-      { id: 'rosca', label: 'Rosca direta (bíceps)', icon: '💪', minutos: 30, motion: 'rosca', dx: 150, lado: -1, segura: 'haltere', efeito: { stats: { aparencia: 2, saude: 1 }, fitness: 2, nec: { energia: -14, fome: -8 } }, texto: 'Bíceps bombeado. Foto no espelho obrigatória.', cond: juntos(matriculado, cansado(15)) },
+      { id: 'rosca', label: 'Rosca direta (bíceps)', icon: '💪', minutos: 30, motion: 'rosca', dx: 150, lado: -1, segura: 'haltere', efeito: { stats: { aparencia: 2, saude: 1 }, fitness: 2, nec: { energia: -14, fome: -8, higiene: -14 } }, texto: 'Bíceps bombeado. Foto no espelho obrigatória.', cond: juntos(matriculado, cansado(15)) },
     ],
   },
   {
@@ -401,14 +414,25 @@ export const PINTORES: Record<string, Pintor> = {
     ctx.fillStyle = '#9fd3dc';
     ctx.fillRect(t.x0, 244, t.x1 - t.x0, 8);
     piso(ctx, t.x0, t.x1, 'azulejo', '#dbe7ea', '#b9ccd1');
-    // box do chuveiro
-    ctx.fillStyle = 'rgba(170,220,235,0.35)';
-    ctx.fillRect(t.x0 + 400, 120, 160, FLOOR - 120);
-    ctx.strokeStyle = '#b9c8cc';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(t.x0 + 400, 120, 160, FLOOR - 120);
+    // box do chuveiro: parede de azulejo, ralo e registro (o chuveiro e a vidraça são objetos)
+    ctx.fillStyle = '#d6ecf1';
+    ctx.fillRect(t.x0 + 390, 110, 180, FLOOR - 110);
+    ctx.strokeStyle = 'rgba(80,140,160,0.3)';
+    ctx.lineWidth = 1.5;
+    for (let y = 130; y < FLOOR; y += 30) { ctx.beginPath(); ctx.moveTo(t.x0 + 390, y); ctx.lineTo(t.x0 + 570, y); ctx.stroke(); }
+    ctx.fillStyle = '#b9c8cc';
+    ctx.fillRect(t.x0 + 386, 104, 188, 8);
+    ctx.fillStyle = '#9fb1b6';
+    ctx.beginPath(); ctx.ellipse(t.x0 + 480, 612, 16, 5, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#c9d2d4';
-    ctx.beginPath(); ctx.arc(t.x0 + 480, 150, 18, 0, Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(t.x0 + 540, 330, 9, 0, Math.PI * 2); ctx.fill();
+    // porta-toalha com toalha pendurada
+    ctx.fillStyle = '#9aa7b0';
+    ctx.fillRect(t.x0 + 30, 300, 110, 6);
+    ctx.fillStyle = '#f4f1ea';
+    ctx.fillRect(t.x0 + 50, 306, 70, 120);
+    ctx.fillStyle = '#7fb3d5';
+    ctx.fillRect(t.x0 + 50, 390, 70, 10);
     luminariaTeto(ctx, t.x0 + 300, hora);
     batente(ctx, t.x0);
   },
@@ -595,6 +619,52 @@ export const DESENHOS: Record<string, (ctx: Ctx, o: ObjetoMundo, hora: number) =
     ctx.fillText('🚌', 136, -258);
     ctx.fillStyle = '#58606a';
     ctx.fillRect(152, -240, 8, 240);
+  },
+  // vaso sanitário (tampa abre; na descarga a água gira) + rolo de papel na parede
+  vaso: (ctx, o) => {
+    const op = o as unknown as { tampa?: number; agua?: number };
+    // rolo de papel
+    ctx.fillStyle = '#9aa7b0';
+    ctx.fillRect(-92, -176, 26, 5);
+    ctx.fillStyle = '#fbfaf6';
+    ctx.beginPath(); ctx.arc(-79, -164, 11, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(-90, -164, 9, 22);
+    // caixa acoplada
+    ctx.fillStyle = '#f4f7f8';
+    ctx.fillRect(-46, -150, 46, 78);
+    ctx.fillStyle = '#dfe7ea';
+    ctx.fillRect(-50, -156, 54, 10);
+    ctx.fillStyle = '#c9d2d4';
+    ctx.beginPath(); ctx.arc(-23, -151, 5, 0, Math.PI * 2); ctx.fill();
+    // pé e bacia
+    ctx.fillStyle = '#e9eff1';
+    ctx.beginPath(); ctx.moveTo(-18, 0); ctx.lineTo(26, 0); ctx.quadraticCurveTo(30, -34, 44, -58); ctx.lineTo(-30, -58); ctx.quadraticCurveTo(-24, -30, -18, 0); ctx.fill();
+    ctx.fillStyle = '#f7fafb';
+    ctx.beginPath(); ctx.ellipse(8, -60, 40, 11, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = (op.agua ?? 0) > 0 ? '#8fd0e6' : '#bfe3ee';
+    ctx.beginPath(); ctx.ellipse(10, -61, 28, 6, 0, 0, Math.PI * 2); ctx.fill();
+    if ((op.agua ?? 0) > 0) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(10, -61, 16 * (op.agua ?? 0), 3.5 * (op.agua ?? 0), (op.agua ?? 0) * 9, 0, Math.PI * 1.4); ctx.stroke();
+    }
+    // assento e tampa
+    ctx.strokeStyle = '#dfe7ea';
+    ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.ellipse(8, -62, 40, 11, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#f4f7f8';
+    if (op.tampa) { ctx.beginPath(); ctx.ellipse(-36, -100, 9, 42, 0.1, 0, Math.PI * 2); ctx.fill(); }
+    else { ctx.beginPath(); ctx.ellipse(8, -64, 41, 10, 0, Math.PI, Math.PI * 2); ctx.fill(); }
+  },
+  // chuveiro (a água é desenhada em partículas pelo controlador)
+  chuveiro: (ctx) => {
+    ctx.fillStyle = '#b9c8cc';
+    ctx.fillRect(-4, -470, 8, 40);
+    ctx.fillRect(-4, -434, 34, 7);
+    ctx.fillStyle = '#c9d2d4';
+    ctx.beginPath(); ctx.ellipse(34, -424, 22, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    for (let i = -2; i <= 2; i++) ctx.fillRect(32 + i * 7, -419, 2, 2);
   },
   balcaoAcademia: (ctx) => {
     ctx.fillStyle = '#e63956';

@@ -28,7 +28,9 @@ export const MIN_POR_SEG = 1.5;
 /** ações correm em avanço rápido: segundos reais = minutos / esta taxa (mínimo 2,4 s) */
 export const AVANCO = 14;
 /** quanto cada necessidade cai por hora de jogo */
-export const QUEDA_HORA: Record<Necessidade, number> = { energia: 3.2, fome: 5, diversao: 3, social: 2.4 };
+export const QUEDA_HORA: Record<Necessidade, number> = { energia: 3.2, fome: 5, diversao: 3, social: 2.4, higiene: 2.2, bexiga: 7 };
+/** a partir de que idade o banho mostra o personagem sem roupa (menores tomam banho atrás da cortina, sempre vestidos) */
+export const IDADE_NUDEZ = 18;
 /** retorno decrescente: ganho × 1/(1 + usos no ano × fator) */
 export const CANSACO_ANO = 0.1;
 export const HORA_ACORDAR = 7 * 60;
@@ -338,6 +340,10 @@ export class Explorador {
 
   private especial(o: ObjetoMundo, ac: AcaoObjeto) {
     const e = this.eu;
+    if (ac.especial === 'banho') return void this.roteiroBanho(o);
+    if (ac.especial === 'xixi') return void this.roteiroVaso(o, 1);
+    if (ac.especial === 'coco') return void this.roteiroVaso(o, 2);
+    if (ac.especial === 'lavarMaos') return void this.roteiroLavarMaos();
     if (ac.especial === 'dormir') {
       e.elev = 34;
       e.play('deitado', { fade: 0.3 });
@@ -434,6 +440,7 @@ export class Explorador {
       const c = { ...this.ctxInteracao(n, p), hoje: n.hoje[it.id] ?? 0 };
       n.hoje[it.id] = (n.hoje[it.id] ?? 0) + 1;
       const r = it.run(c);
+      this.comentarCorpo(n, r);
       await this.encenar(n, r);
       if (n.f && !this.conheceu.has(p.id) && n.f.nomeConhecido) this.conheceu.add(p.id);
       if (r.novoContato) {
@@ -492,6 +499,21 @@ export class Explorador {
     if (dfam && !r.novoContato) this.ui.flutuar(n.ator.x, n.ator.topWorld() - 18, `${dfam > 0 ? '+' : ''}${dfam} familiaridade`, dfam > 0 ? '#ffe08a' : '#ff8a8a');
     this.ui.registrar(r.texto, r.tom);
     if (r.tom === 'bom' && n.f && n.f.fam >= 35 && fam0 < 35) this.ui.aviso(`${n.p.first} agora é seu/sua colega de academia. Já dá para pedir o contato!`, 'ok');
+  }
+
+  /** As pessoas reparam: mau cheiro e mão que não foi lavada depois do banheiro. */
+  private comentarCorpo(n: NpcVivo, r: Resultado) {
+    if (n.papel === 'passante') return;
+    if (this.est.nec.higiene < 18) {
+      if (n.f) mudarFam(n.f, -3);
+      r.ela = rng.pick(['(...cheiro de academia sem banho, hein?)', 'Nossa, você veio direto da esteira?', '*respira pela boca*']) + (r.ela ? ' ' + r.ela : '');
+      r.texto += ' (Seu cheiro não ajudou nada. Um banho resolveria.)';
+      r.tom = r.tom === 'bom' ? 'neutro' : r.tom;
+    }
+    if (this.est.maosSujas && (r.fisico === 'apertoMao' || r.fisico === 'highFive')) {
+      if (n.f) mudarFam(n.f, -2);
+      r.ela = 'Você lavou as mãos depois do banheiro? ...Tá bom, né.' + (r.ela ? ' ' + r.ela : '');
+    }
   }
 
   private fimInteracao(n: NpcVivo) {
@@ -757,8 +779,13 @@ export class Explorador {
   private tick(dt: number) {
     if (this.encerrado) return;
     const e = this.eu;
-    // uso de objeto em andamento: tempo corre acelerado
-    if (this.ocupadoEu) {
+    // roteiro (banho, vaso) em andamento: relógio acelerado e barra de progresso
+    if (this.roteiro) {
+      const r = this.roteiro;
+      r.t += dt;
+      this.avancar((r.minutos * dt) / r.dur);
+      this.ui.progresso(Math.min(1, r.t / r.dur), r.rotulo);
+    } else if (this.ocupadoEu) {
       const u = this.ocupadoEu;
       u.t += dt;
       this.avancar((u.acao.minutos * dt) / u.dur);
@@ -781,6 +808,7 @@ export class Explorador {
     if (this.direcao && (this.direcao.x || this.direcao.y) && !this.emInteracao && !this.ocupadoEu) {
       this.mover = { x: e.x + this.direcao.x * 90, y: clamp(e.y + this.direcao.y * 40, CHAO_FUNDO, CHAO_FRENTE), correr: this.direcao.correr };
     }
+    this.tickCorpo(dt);
     this.tickNpcs(dt);
     this.tickPets(dt);
     this.tickPassantes(dt);
@@ -799,6 +827,7 @@ export class Explorador {
   /** contorno do objeto sob o ponteiro (destaque) */
   destaque: ObjetoMundo | null = null;
   private desenharDestaques(ctx: CanvasRenderingContext2D, _v: { x0: number; x1: number }) {
+    this.desenharBanheiro(ctx);
     const o = this.destaque;
     if (!o) return;
     const s = o.escala ?? 1;
@@ -808,6 +837,290 @@ export class Explorador {
     ctx.lineWidth = 3;
     ctx.strokeRect(o.x - (o.w * s) / 2, o.y - o.h * s, o.w * s, o.h * s + 10);
     ctx.restore();
+  }
+
+  // ================================================================== banheiro (banho completo e necessidades)
+  /** roteiro em andamento (bloqueia cliques; o relógio corre acelerado) */
+  roteiro: { t: number; dur: number; minutos: number; rotulo: string } | null = null;
+  /** estado visual do banho (vidraça, água, vapor) e do jato */
+  banho: { adulto: boolean; agua: boolean; vapor: number } | null = null;
+  jato: { ate: number } | null = null;
+  /** roupa de antes do banho/vaso (guardada uma única vez; sempre devolvida no fim do roteiro) */
+  private roupaNormal: Actor['outfit'] = undefined;
+  private roupaGuardada = false;
+  private proxCheiro = 0;
+
+  private adulto() { return this.L.player.age >= IDADE_NUDEZ; }
+  private espera(s: number) { return this.d.wait(s); }
+  /** troca a roupa do jogador (só adultos chegam a ficar sem roupa) */
+  private roupa(estado: 'normal' | 'semParteDeCima' | 'semRoupa') {
+    const e = this.eu;
+    if (!this.adulto()) return;
+    if (!this.roupaGuardada) { this.roupaNormal = e.outfit; this.roupaGuardada = true; }
+    if (estado === 'normal') { e.outfit = this.roupaNormal; this.roupaGuardada = false; return; }
+    if (estado === 'semParteDeCima') e.outfit = { ...(this.roupaNormal ?? {}), top: 'nu' };
+    else e.outfit = { ...(this.roupaNormal ?? {}), top: 'nu', bottom: 'nu', shoes: 'descalco' };
+  }
+
+  private async rodarRoteiro(rotulo: string, minutos: number, dur: number, fn: () => Promise<void>) {
+    this.emInteracao = true;
+    this.roteiro = { t: 0, dur, minutos, rotulo };
+    try { await fn(); } finally {
+      // segurança: ninguém sai do banheiro sem roupa, aconteça o que acontecer no roteiro
+      if (this.roupaGuardada) { this.eu.outfit = this.roupaNormal; this.roupaGuardada = false; }
+      this.banho = null;
+      this.jato = null;
+      this.roteiro = null;
+      this.emInteracao = false;
+      this.ui.progresso(null);
+      this.eu.elev = 0;
+      this.eu.propN = undefined;
+      this.eu.propF = undefined;
+      this.eu.maoForma = null;
+      this.eu.play('parado', { fade: 0.3 });
+      this.ui.atualizar();
+    }
+  }
+
+  /** Banho de verdade: entra no box, tira a roupa, água, cabelo, sabonete, enxágue, toalha, veste. */
+  async roteiroBanho(o: ObjetoMundo) {
+    const e = this.eu, adulto = this.adulto();
+    await this.rodarRoteiro('Tomando banho', 20, 21, async () => {
+      e.x = o.x; e.y = o.y + 8; e.facing = 1;
+      this.banho = { adulto, agua: false, vapor: 0 };
+      if (adulto) {
+        this.d.say(e, rng.pick(['Hora do banho!', 'Água quente, por favor...', 'Banho: o único lugar onde eu canto bem.']), 1.6, 'pensa');
+        const tira = e.play('tirarRoupa', { fade: 0.2 });
+        await this.espera(1.05); this.roupa('semParteDeCima'); sfx.swoosh();
+        await this.espera(1.0); this.roupa('semRoupa'); sfx.swoosh();
+        await tira;
+      } else {
+        this.d.say(e, 'Fechando a cortina!', 1.4, 'pensa');
+        await this.espera(1.2);
+      }
+      // abre a água
+      this.banho.agua = true;
+      sfx.splash();
+      e.play('banhoEnxaguar', { fade: 0.3 });
+      await this.espera(2.2);
+      // cabelo com xampu
+      e.play('banhoCabelo', { fade: 0.3 });
+      for (let i = 0; i < 6; i++) { this.espuma(e.headWorld().x, e.headWorld().y - 20, 3); if (i % 2 === 0) sfx.splash(); await this.espera(0.55); }
+      if (rng.chance(0.4)) this.d.say(e, rng.pick(['🎵 Evidências... 🎵', '🎵 Lá lá lá... 🎵', 'Caiu xampu no olho!!']), 1.8, 'fala');
+      // sabonete no corpo
+      e.propN = 'sabonete';
+      e.play('banhoEnsaboar', { fade: 0.3 });
+      for (let i = 0; i < 7; i++) { this.espuma(e.x + rng.range(-20, 20), e.y - rng.range(120, 230) * e.scale, 2); await this.espera(0.5); }
+      e.propN = undefined;
+      // enxágue
+      e.play('banhoEnxaguar', { fade: 0.3 });
+      await this.espera(2.4);
+      // fecha a água, seca
+      this.banho.agua = false;
+      sfx.tick();
+      e.propN = 'toalha';
+      e.play('secarToalha', { fade: 0.3 });
+      await this.espera(2.6);
+      e.propN = undefined;
+      if (adulto) {
+        const veste = e.play('vestirRoupa', { fade: 0.2 });
+        await this.espera(0.8); this.roupa('semParteDeCima');
+        await this.espera(1.0); this.roupa('normal');
+        await veste;
+      }
+      this.banho = null;
+      this.est.maosSujas = false;
+      this.aplicarEfeito('banho', o.acoes[0].efeito, 'Banho tomado. Cheirosa(o), renovada(o) e gente de novo.');
+    });
+  }
+
+  /** Vaso: número 1 (homem em pé, com a tampa levantada; mulher sentada) ou número 2 (sentado, celular, força, alívio). */
+  async roteiroVaso(o: ObjetoMundo, n: 1 | 2) {
+    const e = this.eu, adulto = this.adulto();
+    const pp = this.props.get(o.id)!;
+    const emPe = n === 1 && this.L.player.sex === 'm';
+    await this.rodarRoteiro(n === 1 ? 'Número 1' : 'Número 2', n === 1 ? 3 : 12, n === 1 ? 7 : 14, async () => {
+      if (emPe) {
+        e.x = o.x - 64; e.y = o.y + 6; e.facing = 1;
+        pp.opts = { ...pp.opts, tampa: 1 } as typeof pp.opts;
+        sfx.tick();
+        e.play('xixiEmPe', { fade: 0.25 });
+        await this.espera(0.6);
+        this.jato = { ate: this.sc.t + 3.4 };
+        for (let i = 0; i < 5; i++) { this.respingo(o); await this.espera(0.65); }
+        if (rng.chance(0.5)) this.d.say(e, rng.pick(['Ahhh...', '*assobia*', 'Mirar é uma arte.']), 1.4, 'pensa');
+        this.jato = null;
+        await e.play('sacudir', { fade: 0.1 });
+        if (rng.chance(0.35)) { this.ui.registrar('Você esqueceu a tampa levantada. Clássico.', 'neutro'); }
+        else pp.opts = { ...pp.opts, tampa: 0 } as typeof pp.opts;
+      } else {
+        // sentar: abaixa a roupa de baixo (adultos) e senta
+        e.x = o.x + 6; e.y = o.y + 3; e.facing = 1;
+        if (adulto) { if (!this.roupaGuardada) { this.roupaNormal = e.outfit; this.roupaGuardada = true; } e.outfit = { ...(this.roupaNormal ?? {}), bottom: 'nu' }; }
+        e.elev = 0;
+        e.play('sentarVaso', { fade: 0.3 });
+        await this.espera(1.2);
+        if (n === 1) {
+          for (let i = 0; i < 4; i++) { this.respingo(o); await this.espera(0.6); }
+          this.d.say(e, 'Ahhh...', 1.2, 'pensa');
+        } else {
+          e.propN = 'celular';
+          e.play('celularVaso', { fade: 0.3 });
+          this.d.say(e, rng.pick(['Só três minutinhos no zap...', 'Deixa eu ver as notícias...', 'Melhor lugar pra pensar na vida.']), 2.2, 'pensa');
+          await this.espera(3.2);
+          e.propN = undefined;
+          e.play('esforcoVaso', { fade: 0.2 });
+          for (let i = 0; i < 5; i++) { this.sc.fx.spawn('suor', e.headWorld().x, e.headWorld().y - 10, 2, { speed: 60 }); await this.espera(0.45); }
+          sfx.pop(); await this.espera(0.35); sfx.pop();
+          e.setExpr('alivio', 2.5);
+          e.play('sentarVaso', { fade: 0.3 });
+          this.d.say(e, rng.pick(['Ufa...', 'Missão cumprida.', 'Leve como uma pluma.']), 1.6, 'fala');
+          this.sc.fx.spawn('fumaca', o.x + 10, o.y - 90, 4, { speed: 30, size: 16, life: 1.6, color: 'rgba(150,190,90,0.5)' });
+          await this.espera(1.4);
+        }
+        // papel e levantar
+        e.propF = 'papelHigienico';
+        await e.play('limparVaso', { fade: 0.2 });
+        if (n === 2) await e.play('limparVaso', { fade: 0.1 });
+        e.propF = undefined;
+        e.play('parado', { fade: 0.3 });
+        e.x = o.x - 60; e.y = o.y + 8;
+        if (this.roupaGuardada) { e.outfit = this.roupaNormal; this.roupaGuardada = false; }
+        await this.espera(0.3);
+      }
+      // descarga
+      await e.play('puxarDescarga', { fade: 0.15 });
+      sfx.whoosh(); sfx.splash();
+      for (let k = 0; k <= 10; k++) { pp.opts = { ...pp.opts, agua: 1 - k / 10 } as typeof pp.opts; await this.espera(0.08); }
+      pp.opts = { ...pp.opts, agua: 0 } as typeof pp.opts;
+      this.est.maosSujas = true;
+      const ef = n === 1 ? { nec: { bexiga: 100 } } : { stats: { saude: 1, felicidade: 1 }, nec: { bexiga: 100, higiene: -6 } };
+      this.aplicarEfeito(n === 1 ? 'xixi' : 'coco', ef, n === 1 ? 'Alívio imediato.' : 'Leveza na alma (e no corpo).');
+      this.ui.registrar('Dica: lave as mãos na pia. As pessoas reparam.', 'neutro');
+    });
+  }
+
+  async roteiroLavarMaos() {
+    const e = this.eu;
+    await this.rodarRoteiro('Lavando as mãos', 2, 2.6, async () => {
+      e.play('lavarMaos', { fade: 0.2 });
+      sfx.splash();
+      for (let i = 0; i < 4; i++) { this.espuma(e.handWorld(true).x + e.facing * 10, e.handWorld(true).y, 2); await this.espera(0.5); }
+      this.est.maosSujas = false;
+      this.aplicarEfeito('lavarMaos', { nec: { higiene: 6 } }, 'Mãos lavadas. Parabéns, cidadão exemplar.');
+    });
+  }
+
+  private espuma(x: number, y: number, n: number) {
+    this.sc.fx.spawn('bolha', x, y, n, { speed: 40, size: 7, life: 1.1, color: 'rgba(255,255,255,0.9)' });
+  }
+  private respingo(o: ObjetoMundo) {
+    this.sc.fx.spawn('bolha', o.x + 8, o.y - 64, 2, { speed: 30, size: 4, life: 0.4, color: 'rgba(250,225,120,0.8)' });
+  }
+
+  /** Necessidades do corpo: acidente quando a bexiga zera, mau cheiro com higiene baixa. */
+  private tickCorpo(dt: number) {
+    const e = this.eu, est = this.est;
+    if (est.nec.bexiga <= 0 && !this.roteiro && !this.emInteracao) {
+      est.nec.bexiga = 100;
+      est.nec.higiene = Math.min(est.nec.higiene, 5);
+      stat(this.L, 'felicidade', -4);
+      this.pararUso();
+      this.mover = null;
+      e.play('nervoso', { fade: 0.2 });
+      e.setExpr('envergonhado', 4);
+      this.d.say(e, 'Ai não... não deu tempo.', 2.4, 'fala');
+      this.sc.fx.spawn('lagrima', e.x, e.y - 60, 6, { speed: 40, size: 6, life: 1, color: 'rgba(250,225,120,0.85)' });
+      addLog(this.L, 'Você não chegou a tempo ao banheiro. Constrangimento nível máximo.', 'ruim', '😳');
+      this.ui.registrar('😳 Não deu tempo de chegar ao banheiro... Higiene lá embaixo. Hora de um banho.', 'ruim');
+      for (const n of this.npcs) if (n.estado !== 'interagindo' && Math.abs(n.ator.x - e.x) < 700 && n.papel !== 'passante') {
+        if (n.f) mudarFam(n.f, -4);
+        n.ator.play('rirDe', { fade: 0.2 });
+        n.estado = 'pausa'; n.ate = this.sc.t + 3;
+      }
+    }
+    if (est.nec.higiene < 18) {
+      this.proxCheiro -= dt;
+      if (this.proxCheiro <= 0) {
+        this.proxCheiro = 1.2;
+        this.sc.fx.spawn('fumaca', e.x + rng.range(-25, 25), e.y - rng.range(60, 180) * e.scale, 1, { speed: 25, size: 12, life: 1.4, color: 'rgba(140,180,80,0.45)' });
+      }
+    }
+  }
+
+  /** Vidraça jateada do box (esconde o corpo no meio), vapor, água e o jato do xixi. */
+  private desenharBanheiro(ctx: CanvasRenderingContext2D) {
+    const b = this.banho;
+    const ch = OBJETOS.find((o) => o.id === 'chuveiro')!;
+    if (b) {
+      const t = this.sc.t;
+      if (b.agua) {
+        // água caindo do chuveiro
+        ctx.strokeStyle = 'rgba(170,215,240,0.75)';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 16; i++) {
+          const x = ch.x + 20 + ((i * 7) % 34) - 12 + Math.sin(i + t * 3) * 3;
+          const y0 = ch.y - 416 + ((t * 700 + i * 43) % 360);
+          ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x - 2, y0 + 18); ctx.stroke();
+        }
+        b.vapor = Math.min(1, b.vapor + 0.004);
+      } else b.vapor = Math.max(0, b.vapor - 0.004);
+      const x0 = ch.x - 82, x1 = ch.x + 82, y0 = 112, y1 = ch.y + 22;
+      if (b.adulto) {
+        // vidro transparente em cima e embaixo; faixa jateada (opaca) do peito às coxas — como box de verdade
+        ctx.fillStyle = 'rgba(210,235,245,0.22)';
+        ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+        // a faixa acompanha o corpo de quem está no box: do peito ao meio da coxa (cabeça, ombros e canelas aparecem)
+        const topo = this.eu.topWorld(), pe = this.eu.y - this.eu.elev, alt = pe - topo;
+        const fy0 = topo + alt * 0.27, fy1 = topo + alt * 0.66;
+        const g = ctx.createLinearGradient(0, fy0 - 14, 0, fy1 + 14);
+        g.addColorStop(0, 'rgba(236,246,250,0.55)');
+        g.addColorStop(0.08, 'rgba(236,246,250,0.97)');
+        g.addColorStop(0.92, 'rgba(236,246,250,0.97)');
+        g.addColorStop(1, 'rgba(236,246,250,0.55)');
+        ctx.fillStyle = g;
+        ctx.fillRect(x0, fy0 - 14, x1 - x0, fy1 - fy0 + 28);
+        ctx.strokeStyle = 'rgba(160,190,200,0.6)';
+        ctx.lineWidth = 1;
+        for (let y = fy0; y < fy1; y += 9) { ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke(); }
+      } else {
+        // menores: cortina fechada (só a cabeça aparece por cima)
+        ctx.fillStyle = '#7fb3d5';
+        ctx.fillRect(x0, ch.y - 250, x1 - x0, 272);
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        for (let x = x0 + 10; x < x1; x += 22) ctx.fillRect(x, ch.y - 250, 8, 272);
+        ctx.fillStyle = '#9aa7b0';
+        ctx.fillRect(x0 - 4, ch.y - 256, x1 - x0 + 8, 6);
+      }
+      // moldura do box
+      ctx.strokeStyle = '#b9c8cc';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+      // vapor
+      if (b.vapor > 0.02) {
+        for (let i = 0; i < 7; i++) {
+          const vx = x0 + 20 + ((i * 53) % (x1 - x0 - 40)), vy = y0 + 60 + ((i * 97 + t * 30) % 260);
+          ctx.fillStyle = `rgba(255,255,255,${0.18 * b.vapor})`;
+          ctx.beginPath(); ctx.arc(vx, vy, 30 + (i % 3) * 10, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+    }
+    // jato do xixi (sai por trás das mãos, cai na bacia)
+    if (this.jato && this.sc.t < this.jato.ate) {
+      const vaso = OBJETOS.find((o) => o.id === 'vaso')!;
+      const h = this.eu.handWorld(true);
+      const x0 = h.x + this.eu.facing * 6, y0 = h.y + 4, x1 = vaso.x + 6, y1 = vaso.y - 62;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(245,215,90,0.85)';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([10, 5]);
+      ctx.lineDashOffset = -this.sc.t * 90;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.quadraticCurveTo((x0 + x1) / 2 + 6, Math.min(y0, y1) - 26, x1, y1);
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   // ================================================================== fim do dia
@@ -857,8 +1170,11 @@ const PASSANTE: InteracaoMundo[] = [
 export function prepararEstado(L: Life): EstadoExplorar {
   const e = (L.explorar ??= {
     dias: 0, diasNoAno: 0, anoRef: L.player.age, hora: HORA_ACORDAR,
-    nec: { energia: 90, fome: 70, diversao: 70, social: 60 }, usos: {}, frequentadores: {},
+    nec: { energia: 90, fome: 70, diversao: 70, social: 60, higiene: 80, bexiga: 70 }, usos: {}, frequentadores: {},
   });
+  // saves anteriores às necessidades novas
+  e.nec.higiene ??= 80;
+  e.nec.bexiga ??= 70;
   if (e.anoRef !== L.player.age) {
     const passou = Math.max(0, L.player.age - e.anoRef);
     e.anoRef = L.player.age;

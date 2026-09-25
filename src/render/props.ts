@@ -73,6 +73,36 @@ export const HELD: Record<string, { follow: boolean; draw: Held; off?: Pt }> = {
       ctx.fillRect(-6, -10, 12, 2);
     },
   },
+  // toalha de banho dobrada na mão (secar-se)
+  toalha: {
+    follow: false,
+    draw: (ctx) => {
+      box(ctx, -16, -26, 32, 44, 6, '#f4f1ea', { top: false });
+      ctx.fillStyle = '#7fb3d5';
+      ctx.fillRect(-16, -8, 32, 6);
+      ctx.fillStyle = 'rgba(0,0,0,0.08)';
+      ctx.fillRect(-16, 10, 32, 4);
+    },
+  },
+  // sabonete (espuma na mão durante o banho)
+  sabonete: {
+    follow: false,
+    draw: (ctx) => {
+      box(ctx, -9, -6, 18, 11, 5, '#f7b6d2', { top: false });
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(-6 + i * 4.5, -7 - (i % 2) * 3, 3.2, 0, Math.PI * 2); ctx.fill(); }
+    },
+  },
+  // um pedaço de papel higiênico
+  papelHigienico: {
+    follow: false,
+    draw: (ctx) => {
+      ctx.fillStyle = '#fbfaf6';
+      ctx.beginPath(); ctx.moveTo(-8, -18); ctx.lineTo(8, -18); ctx.lineTo(10, 8); ctx.lineTo(-10, 6); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-9, -6); ctx.lineTo(9, -5); ctx.stroke();
+    },
+  },
   xicara: {
     follow: false,
     draw: (ctx, t) => {

@@ -261,6 +261,7 @@ function bottomCover(rc: RC): Cover | null {
   if (ap.top === 'smoking') col = '#1b1c22';
   if (ap.top === 'banho' && kind === 'sunga') col = ap.sex === 'm' ? pal.top : pal.top;
   const sh = shade(col, -0.22), line = shade(col, -0.58);
+  if (kind === 'nu') return null;
   switch (kind) {
     case 'jeans': case 'calca': case 'moletom': case 'legging': return { col, sh, line, to: 1, kind };
     case 'bermuda': return { col, sh, line, to: 0.62, kind };
@@ -577,6 +578,7 @@ export function drawTop(rc: RC) {
   const { ctx, ap, pal, d } = rc;
   const spec = TOP_SPECS[ap.top] ?? TOP_SPECS.camiseta;
   if (ap.top === 'banho' && ap.sex === 'm' && d.age >= 3) return;
+  if (ap.top === 'nu') return;
   const g = torsoGeom(rc);
   const col = topColorOf(rc);
   const sh = shade(col, -0.2), line = shade(col, -0.56);
