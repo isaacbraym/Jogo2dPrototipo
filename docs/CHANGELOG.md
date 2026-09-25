@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-25 — Acesso ao modo Explorar e fim da "versão antiga" (Claude)
+- **Tela de título: botão "Explorar o mundo" (NOVO)** — entra direto no mundo point-and-click com a última vida salva
+  (se tiver 4+ anos) ou cria uma vida de 20 anos. Antes o modo só aparecia no botão VIVER O DIA da tela da vida, e uma
+  vida nova começa bebê (0 anos) — quem abria o jogo nunca chegava ao mundo novo. Selo "NOVO" também no VIVER O DIA.
+- **Versão visível** no rodapé da tela de título (`Versão AAAA-MM-DD HH:MM · commit`; `+` = com mudanças locais), gerada no
+  build (`__VERSAO__` em `vite.config.ts`, `src/versao.ts`).
+- **Site sempre atualizado**: ao abrir, o jogo confere o `index.html` publicado sem cache; se a versão for outra, recarrega
+  com `?v=` (o GitHub Pages deixava a página velha no cache do navegador por 10 min).
+- **`Jogar.bat` sempre abre a versão mais recente**: no branch `main` faz `git pull --ff-only` e **recompila a cada
+  abertura** (antes só compilava se `dist/` não existisse — ficava preso a um build antigo).
+
 ## 2026-09-25 — Modo Explorar v2: ambientes em profundidade, móveis em escala e manual do Codex (Claude) · branch `claude/modo-explorar`
 - **Mundo em profundidade ("casa de bonecas")**: rua contínua com interiores (y 560–750), **fachadas** na linha 750, jardim
   com caminho até a porta, **calçada contínua** e **rua com carros**. A fachada da casa/academia some quando você entra (e

@@ -5,20 +5,45 @@ set "GAME=%~dp0"
 if "%GAME:~-1%"=="\" set "GAME=%GAME:~0,-1%"
 set "PAGE=%GAME%\dist\index.html"
 
-if not exist "%PAGE%" (
-  echo Preparando o jogo pela primeira vez, aguarde...
-  pushd "%GAME%"
-  where npm >nul 2>nul
-  if errorlevel 1 (
-    echo Node.js nao encontrado. Instale em https://nodejs.org e tente novamente.
-    pause
-    exit /b 1
-  )
-  if not exist node_modules call npm install
-  call npm run build
-  popd
+rem Sempre abre a versao MAIS RECENTE do codigo:
+rem  1) se estiver no branch main, traz o que foi publicado no GitHub (so avanca, nunca apaga trabalho local);
+rem  2) recompila o jogo (dist\index.html) a partir do codigo atual.
+rem A versao em execucao aparece no rodape da tela de titulo (data e commit).
+pushd "%GAME%"
+where git >nul 2>nul
+if not errorlevel 1 (
+  set "BR="
+  for /f %%b in ('git rev-parse --abbrev-ref HEAD 2^>nul') do set "BR=%%b"
+  call :atualizaGit
 )
+where npm >nul 2>nul
+if errorlevel 1 goto semNode
+if not exist node_modules (
+  echo Instalando dependencias pela primeira vez, aguarde...
+  call npm install
+)
+echo Preparando a versao mais recente do jogo...
+call npm run build >nul 2>nul
+if errorlevel 1 echo Aviso: nao foi possivel recompilar agora - abrindo a ultima versao pronta.
+popd
+goto abrir
 
+:atualizaGit
+if /i not "%BR%"=="main" goto :eof
+echo Buscando atualizacoes do GitHub...
+git pull --ff-only --quiet >nul 2>nul
+goto :eof
+
+:semNode
+popd
+if not exist "%PAGE%" (
+  echo Node.js nao encontrado. Instale em https://nodejs.org e tente novamente.
+  pause
+  exit /b 1
+)
+echo Node.js nao encontrado: abrindo a ultima versao pronta do jogo.
+
+:abrir
 if not exist "%PAGE%" (
   echo Nao foi possivel preparar o jogo.
   pause

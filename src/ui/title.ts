@@ -11,6 +11,7 @@ import { maoAte, physical } from '../scenes/situations';
 import { marcos } from '../scenes/contato';
 import { GROUND } from '../render/bg';
 import { Life } from '../game/state';
+import { VERSAO } from '../versao';
 
 const SHOWCASE: { env: string; run: (d: Director, r: RNG) => Promise<void> }[] = [
   {
@@ -148,6 +149,10 @@ export function titleScreen(app: App) {
       h('button.btn.primary.big', { onclick: () => app.go('editor') }, icon('sparkles'), 'Nova vida'),
       cont ? h('button.btn.purple.big', { onclick: () => { const L = loadLife(cont); if (L) app.go('game', L); } }, icon('play'), 'Continuar') : null,
     ),
+    // atalho para o modo Explorar (mundo point-and-click): com a vida salva, se tiver idade; senão, uma vida nova de 20 anos
+    h('div.row', null,
+      h('button.btn.green.big.explorar-titulo', { onclick: () => explorarDireto(app, cont) }, h('span', null, '🗺️'), 'Explorar o mundo', h('em.novo', null, 'NOVO')),
+    ),
     h('div.row', null,
       h('button.btn', { onclick: () => loadDialog(app) }, icon('folder'), 'Carregar vida'),
       h('button.btn', { onclick: () => app.go('editor', { presets: true }) }, icon('face'), 'Meus personagens'),
@@ -161,7 +166,7 @@ export function titleScreen(app: App) {
       h('h1.logo', null, ...'VIVA!'.split('').map((c) => h('span', null, c))),
       h('p.tagline', null, 'Uma vida. Mil escolhas. Todas as consequências.'),
       menu,
-      h('div.title-foot', null, musicBtn, sfxBtn, h('span', null, 'Protótipo v1.0 · Canvas2D procedural')),
+      h('div.title-foot', null, musicBtn, sfxBtn, h('span', { title: 'Data e commit do build em execução' }, `Versão ${VERSAO}`)),
     ),
   );
   return {
@@ -192,4 +197,18 @@ export function loadDialog(app: App) {
     h('button.btn.small', { onclick: async () => { const data = await pickJSON(); if (data && data.player && data.stats) { saveLife(data as Life); toast('Vida importada!', 'ok'); render(); } else if (data) toast('Arquivo inválido.', 'bad'); } }, icon('upload'), 'Importar arquivo'),
   ));
   const close = modal('Carregar vida', body, { wide: true });
+}
+
+/** Entra direto no modo Explorar: com a última vida salva (viva e com 4+ anos) ou com uma vida nova de 20 anos. */
+async function explorarDireto(app: App, contId: string | null) {
+  const salva = contId ? loadLife(contId) : null;
+  if (salva && !salva.dead && salva.player.age >= 4) return app.go('explorar', salva);
+  const [{ newLife }, { rng }, { NOMES_F, NOMES_M, SOBRENOMES }] = await Promise.all([
+    import('../game/state'), import('../core/rng'), import('../game/names'),
+  ]);
+  const ap = randomAppearance(rng);
+  const L = newLife(ap, rng.pick(ap.sex === 'f' ? NOMES_F : NOMES_M), rng.pick(SOBRENOMES), 'São Paulo', 20);
+  saveLife(L);
+  if (salva) toast('Sua vida salva ainda é muito nova para sair pelo mundo — criamos uma pessoa de 20 anos para explorar.', 'info');
+  app.go('explorar', L);
 }

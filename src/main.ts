@@ -1,9 +1,13 @@
 import './ui/styles.css';
 import { App } from './ui/app';
 import { sfx } from './core/audio';
+import { verificarAtualizacao } from './versao';
 
 const root = document.getElementById('app')!;
 const params = new URLSearchParams(location.search);
+
+// site publicado: se existe versão mais nova no servidor, recarrega sem a cópia velha do cache
+verificarAtualizacao();
 
 if (params.has('test')) {
   import('./test').then((m) => m.testHarness(root));

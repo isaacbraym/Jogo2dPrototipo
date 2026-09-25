@@ -231,6 +231,13 @@ input[type='range']::-moz-range-thumb { width: 18px; height: 18px; border-radius
 .explore-btn b { font-size: 26px; }
 .explore-btn small { font-size: 10px; letter-spacing: 0.4px; margin-top: 2px; }
 .explore-btn:hover { transform: scale(1.07) rotate(3deg); }
+.explore-btn::after { content: 'NOVO'; position: absolute; top: -6px; right: -10px; background: #e8335a; color: #fff; font: 900 10px var(--display, sans-serif); padding: 3px 6px; border-radius: 8px; animation: novoPulso 1.4s ease-in-out infinite; }
+@keyframes novoPulso { 50% { transform: scale(1.15); } }
+.btn.green { background: linear-gradient(135deg, #3fbf7f, #2f8f6f); border-color: transparent; color: #fff; box-shadow: 0 10px 30px -10px rgba(63, 191, 127, 0.85); }
+.btn.green:hover { box-shadow: 0 14px 34px -8px rgba(63, 191, 127, 0.95); }
+.explorar-titulo { position: relative; }
+.explorar-titulo span { font-size: 22px; margin-right: 4px; }
+.explorar-titulo em.novo { position: absolute; top: -9px; right: -12px; font-style: normal; background: #e8335a; color: #fff; font: 900 11px var(--display, sans-serif); padding: 3px 7px; border-radius: 9px; animation: novoPulso 1.4s ease-in-out infinite; }
 .age-btn::before { content: ''; position: absolute; inset: -8px; border-radius: 50%; border: 3px solid rgba(255, 181, 71, 0.5); animation: ring 2.2s ease-out infinite; }
 @keyframes ring { 0% { transform: scale(0.9); opacity: 1; } 100% { transform: scale(1.25); opacity: 0; } }
 .age-btn:hover { transform: scale(1.07) rotate(-3deg); }
