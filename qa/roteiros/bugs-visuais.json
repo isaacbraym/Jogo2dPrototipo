@@ -1,0 +1,18 @@
+{
+  "tempo": 5000,
+  "tam": "1280x720",
+  "capturas": [
+    { "nome": "01-casa-dia-zoom-longe", "url": "/?ex=1500,712&zoom=0.55&hora=10#explorar" },
+    { "nome": "02-casa-noite-zoom-perto", "url": "/?ex=3000,712&zoom=1.3&hora=21#explorar" },
+    { "nome": "03-menor-banheiro", "url": "/?ex=1450,712&zoom=1.3&hora=10&idade=12#explorar" },
+    { "nome": "04-menor-banho", "url": "/?usar=chuveiro:banho&zoom=1.3&hora=10&idade=12#explorar", "tempo": 9000 },
+    { "nome": "05-porta-casa", "url": "/?ex=3300,790&zoom=1.3&hora=10#explorar" },
+    { "nome": "06-calcada-dia", "url": "/?ex=4300,850&zoom=0.55&hora=10#explorar" },
+    { "nome": "07-calcada-noite", "url": "/?ex=5200,850&zoom=1.3&hora=21#explorar" },
+    { "nome": "08-praca-dia", "url": "/?ex=4700,720&zoom=0.55&hora=16#explorar" },
+    { "nome": "09-praca-noite", "url": "/?ex=4700,720&zoom=1.3&hora=21#explorar" },
+    { "nome": "10-academia-longe", "url": "/?ex=7900,720&zoom=0.55&hora=9#explorar" },
+    { "nome": "11-academia-perto", "url": "/?usar=esteira1:correrEsteira&zoom=1.3&hora=9#explorar" },
+    { "nome": "12-supino-perto", "url": "/?usar=supino1:supino&zoom=1.3&hora=9#explorar" }
+  ]
+}
